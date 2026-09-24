@@ -392,6 +392,7 @@ export async function convertLeadToCustomer(
   let syncMessage = "";
   if (!customer.erpnext_customer_id && getERPNextConfig()) {
     const sync = await syncCustomerBackOffice(erpnextCustomerAdapter, {
+      businessId: context.business.id,
       customerId: customer.id,
       name: customer.contact_name,
       phone: customer.phone,
