@@ -1,0 +1,22 @@
+{
+  "name": "CodeEdge Business OS + ERPNext Demo",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {
+      "version": "latest",
+      "moby": true
+    }
+  },
+  "forwardPorts": [3000, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "CodeEdge Business OS",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "ERPNext Demo",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm install && chmod +x scripts/erpnext-demo.sh scripts/erpnext-demo-stop.sh scripts/erpnext-demo-reset.sh"
+}
