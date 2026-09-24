@@ -1,9 +1,6 @@
 name: ERPNext disposable smoke test
 
 on:
-  push:
-    branches:
-      - test/erpnext-adapter-e2e
   workflow_dispatch:
 
 permissions:
