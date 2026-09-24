@@ -47,3 +47,12 @@ export type ERPNextQuotation = {
   status?: string;
   currency?: string;
 };
+
+
+export type ERPNextCustomerCreateInput = {
+  name?: string;
+  customer_name: string;
+  customer_type: "Individual" | "Company";
+  customer_group: string;
+  territory: string;
+};
