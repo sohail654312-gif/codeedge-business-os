@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { createLead, type LeadFormState } from "@/modules/buy-from-me/leads/actions";
 import { leadSourceLabels, leadSources } from "@/modules/buy-from-me/leads/domain";
@@ -76,7 +77,7 @@ export function LeadCreateForm({
         <button className="btn primary" type="submit" disabled={pending}>
           {pending ? "Saving Lead..." : "Save Lead"}
         </button>
-        <a className="btn" href="/dashboard/buy-from-me/leads">Cancel</a>
+        <Link className="btn" href="/dashboard/buy-from-me/leads">Cancel</Link>
       </div>
     </form>
   );
