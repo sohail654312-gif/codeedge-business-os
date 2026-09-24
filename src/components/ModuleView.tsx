@@ -1,4 +1,5 @@
-import { leads } from "@/data/demo";
+import { demoLeads, formatLeadValue } from "@/modules/buy-from-me/leads/demo";
+import { leadSourceLabels, leadStatusLabels, type LeadStatus } from "@/modules/buy-from-me/leads/domain";
 
 const moduleData = {
   "find-me": {
@@ -39,6 +40,8 @@ const moduleData = {
   }
 } as const;
 
+const pipelineStages: LeadStatus[] = ["new", "contacted", "qualified", "won"];
+
 export type ModuleKey = keyof typeof moduleData;
 
 export function ModuleView({ kind }: { kind: ModuleKey }) {
@@ -54,7 +57,7 @@ export function ModuleView({ kind }: { kind: ModuleKey }) {
         <div className="panel topGap">
           <h2>CRM pipeline</h2>
           <div className="kanban">
-            {["New", "Contacted", "Qualified", "Quote sent"].map((stage) => <div className="kanbanCol" key={stage}><b>{stage}</b>{leads.filter((l) => l.status === stage).map((lead) => <div className="lead" key={lead.name}><b>{lead.name}</b><div className="muted">{lead.service}</div><div className="rowBetween"><span>{lead.source}</span><span>{lead.value}</span></div></div>)}</div>)}
+            {pipelineStages.map((stage) => <div className="kanbanCol" key={stage}><b>{leadStatusLabels[stage]}</b>{demoLeads.filter((lead) => lead.status === stage).map((lead) => <div className="lead" key={lead.id}><b>{lead.contactName}</b><div className="muted">{lead.serviceName}</div><div className="rowBetween"><span>{leadSourceLabels[lead.source]}</span><span>{formatLeadValue(lead.estimatedValuePence)}</span></div></div>)}</div>)}
           </div>
         </div>
       ) : (
