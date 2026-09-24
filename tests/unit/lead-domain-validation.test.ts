@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   leadCreateFormSchema,
+  leadEditFormSchema,
   leadInputSchema,
   leadNoteInputSchema,
   quoteRequestInputSchema,
@@ -84,6 +85,41 @@ describe("Business OS lead validation", () => {
     expect(leadCreateFormSchema.safeParse({
       contact_name: "Alex Example",
       phone: "",
+      email: "",
+      source: "manual",
+      service_id: "",
+      enquiry_summary: "Needs an estimate.",
+      estimated_value_gbp: "",
+    }).success).toBe(false);
+  });
+
+  it("validates Edit Lead identity and normalises editable fields", () => {
+    expect(leadEditFormSchema.parse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      contact_name: "Alex Updated",
+      phone: "",
+      email: "alex@example.test",
+      source: "referral",
+      service_id: "",
+      enquiry_summary: "Updated enquiry.",
+      estimated_value_gbp: "1250.50",
+    })).toEqual({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      contact_name: "Alex Updated",
+      phone: "",
+      email: "alex@example.test",
+      source: "referral",
+      service_id: null,
+      enquiry_summary: "Updated enquiry.",
+      estimated_value_pence: 125050,
+    });
+  });
+
+  it("rejects an invalid Lead id in the Edit Lead form", () => {
+    expect(leadEditFormSchema.safeParse({
+      lead_id: "not-a-uuid",
+      contact_name: "Alex Example",
+      phone: "020 7946 0000",
       email: "",
       source: "manual",
       service_id: "",
