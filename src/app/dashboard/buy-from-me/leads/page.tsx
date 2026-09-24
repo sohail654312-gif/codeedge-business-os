@@ -61,14 +61,14 @@ export default function LeadsPage() {
                 return (
                   <tr key={lead.id}>
                     <td>
-                      <Link className="leadNameLink" href={\`/dashboard/buy-from-me/leads/\${lead.id}\`}>
+                      <Link className="leadNameLink" href={`/dashboard/buy-from-me/leads/${lead.id}`}>
                         {lead.contactName}
                       </Link>
                     </td>
                     <td>{lead.serviceName}</td>
                     <td>{leadSourceLabels[lead.source]}</td>
                     <td>
-                      <span className={\`leadStatus leadStatus\${statusLabel.replace(/\\s+/g, "")}\`}>
+                      <span className={`leadStatus leadStatus${statusLabel.replace(/\s+/g, "")}`}>
                         {statusLabel}
                       </span>
                     </td>
