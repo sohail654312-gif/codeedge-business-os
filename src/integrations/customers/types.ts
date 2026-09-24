@@ -1,4 +1,5 @@
 export type CustomerBackOfficeInput = {
+  businessId: string;
   customerId: string;
   name: string;
   phone: string;
