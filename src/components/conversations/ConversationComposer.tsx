@@ -5,7 +5,13 @@ import { addConversationMessage, type ConversationActionState } from "@/modules/
 
 const initialState: ConversationActionState = {};
 
-export function ConversationComposer({ conversationId }: { conversationId: string }) {
+export function ConversationComposer({
+  conversationId,
+  channel,
+}: {
+  conversationId: string;
+  channel: "website_chat" | "whatsapp" | "email" | "sms" | "voice" | "internal";
+}) {
   const [state, action, pending] = useActionState(addConversationMessage, initialState);
 
   return (
@@ -33,13 +39,15 @@ export function ConversationComposer({ conversationId }: { conversationId: strin
       </div>
 
       <p className="muted formHelp">
-        Local-only: this stores the message in CodeEdge. No WhatsApp, email, SMS or voice delivery is connected yet.
+        {channel === "website_chat"
+          ? "Website Chat delivery is live: the visitor receives public outbound replies through the secure widget. Internal notes remain private."
+          : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
       </p>
 
       {state.error ? <div className="formError" role="alert">{state.error}</div> : null}
 
       <button className="btn primary" type="submit" disabled={pending}>
-        {pending ? "Saving..." : "Store message"}
+        {pending ? "Saving..." : channel === "website_chat" ? "Reply to visitor" : "Store message"}
       </button>
     </form>
   );
