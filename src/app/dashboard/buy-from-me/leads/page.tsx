@@ -1,13 +1,11 @@
-import { leads } from "@/data/demo";
+import Link from "next/link";
+import { demoLeads, formatLeadValue } from "@/modules/buy-from-me/leads/demo";
+import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
 
 export default function LeadsPage() {
-  const potentialValue = leads.reduce((total, lead) => {
-    const amount = Number(lead.value.replace(/[£,]/g, ""));
-    return total + (Number.isFinite(amount) ? amount : 0);
-  }, 0);
-
-  const newCount = leads.filter((lead) => lead.status === "New").length;
-  const qualifiedCount = leads.filter((lead) => lead.status === "Qualified").length;
+  const potentialValue = demoLeads.reduce((total, lead) => total + lead.estimatedValuePence, 0);
+  const newCount = demoLeads.filter((lead) => lead.status === "new").length;
+  const qualifiedCount = demoLeads.filter((lead) => lead.status === "qualified").length;
 
   return (
     <>
@@ -16,7 +14,7 @@ export default function LeadsPage() {
           <div className="eyebrow">Buy From Me</div>
           <h1>Leads</h1>
           <p className="muted">
-            Demo enquiries are now flowing into the lead inbox before we connect ERPNext.
+            Demo enquiries are now flowing through the canonical Lead domain while the real data layer is built.
           </p>
         </div>
         <button className="btn primary" type="button" disabled title="Enabled in a later step">
@@ -25,10 +23,10 @@ export default function LeadsPage() {
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">{leads.length}</div></div>
+        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">{demoLeads.length}</div></div>
         <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
         <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
-        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">£{potentialValue.toLocaleString("en-GB")}</div></div>
+        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -36,7 +34,7 @@ export default function LeadsPage() {
           <div>
             <h2>Lead inbox</h2>
             <p className="muted leadSubtext">
-              Four realistic sample enquiries are loaded so you can see how the lead workspace feels.
+              Open any lead to review its contact, enquiry and opportunity details.
             </p>
           </div>
           <div className="leadFilters">
@@ -58,20 +56,27 @@ export default function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
-                <tr key={lead.name}>
-                  <td><b>{lead.name}</b></td>
-                  <td>{lead.service}</td>
-                  <td>{lead.source}</td>
-                  <td>
-                    <span className={`leadStatus leadStatus${lead.status.replace(/\s+/g, "")}`}>
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td><b>{lead.value}</b></td>
-                  <td className="muted">{lead.lastContact}</td>
-                </tr>
-              ))}
+              {demoLeads.map((lead) => {
+                const statusLabel = leadStatusLabels[lead.status];
+                return (
+                  <tr key={lead.id}>
+                    <td>
+                      <Link className="leadNameLink" href={\`/dashboard/buy-from-me/leads/\${lead.id}\`}>
+                        {lead.contactName}
+                      </Link>
+                    </td>
+                    <td>{lead.serviceName}</td>
+                    <td>{leadSourceLabels[lead.source]}</td>
+                    <td>
+                      <span className={\`leadStatus leadStatus\${statusLabel.replace(/\\s+/g, "")}\`}>
+                        {statusLabel}
+                      </span>
+                    </td>
+                    <td><b>{formatLeadValue(lead.estimatedValuePence)}</b></td>
+                    <td className="muted">{lead.lastContactLabel}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
