@@ -32,91 +32,58 @@ jobs:
         run: |
           docker compose -f pwd.yml up -d
 
-      - name: Show initial container status
-        working-directory: /tmp/frappe_docker
-        run: |
-          docker compose -f pwd.yml ps
-
-      - name: Wait for ERPNext
+      - name: Wait for ERPNext HTTP
         id: wait
         working-directory: /tmp/frappe_docker
         shell: bash
         run: |
-          set +e
-          ready=0
+          set -euo pipefail
           for i in $(seq 1 120); do
-            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/tmp/erpnext.html 2>/tmp/curl.err; then
-              ready=1
-              echo "ERPNext responded on attempt $i"
-              break
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
+              echo "ready=1" >> "$GITHUB_OUTPUT"
+              echo "ERPNext HTTP responded."
+              exit 0
             fi
             sleep 5
           done
-
-          echo "ready=$ready" >> "$GITHUB_OUTPUT"
-
-          if [ "$ready" -eq 1 ]; then
-            head -c 500 /tmp/erpnext.html || true
-            exit 0
-          fi
-
-          echo "ERPNext did not become ready within 10 minutes."
-          cat /tmp/curl.err || true
+          echo "ERPNext HTTP did not become ready."
           exit 1
 
-      - name: Verify HTTP response
-        if: steps.wait.outputs.ready == '1'
-        run: |
-          curl --connect-timeout 3 --max-time 10 -I http://127.0.0.1:8080
-
-      - name: Wait for ERPNext site installation to finish
-        if: steps.wait.outputs.ready == '1'
+      - name: Wait for ERPNext site installation
         working-directory: /tmp/frappe_docker
         shell: bash
         run: |
           set -euo pipefail
-
           container_id="$(docker compose -f pwd.yml ps -q create-site)"
           test -n "$container_id"
 
           for i in $(seq 1 120); do
             status="$(docker inspect -f '{{.State.Status}}' "$container_id")"
             exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$container_id")"
-
             echo "create-site status=$status exit=$exit_code"
 
             if [ "$status" = "exited" ]; then
               if [ "$exit_code" = "0" ]; then
-                echo "ERPNext site installation finished successfully."
+                echo "ERPNext site installation finished."
                 exit 0
               fi
-
               docker compose -f pwd.yml logs create-site --tail=200
               exit 1
             fi
-
             sleep 5
           done
 
-          echo "Timed out waiting for create-site."
           docker compose -f pwd.yml logs create-site --tail=200
           exit 1
 
-      - name: Login to disposable ERPNext and generate API credentials
-        if: steps.wait.outputs.ready == '1'
+      - name: Login and generate temporary API credentials
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsS -c /tmp/erpnext-cookie.txt \
-            -X POST http://127.0.0.1:8080/api/method/login \
-            --data-urlencode 'usr=Administrator' \
-            --data-urlencode 'pwd=admin' \
-            >/tmp/login.json
 
-          curl -fsS -b /tmp/erpnext-cookie.txt \
-            -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys \
-            --data-urlencode 'user=Administrator' \
-            >/tmp/keys.json
+          curl -fsS -c /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/login             --data-urlencode 'usr=Administrator'             --data-urlencode 'pwd=admin'             >/tmp/login.json
+
+          curl -fsS -b /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys             --data-urlencode 'user=Administrator'             >/tmp/keys.json
 
           API_KEY="$(jq -r '.message.api_key' /tmp/keys.json)"
           API_SECRET="$(jq -r '.message.api_secret' /tmp/keys.json)"
@@ -126,46 +93,37 @@ jobs:
           test -n "$API_SECRET"
           test "$API_SECRET" != "null"
 
+          echo "::add-mask::$API_KEY"
+          echo "::add-mask::$API_SECRET"
+
           {
             echo "ERPNEXT_BASE_URL=http://127.0.0.1:8080"
             echo "ERPNEXT_API_KEY=$API_KEY"
             echo "ERPNEXT_API_SECRET=$API_SECRET"
           } >> "$GITHUB_ENV"
 
-          echo "::add-mask::$API_KEY"
-          echo "::add-mask::$API_SECRET"
-
-      - name: Verify Frappe token authentication directly
-        if: steps.wait.outputs.ready == '1'
+      - name: Verify temporary API token
         shell: bash
         run: |
           set -euo pipefail
-
           for i in $(seq 1 30); do
-            if result="$(curl -fsS \
-              -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET" \
-              http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user 2>/tmp/token-auth.err)"; then
-              echo "$result"
+            if result="$(curl -fsS               -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"               http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user 2>/tmp/token.err)"; then
               echo "$result" | jq -e '.message == "Administrator"'
               exit 0
             fi
-
-            echo "Token authentication not ready yet (attempt $i/30)."
             sleep 2
           done
-
-          cat /tmp/token-auth.err || true
+          cat /tmp/token.err || true
           exit 1
 
-      - name: Create one ERPNext customer for the sync test
-        if: steps.wait.outputs.ready == '1'
+      - name: Create one ERPNext customer
         shell: bash
         run: |
           set -euo pipefail
 
-          GROUP="$(curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Customer%20Group | jq -r '.data[0].name')"
+          GROUP="$(curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Customer%20Group | jq -r '.data[0].name')"
 
-          TERRITORY="$(curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Territory | jq -r '.data[0].name')"
+          TERRITORY="$(curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Territory | jq -r '.data[0].name')"
 
           test -n "$GROUP"
           test "$GROUP" != "null"
@@ -179,28 +137,24 @@ jobs:
               territory: $territory
             }' >/tmp/customer.json
 
-          curl -fsS             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer.json             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/created-customer.json
+          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer.json             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/created-customer.json
 
           jq -e '.data.customer_name == "CodeEdge Sync Test Customer"' /tmp/created-customer.json
 
-      - name: Verify ERPNext can read the created customer
-        if: steps.wait.outputs.ready == '1'
+      - name: Verify ERPNext customer exists
         run: |
-          curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name","customer_name","customer_group","territory"]'             --data-urlencode 'filters=[["customer_name","=","CodeEdge Sync Test Customer"]]'             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/erpnext-created-customer.json
+          curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name","customer_name","customer_group","territory"]'             --data-urlencode 'filters=[["customer_name","=","CodeEdge Sync Test Customer"]]'             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/erpnext-customer.json
 
-          jq -e '.data | length == 1' /tmp/erpnext-created-customer.json
-          jq -e '.data[0].customer_name == "CodeEdge Sync Test Customer"' /tmp/erpnext-created-customer.json
+          jq -e '.data | length == 1' /tmp/erpnext-customer.json
+          jq -e '.data[0].customer_name == "CodeEdge Sync Test Customer"' /tmp/erpnext-customer.json
 
       - name: Install CodeEdge dependencies
-        if: steps.wait.outputs.ready == '1'
         run: npm install
 
-      - name: Build CodeEdge with disposable ERPNext configuration
-        if: steps.wait.outputs.ready == '1'
+      - name: Build CodeEdge
         run: npm run build
 
       - name: Start CodeEdge
-        if: steps.wait.outputs.ready == '1'
         shell: bash
         run: |
           nohup npm start >/tmp/codeedge.log 2>&1 &
@@ -216,23 +170,29 @@ jobs:
           cat /tmp/codeedge.log || true
           exit 1
 
-      - name: Verify CodeEdge ERPNext connection endpoint
-        if: steps.wait.outputs.ready == '1'
+      - name: Verify CodeEdge ERPNext connection
         run: |
-          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/status | tee /tmp/codeedge-status.json
-          jq -e '.connected == true and .authenticatedUser == "Administrator"' /tmp/codeedge-status.json
+          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/status | tee /tmp/status.json
+          jq -e '.connected == true and .authenticatedUser == "Administrator"' /tmp/status.json
 
-      - name: Verify CodeEdge ERPNext customer read endpoint
-        if: steps.wait.outputs.ready == '1'
+      - name: Verify customer reaches CodeEdge adapter
         run: |
-          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=50 | tee /tmp/codeedge-customers.json
-          jq -e '.data | type == "array"' /tmp/codeedge-customers.json
-          jq -e '.data | any(.customer_name == "CodeEdge Sync Test Customer")' /tmp/codeedge-customers.json
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=50 >/tmp/codeedge-customers.json 2>/dev/null; then
+              if jq -e '.data | any(.customer_name == "CodeEdge Sync Test Customer")' /tmp/codeedge-customers.json >/dev/null; then
+                cat /tmp/codeedge-customers.json
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
 
-      - name: Verify Customers page renders the ERPNext customer
-        if: steps.wait.outputs.ready == '1'
+          cat /tmp/codeedge-customers.json || true
+          exit 1
+
+      - name: Verify customer renders on Customers page
         run: |
-          curl -fsS http://127.0.0.1:3000/dashboard/buy-from-me/customers | tee /tmp/customers-page.html
+          curl -fsS http://127.0.0.1:3000/dashboard/buy-from-me/customers >/tmp/customers-page.html
           grep -F "CodeEdge Sync Test Customer" /tmp/customers-page.html
           grep -F "ERPNext live" /tmp/customers-page.html
 
@@ -242,25 +202,11 @@ jobs:
         run: |
           echo "===== CONTAINERS ====="
           docker compose -f pwd.yml ps || true
-
-          echo
-          echo "===== CREATE-SITE LOGS ====="
-          docker compose -f pwd.yml logs create-site --tail=200 || true
-
-          echo
-          echo "===== CONFIGURATOR LOGS ====="
-          docker compose -f pwd.yml logs configurator --tail=120 || true
-
-          echo
-          echo "===== DATABASE LOGS ====="
-          docker compose -f pwd.yml logs db --tail=120 || true
-
-          echo
-          echo "===== BACKEND LOGS ====="
+          echo "===== CREATE-SITE ====="
+          docker compose -f pwd.yml logs create-site --tail=120 || true
+          echo "===== BACKEND ====="
           docker compose -f pwd.yml logs backend --tail=120 || true
-
-          echo
-          echo "===== FRONTEND LOGS ====="
+          echo "===== FRONTEND ====="
           docker compose -f pwd.yml logs frontend --tail=120 || true
 
       - name: Shut down disposable ERPNext
