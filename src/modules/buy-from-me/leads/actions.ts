@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { leadCreateFormSchema, leadEditFormSchema } from "./validation";
+import { leadCreateFormSchema, leadEditFormSchema, leadStatusFormSchema } from "./validation";
 import { buildLeadInsert, buildLeadUpdate } from "./persistence";
 
 export type LeadFormState = {
@@ -120,4 +120,44 @@ export async function updateLead(
   revalidatePath("/dashboard/buy-from-me/leads");
   revalidatePath(`/dashboard/buy-from-me/leads/${lead_id}`);
   redirect(`/dashboard/buy-from-me/leads/${lead_id}`);
+}
+
+
+export async function updateLeadStatus(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState> {
+  const parsed = leadStatusFormSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+    status: formData.get("status"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Select a valid Lead status." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  const { data: lead, error } = await client
+    .from("leads")
+    .update({ status: parsed.data.status })
+    .eq("business_id", context.business.id)
+    .eq("id", parsed.data.lead_id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: "Unable to update Lead status. Please try again." };
+  }
+
+  if (!lead) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/buy-from-me");
+  revalidatePath("/dashboard/buy-from-me/leads");
+  revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
+
+  return {};
 }
