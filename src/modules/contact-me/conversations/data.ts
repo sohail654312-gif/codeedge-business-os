@@ -8,6 +8,7 @@ import type {
   Lead,
   Message,
 } from "@/types/database";
+import type { DeliveryStatus } from "./domain";
 import type { InboxFilters } from "./validation";
 
 export type InboxConversation = Conversation & {
@@ -19,7 +20,7 @@ export type ConversationDetail = {
   conversation: Conversation;
   lead: Pick<Lead, "id" | "contact_name" | "phone" | "email"> | null;
   customer: Pick<Customer, "id" | "contact_name" | "phone" | "email"> | null;
-  messages: Message[];
+  messages: Array<Message & { delivery_status: DeliveryStatus | null }>;
 };
 
 async function crmIdentityMaps(
@@ -108,7 +109,7 @@ export async function getConversationDetail(
   if (error) throw new Error("Unable to load the conversation.");
   if (!conversation) return null;
 
-  const [messagesResult, leadResult, customerResult] = await Promise.all([
+  const [messagesResult, deliveriesResult, leadResult, customerResult] = await Promise.all([
     client
       .from("messages")
       .select("*")
@@ -117,6 +118,11 @@ export async function getConversationDetail(
       .order("created_at", { ascending: true })
       .order("id", { ascending: true })
       .limit(500),
+    client
+      .from("message_deliveries")
+      .select("message_id,status")
+      .eq("business_id", businessId)
+      .eq("conversation_id", conversationId),
     conversation.lead_id
       ? client
         .from("leads")
@@ -135,15 +141,22 @@ export async function getConversationDetail(
       : Promise.resolve({ data: null, error: null }),
   ]);
 
-  if (messagesResult.error || leadResult.error || customerResult.error) {
+  if (messagesResult.error || deliveriesResult.error || leadResult.error || customerResult.error) {
     throw new Error("Unable to load conversation details.");
   }
+
+  const deliveryStatuses = new Map(
+    (deliveriesResult.data ?? []).map((delivery) => [delivery.message_id, delivery.status]),
+  );
 
   return {
     conversation,
     lead: leadResult.data,
     customer: customerResult.data,
-    messages: messagesResult.data ?? [],
+    messages: (messagesResult.data ?? []).map((message) => ({
+      ...message,
+      delivery_status: deliveryStatuses.get(message.id) ?? null,
+    })),
   };
 }
 

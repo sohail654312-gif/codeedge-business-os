@@ -1,5 +1,5 @@
 import type { LeadSource, LeadStatus, QuoteRequestStatus } from "@/modules/buy-from-me/leads/domain";
-import type { ConversationChannel, ConversationStatus, MessageDirection, MessageSenderType } from "@/modules/contact-me/conversations/domain";
+import type { ConversationChannel, ConversationStatus, DeliveryStatus, MessageDirection, MessageSenderType } from "@/modules/contact-me/conversations/domain";
 
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
@@ -134,6 +134,7 @@ export type Conversation = {
   business_id: string;
   lead_id: string | null;
   customer_id: string | null;
+  channel_connection_id: string | null;
   channel: ConversationChannel;
   status: ConversationStatus;
   subject: string;
@@ -144,6 +145,34 @@ export type Conversation = {
   last_message_direction: MessageDirection | null;
   last_message_sender_type: MessageSenderType | null;
   created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ChannelConnection = {
+  id: string;
+  business_id: string;
+  channel: ConversationChannel;
+  provider: string;
+  external_account_id: string;
+  external_sender_id: string;
+  display_address: string;
+  credential_key: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MessageDelivery = {
+  id: string;
+  business_id: string;
+  message_id: string;
+  conversation_id: string;
+  connection_id: string;
+  provider: string;
+  status: DeliveryStatus;
+  provider_message_id: string | null;
+  error_code: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -400,12 +429,40 @@ export type Database = {
           | "accent_color"
         >>
       >;
+      channel_connections: Table<
+        ChannelConnection,
+        {
+          business_id: string;
+          channel: ConversationChannel;
+          provider: string;
+          external_account_id?: string;
+          external_sender_id: string;
+          display_address?: string;
+          credential_key: string;
+          enabled?: boolean;
+          id?: string;
+        },
+        Partial<Pick<
+          ChannelConnection,
+          | "external_account_id"
+          | "external_sender_id"
+          | "display_address"
+          | "credential_key"
+          | "enabled"
+        >>
+      >;
+      message_deliveries: Table<
+        MessageDelivery,
+        never,
+        never
+      >;
       conversations: Table<
         Conversation,
         {
           business_id: string;
           lead_id?: string | null;
           customer_id?: string | null;
+          channel_connection_id?: string | null;
           channel?: ConversationChannel;
           status?: ConversationStatus;
           subject?: string;
@@ -547,6 +604,7 @@ export type Database = {
       conversation_status: ConversationStatus;
       message_sender_type: MessageSenderType;
       message_direction: MessageDirection;
+      delivery_status: DeliveryStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

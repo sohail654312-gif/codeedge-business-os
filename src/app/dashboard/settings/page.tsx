@@ -3,13 +3,14 @@ import { BusinessProfilePanel, ServicesPanel } from "@/components/settings/Busin
 import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/ServiceCoveragePanels";
 import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettingsPanels";
 import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSettingsPanel";
+import { WhatsAppSettingsPanel } from "@/components/settings/WhatsAppSettingsPanel";
 import { getEnvironmentIfConfigured } from "@/server/env";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
 
-  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult, websiteChatResult] = await Promise.all([
+  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult, websiteChatResult, whatsappResult] = await Promise.all([
     client
       .from("business_profiles")
       .select("*")
@@ -48,6 +49,13 @@ export default async function Settings() {
       .select("*")
       .eq("business_id", context.business.id)
       .maybeSingle(),
+    client
+      .from("channel_connections")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .eq("channel", "whatsapp")
+      .eq("provider", "meta_whatsapp_cloud")
+      .maybeSingle(),
   ]);
 
   if (
@@ -57,7 +65,8 @@ export default async function Settings() {
     hoursResult.error ||
     faqResult.error ||
     settingsResult.error ||
-    websiteChatResult.error
+    websiteChatResult.error ||
+    whatsappResult.error
   ) {
     throw new Error("Unable to load Business Information.");
   }
@@ -89,7 +98,9 @@ export default async function Settings() {
         <section className="panel">
           <h2>Integration status</h2>
           <p><b>ERPNext</b> — replaceable back-office adapter</p>
-          <p className="muted">Messaging adapter: Not connected</p>
+          <p className="muted">
+            Messaging adapter: {whatsappResult.data?.enabled ? "WhatsApp connected" : "WhatsApp not enabled"}
+          </p>
           <p className="muted">Voice adapter: Reserved for a later phase</p>
           <Link className="btn" href="/dashboard/settings/erpnext">Open ERPNext setup</Link>
         </section>
@@ -131,6 +142,13 @@ export default async function Settings() {
       <WebsiteChatSettingsPanel
         key={websiteChatResult.data?.updated_at ?? "new-website-chat"}
         widget={websiteChatResult.data}
+        canEdit={canEdit}
+        appUrl={appUrl}
+      />
+
+      <WhatsAppSettingsPanel
+        key={whatsappResult.data?.updated_at ?? "new-whatsapp"}
+        connection={whatsappResult.data}
         canEdit={canEdit}
         appUrl={appUrl}
       />

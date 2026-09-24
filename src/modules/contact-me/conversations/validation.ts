@@ -19,6 +19,10 @@ export const localMessageFormSchema = z.object({
   conversation_id: z.uuid(),
   message_kind: z.enum(["reply", "internal"]),
   body: messageBodySchema,
+  request_id: z.preprocess(
+    (value) => typeof value === "string" && value ? value : undefined,
+    z.uuid().optional(),
+  ),
 });
 
 export const conversationStatusFormSchema = z.object({
