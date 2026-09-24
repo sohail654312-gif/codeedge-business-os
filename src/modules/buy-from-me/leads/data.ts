@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Customer, Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
+import type { CrmActivity, Customer, Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
 import type { LeadFilters } from "./validation";
 
 export type LeadWithService = Lead & {
@@ -169,4 +169,23 @@ export async function getLeadCustomer(
 
   if (error) throw new Error("Unable to load converted Customer.");
   return data;
+}
+
+
+export async function listLeadActivities(
+  client: SupabaseClient<Database>,
+  businessId: string,
+  leadId: string,
+): Promise<CrmActivity[]> {
+  const { data, error } = await client
+    .from("crm_activities")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error("Unable to load CRM activity history.");
+  return data ?? [];
 }
