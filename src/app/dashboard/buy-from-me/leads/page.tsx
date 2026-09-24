@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { demoLeads, formatLeadValue } from "@/modules/buy-from-me/leads/demo";
+import { formatLeadDate, formatLeadValue, listLeads } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
+import { requireDashboardTenant } from "@/server/auth/session";
 
-export default function LeadsPage() {
-  const potentialValue = demoLeads.reduce((total, lead) => total + lead.estimatedValuePence, 0);
-  const newCount = demoLeads.filter((lead) => lead.status === "new").length;
-  const qualifiedCount = demoLeads.filter((lead) => lead.status === "qualified").length;
+export default async function LeadsPage() {
+  const { client, context } = await requireDashboardTenant();
+  const leads = await listLeads(client, context.business.id);
+  const potentialValue = leads.reduce((total, lead) => total + (lead.estimated_value_pence ?? 0), 0);
+  const newCount = leads.filter((lead) => lead.status === "new").length;
+  const qualifiedCount = leads.filter((lead) => lead.status === "qualified").length;
 
   return (
     <>
@@ -14,16 +17,16 @@ export default function LeadsPage() {
           <div className="eyebrow">Buy From Me</div>
           <h1>Leads</h1>
           <p className="muted">
-            Demo enquiries are now flowing through the canonical Lead domain while the real data layer is built.
+            Real CRM Leads for {context.business.name}, protected by the active tenant membership.
           </p>
         </div>
-        <button className="btn primary" type="button" disabled title="Enabled in a later step">
+        <Link className="btn primary" href="/dashboard/buy-from-me/leads/new">
           + Add lead
-        </button>
+        </Link>
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">{demoLeads.length}</div></div>
+        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">{leads.length}</div></div>
         <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
         <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
         <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
@@ -34,7 +37,7 @@ export default function LeadsPage() {
           <div>
             <h2>Lead inbox</h2>
             <p className="muted leadSubtext">
-              Open any lead to review its contact, enquiry and opportunity details.
+              Open any Lead to review its contact, enquiry and opportunity details.
             </p>
           </div>
           <div className="leadFilters">
@@ -56,27 +59,38 @@ export default function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {demoLeads.map((lead) => {
+              {leads.length ? leads.map((lead) => {
                 const statusLabel = leadStatusLabels[lead.status];
                 return (
                   <tr key={lead.id}>
                     <td>
                       <Link className="leadNameLink" href={`/dashboard/buy-from-me/leads/${lead.id}`}>
-                        {lead.contactName}
+                        {lead.contact_name}
                       </Link>
                     </td>
-                    <td>{lead.serviceName}</td>
+                    <td>{lead.service_name ?? "—"}</td>
                     <td>{leadSourceLabels[lead.source]}</td>
                     <td>
                       <span className={`leadStatus leadStatus${statusLabel.replace(/\s+/g, "")}`}>
                         {statusLabel}
                       </span>
                     </td>
-                    <td><b>{formatLeadValue(lead.estimatedValuePence)}</b></td>
-                    <td className="muted">{lead.lastContactLabel}</td>
+                    <td><b>{formatLeadValue(lead.estimated_value_pence)}</b></td>
+                    <td className="muted">{formatLeadDate(lead.last_contact_at)}</td>
                   </tr>
                 );
-              })}
+              }) : (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="emptyState">
+                      <div className="emptyIcon">↗</div>
+                      <h3>No Leads yet</h3>
+                      <p>Create the first real Lead for this workspace.</p>
+                      <Link className="btn primary topGap" href="/dashboard/buy-from-me/leads/new">+ Add lead</Link>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
