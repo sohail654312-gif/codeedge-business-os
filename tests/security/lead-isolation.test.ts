@@ -72,6 +72,14 @@ describe("Business OS Lead tenant isolation", () => {
     )).rejects.toThrow(/row-level security/);
   });
 
+  it("hides cross-tenant Lead status updates", async () => {
+    await asUser(db, f.ownerA);
+    expect((await db.query(
+      "update public.leads set status='won' where id=$1 returning id",
+      [f.leadB],
+    )).rows).toEqual([]);
+  });
+
   it("allows staff to update own-tenant leads but not delete them", async () => {
     await asUser(db, f.staffA);
     expect((await db.query(
