@@ -43,6 +43,9 @@ create table public.conversations (
   ),
   assigned_user_id uuid,
   last_message_at timestamptz not null default now(),
+  last_message_preview text not null default '' check (char_length(last_message_preview) <= 240),
+  last_message_direction public.message_direction,
+  last_message_sender_type public.message_sender_type,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -109,6 +112,9 @@ as $$
 begin
   update public.conversations
   set last_message_at = greatest(last_message_at, new.created_at),
+      last_message_preview = left(regexp_replace(btrim(new.body), '[[:space:]]+', ' ', 'g'), 240),
+      last_message_direction = new.direction,
+      last_message_sender_type = new.sender_type,
       updated_at = now()
   where business_id = new.business_id
     and id = new.conversation_id;

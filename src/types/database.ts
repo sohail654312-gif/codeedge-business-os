@@ -140,6 +140,9 @@ export type Conversation = {
   external_thread_id: string | null;
   assigned_user_id: string | null;
   last_message_at: string;
+  last_message_preview: string;
+  last_message_direction: MessageDirection | null;
+  last_message_sender_type: MessageSenderType | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
