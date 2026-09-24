@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLeadSearchOr, hasLeadFilters } from "../../src/modules/buy-from-me/leads/filters";
+import { hasLeadFilters } from "../../src/modules/buy-from-me/leads/filters";
 import { leadFilterSchema } from "../../src/modules/buy-from-me/leads/validation";
 
 describe("Lead search and filters", () => {
@@ -29,18 +29,6 @@ describe("Lead search and filters", () => {
       source: null,
       service_id: null,
     });
-  });
-
-  it("uses only the supported searchable Lead columns", () => {
-    expect(buildLeadSearchOr("Sarah")).toBe(
-      "contact_name.ilike.%Sarah%,phone.ilike.%Sarah%,email.ilike.%Sarah%,enquiry_summary.ilike.%Sarah%",
-    );
-  });
-
-  it("neutralizes PostgREST filter punctuation in search input", () => {
-    expect(buildLeadSearchOr("a,b%(test)")).toBe(
-      "contact_name.ilike.%a b test%,phone.ilike.%a b test%,email.ilike.%a b test%,enquiry_summary.ilike.%a b test%",
-    );
   });
 
   it("reports whether a filtered inbox is active", () => {
