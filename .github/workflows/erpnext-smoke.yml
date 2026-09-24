@@ -1,6 +1,9 @@
 name: ERPNext disposable smoke test
 
 on:
+  push:
+    branches:
+      - feature/customers-erpnext-sync-test
   workflow_dispatch:
 
 permissions:
@@ -108,6 +111,40 @@ jobs:
           echo "$result"
           echo "$result" | jq -e '.message == "Administrator"'
 
+      - name: Create one ERPNext customer for the sync test
+        if: steps.wait.outputs.ready == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          GROUP="$(curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Customer%20Group | jq -r '.data[0].name')"
+
+          TERRITORY="$(curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Territory | jq -r '.data[0].name')"
+
+          test -n "$GROUP"
+          test "$GROUP" != "null"
+          test -n "$TERRITORY"
+          test "$TERRITORY" != "null"
+
+          jq -n             --arg name "CodeEdge Sync Test Customer"             --arg group "$GROUP"             --arg territory "$TERRITORY"             '{
+              customer_name: $name,
+              customer_type: "Individual",
+              customer_group: $group,
+              territory: $territory
+            }' >/tmp/customer.json
+
+          curl -fsS             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer.json             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/created-customer.json
+
+          jq -e '.data.customer_name == "CodeEdge Sync Test Customer"' /tmp/created-customer.json
+
+      - name: Verify ERPNext can read the created customer
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          curl -fsS --get             -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"             --data-urlencode 'fields=["name","customer_name","customer_group","territory"]'             --data-urlencode 'filters=[["customer_name","=","CodeEdge Sync Test Customer"]]'             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/erpnext-created-customer.json
+
+          jq -e '.data | length == 1' /tmp/erpnext-created-customer.json
+          jq -e '.data[0].customer_name == "CodeEdge Sync Test Customer"' /tmp/erpnext-created-customer.json
+
       - name: Install CodeEdge dependencies
         if: steps.wait.outputs.ready == '1'
         run: npm install
@@ -142,8 +179,16 @@ jobs:
       - name: Verify CodeEdge ERPNext customer read endpoint
         if: steps.wait.outputs.ready == '1'
         run: |
-          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=5 | tee /tmp/codeedge-customers.json
+          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=50 | tee /tmp/codeedge-customers.json
           jq -e '.data | type == "array"' /tmp/codeedge-customers.json
+          jq -e '.data | any(.customer_name == "CodeEdge Sync Test Customer")' /tmp/codeedge-customers.json
+
+      - name: Verify Customers page renders the ERPNext customer
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          curl -fsS http://127.0.0.1:3000/dashboard/buy-from-me/customers | tee /tmp/customers-page.html
+          grep -F "CodeEdge Sync Test Customer" /tmp/customers-page.html
+          grep -F "ERPNext live" /tmp/customers-page.html
 
       - name: Diagnostics
         if: always()
