@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
 import type { LeadFilters } from "./validation";
-import { buildLeadSearchOr, type LeadFilters } from "./filters";
+import { buildLeadSearchOr } from "./filters";
 
 export type LeadWithService = Lead & {
   service_name: string | null;
@@ -38,7 +38,7 @@ export async function listLeads(
 
   if (filters?.status) query = query.eq("status", filters.status);
   if (filters?.source) query = query.eq("source", filters.source);
-  if (filters?.service) query = query.eq("service_id", filters.service);
+  if (filters?.service_id) query = query.eq("service_id", filters.service_id);
 
   const search = filters?.q ? buildLeadSearchOr(filters.q) : null;
   if (search) query = query.or(search);
