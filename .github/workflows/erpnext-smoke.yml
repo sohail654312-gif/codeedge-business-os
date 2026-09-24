@@ -121,30 +121,50 @@ jobs:
         run: |
           set -euo pipefail
 
-          cat >/tmp/customer-group.json <<'JSON'
+          cat >/tmp/customer-group-root.json <<'JSON'
           {
             "customer_group_name": "All Customer Groups",
             "is_group": 1
           }
           JSON
 
-          cat >/tmp/territory.json <<'JSON'
+          cat >/tmp/customer-group-leaf.json <<'JSON'
+          {
+            "customer_group_name": "CodeEdge Demo Customers",
+            "parent_customer_group": "All Customer Groups",
+            "is_group": 0
+          }
+          JSON
+
+          cat >/tmp/territory-root.json <<'JSON'
           {
             "territory_name": "All Territories",
             "is_group": 1
           }
           JSON
 
-          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer-group.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-created.json
+          cat >/tmp/territory-leaf.json <<'JSON'
+          {
+            "territory_name": "CodeEdge Demo Territory",
+            "parent_territory": "All Territories",
+            "is_group": 0
+          }
+          JSON
 
-          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/territory.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-created.json
+          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/customer-group-root.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-root-created.json
+
+          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/customer-group-leaf.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-leaf-created.json
+
+          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/territory-root.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-root-created.json
+
+          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/territory-leaf.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-leaf-created.json
 
           cat >/tmp/customer.json <<'JSON'
           {
             "customer_name": "CodeEdge Sync Test Customer",
             "customer_type": "Individual",
-            "customer_group": "All Customer Groups",
-            "territory": "All Territories"
+            "customer_group": "CodeEdge Demo Customers",
+            "territory": "CodeEdge Demo Territory"
           }
           JSON
 
