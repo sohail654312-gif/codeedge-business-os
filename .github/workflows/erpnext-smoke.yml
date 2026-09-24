@@ -69,6 +69,39 @@ jobs:
         run: |
           curl --connect-timeout 3 --max-time 10 -I http://127.0.0.1:8080
 
+      - name: Wait for ERPNext site installation to finish
+        if: steps.wait.outputs.ready == '1'
+        working-directory: /tmp/frappe_docker
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          container_id="$(docker compose -f pwd.yml ps -q create-site)"
+          test -n "$container_id"
+
+          for i in $(seq 1 120); do
+            status="$(docker inspect -f '{{.State.Status}}' "$container_id")"
+            exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$container_id")"
+
+            echo "create-site status=$status exit=$exit_code"
+
+            if [ "$status" = "exited" ]; then
+              if [ "$exit_code" = "0" ]; then
+                echo "ERPNext site installation finished successfully."
+                exit 0
+              fi
+
+              docker compose -f pwd.yml logs create-site --tail=200
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "Timed out waiting for create-site."
+          docker compose -f pwd.yml logs create-site --tail=200
+          exit 1
+
       - name: Login to disposable ERPNext and generate API credentials
         if: steps.wait.outputs.ready == '1'
         shell: bash
