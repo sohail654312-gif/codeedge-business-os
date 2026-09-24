@@ -27,7 +27,12 @@ export async function signIn(
       return { error: "Unable to sign in. Check your details and verify your email." };
     }
 
-    await verifiedUser(client);
+    try {
+      await verifiedUser(client);
+    } catch {
+      await client.auth.signOut({ scope: "local" });
+      return { error: "Unable to sign in. Check your details and verify your email." };
+    }
   } catch {
     return { error: "Sign-in is unavailable. Please try again shortly." };
   }
