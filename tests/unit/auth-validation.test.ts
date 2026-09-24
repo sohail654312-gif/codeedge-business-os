@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "../../src/modules/auth/validation";
+import { loginSchema, signupSchema } from "../../src/modules/auth/validation";
 
 describe("login validation", () => {
   it("accepts a normal email/password pair", () => {
@@ -21,5 +21,28 @@ describe("login validation", () => {
       [field]: value,
     };
     expect(loginSchema.safeParse(input).success).toBe(false);
+  });
+});
+
+describe("owner signup validation", () => {
+  const valid = {
+    business_name: "CodeEdge Test Business",
+    email: "owner@example.com",
+    password: "a-strong-password-123",
+    confirmation: "a-strong-password-123",
+  };
+
+  it("accepts a new business owner signup", () => {
+    expect(signupSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it.each([
+    ["business_name", "x"],
+    ["business_name", "x".repeat(121)],
+    ["email", "invalid"],
+    ["password", "short"],
+    ["confirmation", "different-password"],
+  ])("rejects invalid signup %s", (field, value) => {
+    expect(signupSchema.safeParse({ ...valid, [field]: value }).success).toBe(false);
   });
 });
