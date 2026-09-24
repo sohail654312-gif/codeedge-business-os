@@ -1,3 +1,5 @@
+import { customers } from "@/data/demo";
+
 export default function CustomersPage() {
   return (
     <>
@@ -6,7 +8,7 @@ export default function CustomersPage() {
           <div className="eyebrow">Buy From Me</div>
           <h1>Customers</h1>
           <p className="muted">
-            The customer view for CodeEdge. Demo records will be added in the next step.
+            Demo customer records are shown here before the ERPNext connection replaces them with live data.
           </p>
         </div>
         <button className="btn primary" type="button" disabled title="Enabled in a later step">
@@ -15,10 +17,10 @@ export default function CustomersPage() {
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">Active</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">New this month</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">Customer value</div><div className="statValue">£0</div></div>
+        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">4</div></div>
+        <div className="stat"><div className="statLabel">Active</div><div className="statValue">3</div></div>
+        <div className="stat"><div className="statLabel">New this month</div><div className="statValue">1</div></div>
+        <div className="stat"><div className="statLabel">Customer value</div><div className="statValue">£7,990</div></div>
       </div>
 
       <section className="panel topGap">
@@ -26,7 +28,7 @@ export default function CustomersPage() {
           <div>
             <h2>Customer directory</h2>
             <p className="muted customerSubtext">
-              This screen is ready for demo data first, then ERPNext customer records.
+              Four sample customers are loaded so you can see the finished directory before ERPNext goes live.
             </p>
           </div>
           <div className="customerFilters">
@@ -49,18 +51,21 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={7}>
-                  <div className="emptyState">
-                    <div className="emptyIcon">◎</div>
-                    <h3>No customers yet</h3>
-                    <p>
-                      Part A creates the customer workspace only. Part B will add a few demo customers
-                      so you can see the screen come alive before we connect ERPNext.
-                    </p>
-                  </div>
-                </td>
-              </tr>
+              {customers.map((customer) => (
+                <tr key={customer.name}>
+                  <td><b>{customer.name}</b></td>
+                  <td>{customer.company}</td>
+                  <td className="muted">{customer.contact}</td>
+                  <td>
+                    <span className={`customerStatus customerStatus${customer.status.replace(/\s+/g, "")}`}>
+                      {customer.status}
+                    </span>
+                  </td>
+                  <td>{customer.source}</td>
+                  <td><b>{customer.value}</b></td>
+                  <td className="muted">{customer.lastActivity}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
