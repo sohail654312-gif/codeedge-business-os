@@ -1,4 +1,14 @@
+import { leads } from "@/data/demo";
+
 export default function LeadsPage() {
+  const potentialValue = leads.reduce((total, lead) => {
+    const amount = Number(lead.value.replace(/[£,]/g, ""));
+    return total + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+
+  const newCount = leads.filter((lead) => lead.status === "New").length;
+  const qualifiedCount = leads.filter((lead) => lead.status === "Qualified").length;
+
   return (
     <>
       <div className="pageHead">
@@ -6,7 +16,7 @@ export default function LeadsPage() {
           <div className="eyebrow">Buy From Me</div>
           <h1>Leads</h1>
           <p className="muted">
-            A dedicated workspace for new enquiries before they become customers.
+            Demo enquiries are now flowing into the lead inbox before we connect ERPNext.
           </p>
         </div>
         <button className="btn primary" type="button" disabled title="Enabled in a later step">
@@ -15,10 +25,10 @@ export default function LeadsPage() {
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">New</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">0</div></div>
-        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">£0</div></div>
+        <div className="stat"><div className="statLabel">Total leads</div><div className="statValue">{leads.length}</div></div>
+        <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
+        <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
+        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">£{potentialValue.toLocaleString("en-GB")}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -26,7 +36,7 @@ export default function LeadsPage() {
           <div>
             <h2>Lead inbox</h2>
             <p className="muted leadSubtext">
-              Part A creates the Leads workspace only. Demo enquiries will arrive in the next step.
+              Four realistic sample enquiries are loaded so you can see how the lead workspace feels.
             </p>
           </div>
           <div className="leadFilters">
@@ -48,18 +58,20 @@ export default function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={6}>
-                  <div className="emptyState">
-                    <div className="emptyIcon">↗</div>
-                    <h3>No leads yet</h3>
-                    <p>
-                      This is the new CodeEdge lead inbox. Part B will add a small set of realistic
-                      demo enquiries so you can see the workflow before ERPNext is connected.
-                    </p>
-                  </div>
-                </td>
-              </tr>
+              {leads.map((lead) => (
+                <tr key={lead.name}>
+                  <td><b>{lead.name}</b></td>
+                  <td>{lead.service}</td>
+                  <td>{lead.source}</td>
+                  <td>
+                    <span className={`leadStatus leadStatus${lead.status.replace(/\s+/g, "")}`}>
+                      {lead.status}
+                    </span>
+                  </td>
+                  <td><b>{lead.value}</b></td>
+                  <td className="muted">{lead.lastContact}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

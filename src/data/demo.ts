@@ -10,10 +10,10 @@ export const stats = [
 ];
 
 export const leads = [
-  { name: "Sarah Jenkins", source: "Google", service: "Boiler repair", value: "£480", status: "New" },
-  { name: "David Patel", source: "Website", service: "Bathroom quote", value: "£2,400", status: "Contacted" },
-  { name: "Mike Turner", source: "AI Voice", service: "Emergency plumbing", value: "£320", status: "Qualified" },
-  { name: "Emily Carter", source: "WhatsApp", service: "Heating service", value: "£210", status: "Quote sent" }
+  { name: "Sarah Jenkins", source: "Google", service: "Boiler repair", value: "£480", status: "New", lastContact: "10 min ago" },
+  { name: "David Patel", source: "Website", service: "Bathroom quote", value: "£2,400", status: "Contacted", lastContact: "45 min ago" },
+  { name: "Mike Turner", source: "AI Voice", service: "Emergency plumbing", value: "£320", status: "Qualified", lastContact: "1 hour ago" },
+  { name: "Emily Carter", source: "WhatsApp", service: "Heating service", value: "£210", status: "Quote sent", lastContact: "Yesterday" }
 ];
 
 export const customers = [
