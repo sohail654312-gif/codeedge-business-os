@@ -8,17 +8,25 @@
     "start": "next start",
     "erpnext:demo:start": "bash scripts/erpnext-demo.sh",
     "erpnext:demo:stop": "bash scripts/erpnext-demo-stop.sh",
-    "erpnext:demo:reset": "bash scripts/erpnext-demo-reset.sh"
+    "erpnext:demo:reset": "bash scripts/erpnext-demo-reset.sh",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "next": "15.5.2",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "15.5.2",
+    "vitest": "^3.2.4",
+    "@eslint/eslintrc": "^3.3.1"
   }
 }
