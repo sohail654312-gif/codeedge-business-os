@@ -129,3 +129,27 @@ export type LeadNoteDeleteInput = z.infer<typeof leadNoteDeleteSchema>;
 export type QuoteRequestInput = z.infer<typeof quoteRequestInputSchema>;
 export type QuoteRequestCreateInput = z.infer<typeof quoteRequestCreateFormSchema>;
 export type QuoteRequestStatusInput = z.infer<typeof quoteRequestStatusFormSchema>;
+
+
+const firstQueryValue = (value: unknown) => Array.isArray(value) ? value[0] : value;
+
+export const leadFilterSchema = z.object({
+  q: z.preprocess(
+    firstQueryValue,
+    z.string().trim().max(120).catch(""),
+  ).transform((value) => value || null),
+  status: z.preprocess(
+    firstQueryValue,
+    z.union([z.enum(leadStatuses), z.literal("")]).catch(""),
+  ).transform((value) => value || null),
+  source: z.preprocess(
+    firstQueryValue,
+    z.union([z.enum(leadSources), z.literal("")]).catch(""),
+  ).transform((value) => value || null),
+  service_id: z.preprocess(
+    firstQueryValue,
+    z.union([z.uuid(), z.literal("")]).catch(""),
+  ).transform((value) => value || null),
+});
+
+export type LeadFilters = z.infer<typeof leadFilterSchema>;

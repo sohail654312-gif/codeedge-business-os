@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   leadCreateFormSchema,
   leadEditFormSchema,
+  leadFilterSchema,
   leadInputSchema,
   leadNoteDeleteSchema,
   leadNoteFormSchema,
@@ -131,6 +132,32 @@ describe("Business OS lead validation", () => {
       enquiry_summary: "Needs an estimate.",
       estimated_value_gbp: "",
     }).success).toBe(false);
+  });
+
+  it("normalises URL search and filter parameters", () => {
+    expect(leadFilterSchema.parse({
+      q: "  boiler leak  ",
+      status: "qualified",
+      source: "google",
+      service_id: "30000000-0000-4000-8000-000000000001",
+    })).toEqual({
+      q: "boiler leak",
+      status: "qualified",
+      source: "google",
+      service_id: "30000000-0000-4000-8000-000000000001",
+    });
+
+    expect(leadFilterSchema.parse({
+      q: "x".repeat(121),
+      status: "not-real",
+      source: "unknown",
+      service_id: "not-a-uuid",
+    })).toEqual({
+      q: null,
+      status: null,
+      source: null,
+      service_id: null,
+    });
   });
 
   it("validates the dedicated Lead status workflow", () => {
