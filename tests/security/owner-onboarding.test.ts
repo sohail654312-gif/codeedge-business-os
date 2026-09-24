@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { openDatabase, type TestDatabase } from "../helpers/database";
 
 describe("owner onboarding", () => {
@@ -10,6 +10,14 @@ describe("owner onboarding", () => {
 
   afterAll(async () => {
     await db.close();
+  });
+
+  beforeEach(async () => {
+    await db.exec("SAVEPOINT owner_onboarding_case");
+  });
+
+  afterEach(async () => {
+    await db.exec("ROLLBACK TO SAVEPOINT owner_onboarding_case; RELEASE SAVEPOINT owner_onboarding_case");
   });
 
   it("creates an isolated owner workspace only for CodeEdge signups", async () => {
@@ -33,7 +41,7 @@ describe("owner onboarding", () => {
 
     expect(businesses.rows).toHaveLength(1);
     expect(businesses.rows[0]?.name).toBe("CodeEdge Test Business");
-    expect(businesses.rows[0]?.slug).toMatch(/^workspace-[a-f0-9]{20}$/);
+    expect(businesses.rows[0]?.slug).toMatch(/^workspace-[a-f0-9]{32}$/);
     expect(memberships.rows).toEqual([{
       business_id: businesses.rows[0]!.id,
       user_id: userId,
