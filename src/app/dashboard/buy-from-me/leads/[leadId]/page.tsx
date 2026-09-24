@@ -6,19 +6,23 @@ import { LeadConversionForm } from "@/components/leads/LeadConversionForm";
 import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
 import { QuoteRequestCreateForm } from "@/components/leads/QuoteRequestCreateForm";
 import { QuoteRequestStatusForm } from "@/components/leads/QuoteRequestStatusForm";
+import { StartConversationForm } from "@/components/conversations/StartConversationForm";
 import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, getLeadCustomer, listLeadActivities, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels, quoteRequestStatusLabels } from "@/modules/buy-from-me/leads/domain";
+import { listLeadConversations, formatConversationTime } from "@/modules/contact-me/conversations/data";
+import { conversationChannelLabels, conversationStatusLabels } from "@/modules/contact-me/conversations/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const [lead, notes, quoteRequests, customer, activities] = await Promise.all([
+  const [lead, notes, quoteRequests, customer, activities, conversations] = await Promise.all([
     getLead(client, context.business.id, leadId),
     listLeadNotes(client, context.business.id, leadId),
     listQuoteRequests(client, context.business.id, leadId),
     getLeadCustomer(client, context.business.id, leadId),
     listLeadActivities(client, context.business.id, leadId),
+    listLeadConversations(client, context.business.id, leadId),
   ]);
 
   if (!lead) notFound();
@@ -103,6 +107,40 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
       <section className="panel topGap">
         <h2>Enquiry summary</h2>
         <p className="leadSummaryText">{lead.enquiry_summary}</p>
+      </section>
+
+      <section className="panel topGap" id="conversations">
+        <div className="noteSectionHead">
+          <div>
+            <h2>Conversations</h2>
+            <p className="muted">Shared Inbox threads linked to this Lead.</p>
+          </div>
+          <span className="pill">{conversations.length} {conversations.length === 1 ? "conversation" : "conversations"}</span>
+        </div>
+
+        <StartConversationForm leadId={lead.id} leadName={lead.contact_name} />
+
+        <div className="leadConversationList">
+          {conversations.length ? conversations.map((conversation) => (
+            <Link
+              className="leadConversationRow"
+              href={`/dashboard/contact-me/${conversation.id}`}
+              key={conversation.id}
+            >
+              <div>
+                <b>{conversation.subject || "Conversation"}</b>
+                <div className="muted">
+                  {conversationChannelLabels[conversation.channel]} · {conversationStatusLabels[conversation.status]}
+                </div>
+              </div>
+              <span className="muted">
+                {formatConversationTime(conversation.last_message_at, context.business.timezone)}
+              </span>
+            </Link>
+          )) : (
+            <div className="noteEmpty">No Shared Inbox conversations are linked to this Lead yet.</div>
+          )}
+        </div>
       </section>
 
       <section className="panel topGap" id="activity-history">
