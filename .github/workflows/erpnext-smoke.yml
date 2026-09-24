@@ -137,12 +137,25 @@ jobs:
 
       - name: Verify Frappe token authentication directly
         if: steps.wait.outputs.ready == '1'
+        shell: bash
         run: |
-          result="$(curl -fsS \
-            -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET" \
-            http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user)"
-          echo "$result"
-          echo "$result" | jq -e '.message == "Administrator"'
+          set -euo pipefail
+
+          for i in $(seq 1 30); do
+            if result="$(curl -fsS \
+              -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET" \
+              http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user 2>/tmp/token-auth.err)"; then
+              echo "$result"
+              echo "$result" | jq -e '.message == "Administrator"'
+              exit 0
+            fi
+
+            echo "Token authentication not ready yet (attempt $i/30)."
+            sleep 2
+          done
+
+          cat /tmp/token-auth.err || true
+          exit 1
 
       - name: Create one ERPNext customer for the sync test
         if: steps.wait.outputs.ready == '1'
