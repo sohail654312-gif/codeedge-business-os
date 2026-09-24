@@ -158,10 +158,3 @@ export const leadFilterSchema = z.object({
 });
 
 export type LeadFilters = z.infer<typeof leadFilterSchema>;
-
-
-export const leadConversionFormSchema = z.object({
-  lead_id: z.uuid(),
-});
-
-export type LeadConversionInput = z.infer<typeof leadConversionFormSchema>;
