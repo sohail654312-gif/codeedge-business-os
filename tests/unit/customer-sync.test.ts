@@ -3,6 +3,7 @@ import { syncCustomerBackOffice } from "../../src/modules/buy-from-me/customers/
 import type { CustomerBackOfficeAdapter } from "../../src/integrations/customers";
 
 const input = {
+  businessId: "20000000-0000-4000-8000-000000000001",
   customerId: "60000000-0000-4000-8000-000000000001",
   name: "Alex Example",
   phone: "020 7946 0000",
