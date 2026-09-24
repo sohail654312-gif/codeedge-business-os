@@ -108,6 +108,26 @@ export type OpeningHours = {
   updated_at: string;
 };
 
+export type BusinessFaq = {
+  id: string;
+  business_id: string;
+  question: string;
+  answer: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BusinessSettings = {
+  business_id: string;
+  locale: string;
+  lead_notification_email: string;
+  notify_new_leads: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type QuoteRequest = {
   id: string;
   business_id: string;
@@ -272,6 +292,39 @@ export type Database = {
           | "is_closed"
           | "opens_at"
           | "closes_at"
+        >>
+      >;
+      business_faqs: Table<
+        BusinessFaq,
+        {
+          business_id: string;
+          question: string;
+          answer: string;
+          is_active?: boolean;
+          display_order?: number;
+          id?: string;
+        },
+        Partial<Pick<
+          BusinessFaq,
+          | "question"
+          | "answer"
+          | "is_active"
+          | "display_order"
+        >>
+      >;
+      business_settings: Table<
+        BusinessSettings,
+        {
+          business_id: string;
+          locale?: string;
+          lead_notification_email?: string;
+          notify_new_leads?: boolean;
+        },
+        Partial<Pick<
+          BusinessSettings,
+          | "locale"
+          | "lead_notification_email"
+          | "notify_new_leads"
         >>
       >;
       quote_requests: Table<

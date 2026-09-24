@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { BusinessProfilePanel, ServicesPanel } from "@/components/settings/BusinessProfileServices";
 import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/ServiceCoveragePanels";
+import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettingsPanels";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
 
-  const [profileResult, serviceResult, areaResult, hoursResult] = await Promise.all([
+  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult] = await Promise.all([
     client
       .from("business_profiles")
       .select("*")
@@ -29,9 +30,27 @@ export default async function Settings() {
       .select("*")
       .eq("business_id", context.business.id)
       .order("weekday", { ascending: true }),
+    client
+      .from("business_faqs")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .order("display_order", { ascending: true })
+      .order("id", { ascending: true }),
+    client
+      .from("business_settings")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .maybeSingle(),
   ]);
 
-  if (profileResult.error || serviceResult.error || areaResult.error || hoursResult.error) {
+  if (
+    profileResult.error ||
+    serviceResult.error ||
+    areaResult.error ||
+    hoursResult.error ||
+    faqResult.error ||
+    settingsResult.error
+  ) {
     throw new Error("Unable to load Business Information.");
   }
 
@@ -86,6 +105,17 @@ export default async function Settings() {
       <OpeningHoursPanel
         hours={hoursResult.data ?? []}
         timezone={context.business.timezone}
+        canEdit={canEdit}
+      />
+
+      <FaqPanel
+        faqs={faqResult.data ?? []}
+        canEdit={canEdit}
+      />
+
+      <BusinessSettingsPanel
+        key={settingsResult.data?.updated_at ?? "default-settings"}
+        settings={settingsResult.data}
         canEdit={canEdit}
       />
     </>
