@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
+import { buildLeadSearchOr, type LeadFilters } from "./filters";
 
 export type LeadWithService = Lead & {
   service_name: string | null;
@@ -27,12 +28,21 @@ async function serviceNames(
 export async function listLeads(
   client: SupabaseClient<Database>,
   businessId: string,
+  filters?: LeadFilters,
 ): Promise<LeadWithService[]> {
-  const { data, error } = await client
+  let query = client
     .from("leads")
     .select("*")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false });
+    .eq("business_id", businessId);
+
+  if (filters?.status) query = query.eq("status", filters.status);
+  if (filters?.source) query = query.eq("source", filters.source);
+  if (filters?.service) query = query.eq("service_id", filters.service);
+
+  const search = filters?.q ? buildLeadSearchOr(filters.q) : null;
+  if (search) query = query.or(search);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) throw new Error("Unable to load Leads.");
 
