@@ -25,6 +25,26 @@ export type BusinessMembership = {
 
 export type CustomerBackofficeStatus = "pending" | "synced" | "failed";
 
+export type CrmActivityType =
+  | "lead_created"
+  | "lead_edited"
+  | "lead_status_changed"
+  | "lead_note_added"
+  | "quote_request_created"
+  | "quote_request_status_changed"
+  | "lead_converted_to_customer";
+
+export type CrmActivity = {
+  id: string;
+  business_id: string;
+  lead_id: string;
+  event_type: CrmActivityType;
+  description: string;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
 export type Customer = {
   id: string;
   business_id: string;
@@ -96,6 +116,11 @@ type Table<Row, Insert, Update> = {
 export type Database = {
   public: {
     Tables: {
+      crm_activities: Table<
+        CrmActivity,
+        never,
+        never
+      >;
       customers: Table<
         Customer,
         {
@@ -193,6 +218,7 @@ export type Database = {
       business_status: BusinessStatus;
       membership_status: MembershipStatus;
       customer_backoffice_status: CustomerBackofficeStatus;
+      crm_activity_type: CrmActivityType;
       lead_status: LeadStatus;
       quote_request_status: QuoteRequestStatus;
     };
