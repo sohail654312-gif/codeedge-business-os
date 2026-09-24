@@ -6,6 +6,7 @@ const items = [
   ["◎", "Find Me", "/dashboard/find-me"],
   ["☎", "Contact Me", "/dashboard/contact-me"],
   ["↗", "Buy From Me", "/dashboard/buy-from-me"],
+  ["•", "Customers", "/dashboard/buy-from-me/customers"],
   ["£", "Pay Me", "/dashboard/pay-me"],
   ["✓", "Manage Me", "/dashboard/manage-me"],
   ["✦", "Help Me Grow", "/dashboard/help-me-grow"],
