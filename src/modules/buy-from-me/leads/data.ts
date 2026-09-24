@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
+import type { LeadFilters } from "./validation";
 import { buildLeadSearchOr, type LeadFilters } from "./filters";
 
 export type LeadWithService = Lead & {
