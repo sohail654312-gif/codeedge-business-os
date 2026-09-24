@@ -23,6 +23,22 @@ export type BusinessMembership = {
   updated_at: string;
 };
 
+export type CustomerBackofficeStatus = "pending" | "synced" | "failed";
+
+export type Customer = {
+  id: string;
+  business_id: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+  source_lead_id: string;
+  erpnext_customer_id: string | null;
+  erpnext_sync_status: CustomerBackofficeStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Service = {
   id: string;
   business_id: string;
@@ -80,6 +96,21 @@ type Table<Row, Insert, Update> = {
 export type Database = {
   public: {
     Tables: {
+      customers: Table<
+        Customer,
+        {
+          business_id: string;
+          contact_name: string;
+          phone: string;
+          email: string;
+          source_lead_id: string;
+          erpnext_customer_id?: string | null;
+          erpnext_sync_status?: CustomerBackofficeStatus;
+          created_by: string | null;
+          id?: string;
+        },
+        { erpnext_customer_id?: string | null; erpnext_sync_status?: CustomerBackofficeStatus }
+      >;
       businesses: Table<
         Business,
         { name: string; slug: string; timezone?: string; id?: string; status?: BusinessStatus },
@@ -142,6 +173,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      convert_lead_to_customer: {
+        Args: { target_lead_id: string };
+        Returns: Array<{ customer_id: string; created: boolean }>;
+      };
       search_leads: {
         Args: {
           p_business_id: string;
@@ -157,6 +192,7 @@ export type Database = {
       business_role: BusinessRole;
       business_status: BusinessStatus;
       membership_status: MembershipStatus;
+      customer_backoffice_status: CustomerBackofficeStatus;
       lead_status: LeadStatus;
       quote_request_status: QuoteRequestStatus;
     };
