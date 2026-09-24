@@ -6,18 +6,19 @@ import { LeadConversionForm } from "@/components/leads/LeadConversionForm";
 import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
 import { QuoteRequestCreateForm } from "@/components/leads/QuoteRequestCreateForm";
 import { QuoteRequestStatusForm } from "@/components/leads/QuoteRequestStatusForm";
-import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, getLeadCustomer, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
+import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, getLeadCustomer, listLeadActivities, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels, quoteRequestStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const [lead, notes, quoteRequests, customer] = await Promise.all([
+  const [lead, notes, quoteRequests, customer, activities] = await Promise.all([
     getLead(client, context.business.id, leadId),
     listLeadNotes(client, context.business.id, leadId),
     listQuoteRequests(client, context.business.id, leadId),
     getLeadCustomer(client, context.business.id, leadId),
+    listLeadActivities(client, context.business.id, leadId),
   ]);
 
   if (!lead) notFound();
@@ -102,6 +103,37 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
       <section className="panel topGap">
         <h2>Enquiry summary</h2>
         <p className="leadSummaryText">{lead.enquiry_summary}</p>
+      </section>
+
+      <section className="panel topGap" id="activity-history">
+        <div className="noteSectionHead">
+          <div>
+            <h2>CRM activity</h2>
+            <p className="muted">Append-oriented history of meaningful Lead actions.</p>
+          </div>
+          <span className="pill">{activities.length} {activities.length === 1 ? "event" : "events"}</span>
+        </div>
+
+        <div className="activityTimeline">
+          {activities.length ? activities.map((activity) => (
+            <article className="activityItem" key={activity.id}>
+              <div className="activityDot" aria-hidden="true" />
+              <div className="activityBody">
+                <div className="activityHead">
+                  <b>{activity.description}</b>
+                  <span className="muted">{formatNoteDate(activity.created_at)}</span>
+                </div>
+                <div className="activityMeta">
+                  {activity.actor_user_id
+                    ? activity.actor_user_id === context.userId ? "You" : "Team member"
+                    : "System"}
+                </div>
+              </div>
+            </article>
+          )) : (
+            <div className="noteEmpty">No CRM activity recorded yet.</div>
+          )}
+        </div>
       </section>
 
       <div className="twoCol topGap">
