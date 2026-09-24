@@ -141,7 +141,18 @@ export type Database = {
       >;
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      search_leads: {
+        Args: {
+          p_business_id: string;
+          p_query?: string | null;
+          p_status?: LeadStatus | null;
+          p_source?: string | null;
+          p_service_id?: string | null;
+        };
+        Returns: Lead[];
+      };
+    };
     Enums: {
       business_role: BusinessRole;
       business_status: BusinessStatus;
