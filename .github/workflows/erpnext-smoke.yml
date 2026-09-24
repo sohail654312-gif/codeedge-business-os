@@ -1,6 +1,9 @@
 name: ERPNext disposable smoke test
 
 on:
+  push:
+    branches:
+      - test/erpnext-adapter-e2e
   workflow_dispatch:
 
 permissions:
@@ -65,6 +68,85 @@ jobs:
         if: steps.wait.outputs.ready == '1'
         run: |
           curl --connect-timeout 3 --max-time 10 -I http://127.0.0.1:8080
+
+      - name: Login to disposable ERPNext and generate API credentials
+        if: steps.wait.outputs.ready == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -c /tmp/erpnext-cookie.txt \
+            -X POST http://127.0.0.1:8080/api/method/login \
+            --data-urlencode 'usr=Administrator' \
+            --data-urlencode 'pwd=admin' \
+            >/tmp/login.json
+
+          curl -fsS -b /tmp/erpnext-cookie.txt \
+            -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys \
+            --data-urlencode 'user=Administrator' \
+            >/tmp/keys.json
+
+          API_KEY="$(jq -r '.message.api_key' /tmp/keys.json)"
+          API_SECRET="$(jq -r '.message.api_secret' /tmp/keys.json)"
+
+          test -n "$API_KEY"
+          test "$API_KEY" != "null"
+          test -n "$API_SECRET"
+          test "$API_SECRET" != "null"
+
+          {
+            echo "ERPNEXT_BASE_URL=http://127.0.0.1:8080"
+            echo "ERPNEXT_API_KEY=$API_KEY"
+            echo "ERPNEXT_API_SECRET=$API_SECRET"
+          } >> "$GITHUB_ENV"
+
+          echo "::add-mask::$API_KEY"
+          echo "::add-mask::$API_SECRET"
+
+      - name: Verify Frappe token authentication directly
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          result="$(curl -fsS \
+            -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET" \
+            http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user)"
+          echo "$result"
+          echo "$result" | jq -e '.message == "Administrator"'
+
+      - name: Install CodeEdge dependencies
+        if: steps.wait.outputs.ready == '1'
+        run: npm install
+
+      - name: Build CodeEdge with disposable ERPNext configuration
+        if: steps.wait.outputs.ready == '1'
+        run: npm run build
+
+      - name: Start CodeEdge
+        if: steps.wait.outputs.ready == '1'
+        shell: bash
+        run: |
+          nohup npm start >/tmp/codeedge.log 2>&1 &
+          echo $! >/tmp/codeedge.pid
+
+          for i in $(seq 1 60); do
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat /tmp/codeedge.log || true
+          exit 1
+
+      - name: Verify CodeEdge ERPNext connection endpoint
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/status | tee /tmp/codeedge-status.json
+          jq -e '.connected == true and .authenticatedUser == "Administrator"' /tmp/codeedge-status.json
+
+      - name: Verify CodeEdge ERPNext customer read endpoint
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=5 | tee /tmp/codeedge-customers.json
+          jq -e '.data | type == "array"' /tmp/codeedge-customers.json
 
       - name: Diagnostics
         if: always()
