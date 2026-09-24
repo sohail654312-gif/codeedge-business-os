@@ -28,3 +28,15 @@ export function buildLeadInsert(
     created_by: context.userId,
   };
 }
+
+export function buildLeadUpdate(values: LeadCreateValues) {
+  return {
+    contact_name: values.contact_name,
+    phone: values.phone,
+    email: values.email,
+    source: values.source,
+    service_id: values.service_id,
+    enquiry_summary: values.enquiry_summary,
+    estimated_value_pence: values.estimated_value_pence,
+  };
+}

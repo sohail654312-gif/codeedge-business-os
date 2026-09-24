@@ -24,9 +24,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
           <span className={"leadStatus leadStatus" + leadStatusLabels[lead.status].replace(/\s+/g, "")}>
             {leadStatusLabels[lead.status]}
           </span>
-          <button className="btn primary" type="button" disabled title="Editing arrives in the next step">
+          <Link className="btn primary" href={`/dashboard/buy-from-me/leads/${lead.id}/edit`}>
             Edit lead
-          </button>
+          </Link>
         </div>
       </div>
 
