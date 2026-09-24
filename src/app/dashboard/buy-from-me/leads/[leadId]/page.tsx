@@ -2,20 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteLeadNoteForm } from "@/components/leads/DeleteLeadNoteForm";
 import { LeadNoteForm } from "@/components/leads/LeadNoteForm";
+import { LeadConversionForm } from "@/components/leads/LeadConversionForm";
 import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
 import { QuoteRequestCreateForm } from "@/components/leads/QuoteRequestCreateForm";
 import { QuoteRequestStatusForm } from "@/components/leads/QuoteRequestStatusForm";
-import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
+import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, getLeadCustomer, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels, quoteRequestStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const [lead, notes, quoteRequests] = await Promise.all([
+  const [lead, notes, quoteRequests, customer] = await Promise.all([
     getLead(client, context.business.id, leadId),
     listLeadNotes(client, context.business.id, leadId),
     listQuoteRequests(client, context.business.id, leadId),
+    getLeadCustomer(client, context.business.id, leadId),
   ]);
 
   if (!lead) notFound();
@@ -69,6 +71,32 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
           </p>
         </div>
         <LeadStatusForm leadId={lead.id} currentStatus={lead.status} />
+      </section>
+
+      <section className="panel topGap conversionPanel">
+        <div>
+          <h2>Customer conversion</h2>
+          <p className="muted">
+            {customer
+              ? "This Lead is linked to a CodeEdge Customer and remains preserved for CRM traceability."
+              : "Create a Customer from this Lead without deleting or replacing the original Lead."}
+          </p>
+        </div>
+        {customer ? (
+          <div className="conversionState">
+            <span className="pill">Converted</span>
+            <span className="muted">
+              {customer.erpnext_customer_id
+                ? `ERPNext synced · ${customer.erpnext_customer_id}`
+                : customer.erpnext_sync_status === "failed"
+                  ? "ERPNext sync failed — CodeEdge Customer retained"
+                  : "ERPNext sync pending"}
+            </span>
+            <Link className="btn" href="/dashboard/buy-from-me/customers">View customers</Link>
+          </div>
+        ) : (
+          <LeadConversionForm leadId={lead.id} />
+        )}
       </section>
 
       <section className="panel topGap">

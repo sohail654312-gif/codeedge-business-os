@@ -1,5 +1,6 @@
 import { stats } from "@/data/demo";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
+import { requireDashboardTenant } from "@/server/auth/session";
 
 const modules = [
   ["Find Me", "Website, SEO and reviews", "/dashboard/find-me"],
@@ -11,14 +12,15 @@ const modules = [
 ];
 
 export default async function Dashboard() {
-  const customerDirectory = await getCustomerDirectoryData();
+  const { client, context } = await requireDashboardTenant();
+  const customerDirectory = await getCustomerDirectoryData(client, context.business.id);
   const activeCustomers = customerDirectory.rows.filter((customer) => customer.status === "Active").length;
   const customerPreview = customerDirectory.rows.slice(0, 3);
 
   return (
     <>
       <div className="pageHead">
-        <div><div className="eyebrow">ABC Plumbing & Heating Ltd</div><h1>Good morning, James.</h1>
+        <div><div className="eyebrow">{context.business.name}</div><h1>Command Centre</h1>
         <p className="muted">Here is what needs your attention today.</p></div>
         <span className="pill">Demo workspace</span>
       </div>
@@ -52,7 +54,7 @@ export default async function Dashboard() {
           <div>
             <div className="row customerSummaryTitleRow">
               <h2>Customer snapshot</h2>
-              <span className="pill">{customerDirectory.mode === "erpnext" ? "ERPNext live" : "Demo fallback"}</span>
+              <span className="pill">{customerDirectory.mode === "hybrid" ? "CodeEdge + ERPNext" : customerDirectory.mode === "erpnext" ? "ERPNext live" : "CodeEdge CRM"}</span>
             </div>
             <p className="muted customerSubtext">A quick view of customers directly on the Command Centre.</p>
           </div>

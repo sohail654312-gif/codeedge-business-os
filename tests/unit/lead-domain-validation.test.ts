@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  leadConversionSchema,
   leadCreateFormSchema,
   leadEditFormSchema,
   leadFilterSchema,
@@ -158,6 +159,13 @@ describe("Business OS lead validation", () => {
       source: null,
       service_id: null,
     });
+  });
+
+  it("validates Lead conversion identity", () => {
+    expect(leadConversionSchema.safeParse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+    }).success).toBe(true);
+    expect(leadConversionSchema.safeParse({ lead_id: "not-a-uuid" }).success).toBe(false);
   });
 
   it("validates the dedicated Lead status workflow", () => {

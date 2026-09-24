@@ -1,6 +1,7 @@
 import { getERPNextConfig } from "./config";
 import type {
   ERPNextCustomer,
+  ERPNextCustomerCreateInput,
   ERPNextDocumentResponse,
   ERPNextLead,
   ERPNextListResponse,
@@ -83,4 +84,24 @@ export async function getERPNextDocument<T>(doctype: string, name: string) {
   const safeDoctype = encodeURIComponent(doctype);
   const safeName = encodeURIComponent(name);
   return erpnextFetch<ERPNextDocumentResponse<T>>(`/api/resource/${safeDoctype}/${safeName}`);
+}
+
+
+export async function getERPNextCustomerByName(name: string) {
+  const query = new URLSearchParams({
+    fields: JSON.stringify(["name", "customer_name", "customer_type", "customer_group", "territory"]),
+    filters: JSON.stringify([["name", "=", name]]),
+    limit_page_length: "1",
+  });
+  const result = await erpnextFetch<ERPNextListResponse<ERPNextCustomer>>(
+    `/api/resource/Customer?${query.toString()}`,
+  );
+  return result.data[0] ?? null;
+}
+
+export async function createERPNextCustomer(input: ERPNextCustomerCreateInput) {
+  return erpnextFetch<ERPNextDocumentResponse<ERPNextCustomer>>("/api/resource/Customer", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

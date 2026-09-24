@@ -89,6 +89,10 @@ export const leadStatusFormSchema = z.object({
   status: z.enum(leadStatuses),
 });
 
+export const leadConversionSchema = z.object({
+  lead_id: z.uuid(),
+});
+
 export const leadNoteInputSchema = z.object({
   body: z.string().trim().min(1, "Note is required.").max(5000),
 });
@@ -123,6 +127,7 @@ export type LeadInput = z.infer<typeof leadInputSchema>;
 export type LeadCreateInput = z.infer<typeof leadCreateFormSchema>;
 export type LeadEditInput = z.infer<typeof leadEditFormSchema>;
 export type LeadStatusInput = z.infer<typeof leadStatusFormSchema>;
+export type LeadConversionInput = z.infer<typeof leadConversionSchema>;
 export type LeadNoteInput = z.infer<typeof leadNoteInputSchema>;
 export type LeadNoteFormInput = z.infer<typeof leadNoteFormSchema>;
 export type LeadNoteDeleteInput = z.infer<typeof leadNoteDeleteSchema>;
