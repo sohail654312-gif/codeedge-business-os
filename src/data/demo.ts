@@ -15,3 +15,42 @@ export const leads = [
   { name: "Mike Turner", source: "AI Voice", service: "Emergency plumbing", value: "£320", status: "Qualified" },
   { name: "Emily Carter", source: "WhatsApp", service: "Heating service", value: "£210", status: "Quote sent" }
 ];
+
+export const customers = [
+  {
+    name: "Sarah Jenkins",
+    company: "Homeowner",
+    contact: "sarah.jenkins@example.com",
+    status: "Active",
+    source: "Google",
+    value: "£1,240",
+    lastActivity: "Today",
+  },
+  {
+    name: "David Patel",
+    company: "Patel Property Services",
+    contact: "david.patel@example.com",
+    status: "Active",
+    source: "Website",
+    value: "£3,860",
+    lastActivity: "Yesterday",
+  },
+  {
+    name: "Mike Turner",
+    company: "Turner Lettings",
+    contact: "mike.turner@example.com",
+    status: "New",
+    source: "AI Voice",
+    value: "£780",
+    lastActivity: "2 days ago",
+  },
+  {
+    name: "Emily Carter",
+    company: "Homeowner",
+    contact: "emily.carter@example.com",
+    status: "Active",
+    source: "WhatsApp",
+    value: "£2,110",
+    lastActivity: "3 days ago",
+  },
+];
