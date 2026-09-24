@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeleteLeadNoteForm } from "@/components/leads/DeleteLeadNoteForm";
+import { LeadNoteForm } from "@/components/leads/LeadNoteForm";
 import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
-import { formatLeadDate, formatLeadValue, getLead } from "@/modules/buy-from-me/leads/data";
+import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, listLeadNotes } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const lead = await getLead(client, context.business.id, leadId);
+  const [lead, notes] = await Promise.all([
+    getLead(client, context.business.id, leadId),
+    listLeadNotes(client, context.business.id, leadId),
+  ]);
 
   if (!lead) notFound();
 
@@ -69,9 +74,33 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
       </section>
 
       <div className="twoCol topGap">
-        <section className="panel">
-          <h2>Internal notes</h2>
-          <p className="muted">Notes are not enabled yet. They will be added as a separate secured CRM step.</p>
+        <section className="panel" id="internal-notes">
+          <div className="noteSectionHead">
+            <div>
+              <h2>Internal notes</h2>
+              <p className="muted">Private team context for this Lead.</p>
+            </div>
+            <span className="pill">{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
+          </div>
+
+          <LeadNoteForm leadId={lead.id} />
+
+          <div className="noteList">
+            {notes.length ? notes.map((note) => (
+              <article className="noteCard" key={note.id}>
+                <div className="noteMeta">
+                  <span>{note.created_by === context.userId ? "You" : "Team member"}</span>
+                  <span>{formatNoteDate(note.created_at)}</span>
+                </div>
+                <p>{note.body}</p>
+                {context.role === "owner" ? (
+                  <DeleteLeadNoteForm leadId={lead.id} noteId={note.id} />
+                ) : null}
+              </article>
+            )) : (
+              <div className="noteEmpty">No internal notes yet.</div>
+            )}
+          </div>
         </section>
         <section className="panel">
           <h2>Quote requests</h2>

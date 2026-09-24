@@ -32,6 +32,16 @@ export type Service = {
   updated_at: string;
 };
 
+export type LeadNote = {
+  id: string;
+  business_id: string;
+  lead_id: string;
+  body: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Lead = {
   id: string;
   business_id: string;
@@ -78,6 +88,17 @@ export type Database = {
         Service,
         { business_id: string; name: string; active?: boolean; id?: string },
         { name?: string; active?: boolean }
+      >;
+      lead_notes: Table<
+        LeadNote,
+        {
+          business_id: string;
+          lead_id: string;
+          body: string;
+          created_by: string | null;
+          id?: string;
+        },
+        never
       >;
       leads: Table<
         Lead,

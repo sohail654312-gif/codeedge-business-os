@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { leadCreateFormSchema, leadEditFormSchema, leadStatusFormSchema } from "./validation";
+import { leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema } from "./validation";
 import { buildLeadInsert, buildLeadUpdate } from "./persistence";
 
 export type LeadFormState = {
@@ -160,4 +160,102 @@ export async function updateLeadStatus(
   revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
 
   return {};
+}
+
+
+async function leadExistsInTenant(
+  client: Awaited<ReturnType<typeof requireDashboardTenant>>["client"],
+  businessId: string,
+  leadId: string,
+) {
+  const { data, error } = await client
+    .from("leads")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("id", leadId)
+    .maybeSingle();
+
+  return !error && Boolean(data);
+}
+
+export async function addLeadNote(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState> {
+  const parsed = leadNoteFormSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+    body: formData.get("body"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the note." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  if (!await leadExistsInTenant(client, context.business.id, parsed.data.lead_id)) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  const { data: note, error } = await client
+    .from("lead_notes")
+    .insert({
+      business_id: context.business.id,
+      lead_id: parsed.data.lead_id,
+      body: parsed.data.body,
+      created_by: context.userId,
+    })
+    .select("id")
+    .single();
+
+  if (error || !note) {
+    return { error: "Unable to add the note. Please try again." };
+  }
+
+  revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
+  redirect(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}#internal-notes`);
+}
+
+export async function deleteLeadNote(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState> {
+  const parsed = leadNoteDeleteSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+    note_id: formData.get("note_id"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Invalid note request." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  if (context.role !== "owner") {
+    return { error: "Only a business owner can delete internal notes." };
+  }
+
+  if (!await leadExistsInTenant(client, context.business.id, parsed.data.lead_id)) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  const { data: note, error } = await client
+    .from("lead_notes")
+    .delete()
+    .eq("business_id", context.business.id)
+    .eq("lead_id", parsed.data.lead_id)
+    .eq("id", parsed.data.note_id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: "Unable to delete the note. Please try again." };
+  }
+
+  if (!note) {
+    return { error: "Note unavailable in this workspace." };
+  }
+
+  revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
+  redirect(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}#internal-notes`);
 }

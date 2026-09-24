@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Lead, Service } from "@/types/database";
+import type { Database, Lead, LeadNote, Service } from "@/types/database";
 
 export type LeadWithService = Lead & {
   service_name: string | null;
@@ -101,6 +101,31 @@ export function formatLeadValue(pence: number | null) {
 
 export function formatLeadDate(value: string | null) {
   if (!value) return "Not contacted";
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+
+export async function listLeadNotes(
+  client: SupabaseClient<Database>,
+  businessId: string,
+  leadId: string,
+): Promise<LeadNote[]> {
+  const { data, error } = await client
+    .from("lead_notes")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Unable to load Lead notes.");
+  return data ?? [];
+}
+
+export function formatNoteDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
