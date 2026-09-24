@@ -1,0 +1,103 @@
+name: ERPNext disposable smoke test
+
+on:
+  push:
+    branches:
+      - diagnostics/erpnext-smoke
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  erpnext:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout CodeEdge
+        uses: actions/checkout@v4
+
+      - name: Show Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Clone official Frappe Docker
+        run: |
+          git clone --depth 1 https://github.com/frappe/frappe_docker.git /tmp/frappe_docker
+
+      - name: Start ERPNext disposable stack
+        working-directory: /tmp/frappe_docker
+        run: |
+          docker compose -f pwd.yml up -d
+
+      - name: Show initial container status
+        working-directory: /tmp/frappe_docker
+        run: |
+          docker compose -f pwd.yml ps
+
+      - name: Wait for ERPNext
+        id: wait
+        working-directory: /tmp/frappe_docker
+        shell: bash
+        run: |
+          set +e
+          ready=0
+          for i in $(seq 1 120); do
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/tmp/erpnext.html 2>/tmp/curl.err; then
+              ready=1
+              echo "ERPNext responded on attempt $i"
+              break
+            fi
+            sleep 5
+          done
+
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+          if [ "$ready" -eq 1 ]; then
+            head -c 500 /tmp/erpnext.html || true
+            exit 0
+          fi
+
+          echo "ERPNext did not become ready within 10 minutes."
+          cat /tmp/curl.err || true
+          exit 1
+
+      - name: Verify HTTP response
+        if: steps.wait.outputs.ready == '1'
+        run: |
+          curl --connect-timeout 3 --max-time 10 -I http://127.0.0.1:8080
+
+      - name: Diagnostics
+        if: always()
+        working-directory: /tmp/frappe_docker
+        run: |
+          echo "===== CONTAINERS ====="
+          docker compose -f pwd.yml ps || true
+
+          echo
+          echo "===== CREATE-SITE LOGS ====="
+          docker compose -f pwd.yml logs create-site --tail=200 || true
+
+          echo
+          echo "===== CONFIGURATOR LOGS ====="
+          docker compose -f pwd.yml logs configurator --tail=120 || true
+
+          echo
+          echo "===== DATABASE LOGS ====="
+          docker compose -f pwd.yml logs db --tail=120 || true
+
+          echo
+          echo "===== BACKEND LOGS ====="
+          docker compose -f pwd.yml logs backend --tail=120 || true
+
+          echo
+          echo "===== FRONTEND LOGS ====="
+          docker compose -f pwd.yml logs frontend --tail=120 || true
+
+      - name: Shut down disposable ERPNext
+        if: always()
+        working-directory: /tmp/frappe_docker
+        run: |
+          docker compose -f pwd.yml down -v || true
