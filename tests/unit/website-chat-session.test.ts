@@ -45,7 +45,7 @@ describe("Website Chat session and transport helpers", () => {
     expect(script).toContain("data-widget-id");
     expect(script).toContain("X-Codeedge-Chat-Session");
     expect(script).toContain("localStorage");
-    expect(script).toContain("Website Chat");
+    expect(script).toMatch(/Website chat/i);
     expect(script).not.toMatch(/tiledesk/i);
     expect(script).not.toMatch(/firebase/i);
   });

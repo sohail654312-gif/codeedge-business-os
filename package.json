@@ -12,7 +12,8 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:security": "vitest run tests/security"
+    "test:security": "vitest run tests/security",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "15.5.2",
@@ -32,6 +33,7 @@
     "eslint-config-next": "15.5.2",
     "vitest": "^3.2.4",
     "@eslint/eslintrc": "^3.3.1",
-    "@electric-sql/pglite": "^0.5.8"
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.55.0"
   }
 }
