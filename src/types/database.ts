@@ -86,6 +86,28 @@ export type Service = {
   updated_at: string;
 };
 
+export type ServiceArea = {
+  id: string;
+  business_id: string;
+  name: string;
+  postcode: string;
+  notes: string;
+  active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OpeningHours = {
+  business_id: string;
+  weekday: number;
+  is_closed: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type QuoteRequest = {
   id: string;
   business_id: string;
@@ -214,6 +236,42 @@ export type Database = {
           | "starting_price_pence"
           | "quote_required"
           | "display_order"
+        >>
+      >;
+      service_areas: Table<
+        ServiceArea,
+        {
+          business_id: string;
+          name: string;
+          postcode?: string;
+          notes?: string;
+          active?: boolean;
+          display_order?: number;
+          id?: string;
+        },
+        Partial<Pick<
+          ServiceArea,
+          | "name"
+          | "postcode"
+          | "notes"
+          | "active"
+          | "display_order"
+        >>
+      >;
+      opening_hours: Table<
+        OpeningHours,
+        {
+          business_id: string;
+          weekday: number;
+          is_closed?: boolean;
+          opens_at?: string | null;
+          closes_at?: string | null;
+        },
+        Partial<Pick<
+          OpeningHours,
+          | "is_closed"
+          | "opens_at"
+          | "closes_at"
         >>
       >;
       quote_requests: Table<

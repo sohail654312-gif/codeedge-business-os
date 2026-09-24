@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { BusinessProfilePanel, ServicesPanel } from "@/components/settings/BusinessProfileServices";
+import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/ServiceCoveragePanels";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
 
-  const [profileResult, serviceResult] = await Promise.all([
+  const [profileResult, serviceResult, areaResult, hoursResult] = await Promise.all([
     client
       .from("business_profiles")
       .select("*")
@@ -17,9 +18,20 @@ export default async function Settings() {
       .eq("business_id", context.business.id)
       .order("display_order", { ascending: true })
       .order("id", { ascending: true }),
+    client
+      .from("service_areas")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .order("display_order", { ascending: true })
+      .order("id", { ascending: true }),
+    client
+      .from("opening_hours")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .order("weekday", { ascending: true }),
   ]);
 
-  if (profileResult.error || serviceResult.error) {
+  if (profileResult.error || serviceResult.error || areaResult.error || hoursResult.error) {
     throw new Error("Unable to load Business Information.");
   }
 
@@ -63,6 +75,17 @@ export default async function Settings() {
 
       <ServicesPanel
         services={serviceResult.data ?? []}
+        canEdit={canEdit}
+      />
+
+      <ServiceAreasPanel
+        areas={areaResult.data ?? []}
+        canEdit={canEdit}
+      />
+
+      <OpeningHoursPanel
+        hours={hoursResult.data ?? []}
+        timezone={context.business.timezone}
         canEdit={canEdit}
       />
     </>
