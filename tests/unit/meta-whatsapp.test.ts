@@ -90,12 +90,16 @@ describe("Meta WhatsApp adapter", () => {
       client_primary: "test-token-that-is-long-enough",
     });
 
-    const fetcher = vi.fn(async () => new Response(
-      JSON.stringify({ messages: [{ id: "wamid.sent" }] }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    ));
+    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push({ input, init });
+      return new Response(
+        JSON.stringify({ messages: [{ id: "wamid.sent" }] }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
 
-    const provider = createMetaWhatsAppProvider(fetcher as typeof fetch);
+    const provider = createMetaWhatsAppProvider(fetcher);
     await expect(provider.sendText({
       externalSenderId: "109876543210",
       credentialKey: "client_primary",
@@ -103,14 +107,14 @@ describe("Meta WhatsApp adapter", () => {
       body: "Reply",
     })).resolves.toEqual({ providerMessageId: "wamid.sent" });
 
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    const [url, init] = fetcher.mock.calls[0]!;
-    expect(url).toBe("https://graph.facebook.com/v99.0/109876543210/messages");
-    expect(init?.headers).toMatchObject({
+    expect(requests).toHaveLength(1);
+    const request = requests[0]!;
+    expect(request.input).toBe("https://graph.facebook.com/v99.0/109876543210/messages");
+    expect(request.init?.headers).toMatchObject({
       Authorization: "Bearer test-token-that-is-long-enough",
       "Content-Type": "application/json",
     });
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    expect(JSON.parse(String(request.init?.body))).toMatchObject({
       messaging_product: "whatsapp",
       to: "447700900123",
       type: "text",
