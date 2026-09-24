@@ -18,7 +18,10 @@
     "next": "15.5.2",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "zod": "4.5.4"
+    "zod": "4.5.4",
+    "@supabase/ssr": "0.12.6",
+    "@supabase/supabase-js": "2.116.0",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22",

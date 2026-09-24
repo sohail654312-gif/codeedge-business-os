@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Brand } from "./Brand";
+import { signOut } from "@/modules/auth/actions";
+import type { BusinessRole } from "@/types/database";
 
 const items = [
   ["⌂", "Command Centre", "/dashboard"],
@@ -13,10 +15,20 @@ const items = [
   ["✦", "Help Me Grow", "/dashboard/help-me-grow"],
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  businessName,
+  role,
+}: {
+  businessName: string;
+  role: BusinessRole;
+}) {
   return (
     <aside className="sidebar">
       <Brand />
+      <div className="workspaceIdentity">
+        <b>{businessName}</b>
+        <span>{role === "owner" ? "Owner" : "Staff"}</span>
+      </div>
       <div className="navGroup">
         <div className="navLabel">Business OS</div>
         {items.map(([icon, label, href]) => (
@@ -26,7 +38,9 @@ export function Sidebar() {
         ))}
         <div className="navLabel">Workspace</div>
         <Link className="navItem" href="/dashboard/settings">⚙ Settings</Link>
-        <Link className="navItem" href="/">↩ Sign out</Link>
+        <form action={signOut}>
+          <button className="navItem navButton" type="submit">↩ Sign out</button>
+        </form>
       </div>
     </aside>
   );
