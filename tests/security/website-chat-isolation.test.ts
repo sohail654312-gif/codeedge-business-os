@@ -173,6 +173,19 @@ describe("Production Website Chat security and canonical integration", () => {
       [conversationId],
     )).rows).toEqual([{ lead_id: lead.rows[0]!.id }]);
 
+    await asUser(db, f.ownerA);
+    const conversion = await db.query<{ customer_id: string; created: boolean }>(
+      "select * from public.convert_lead_to_customer($1)",
+      [lead.rows[0]!.id],
+    );
+    expect(conversion.rows).toHaveLength(1);
+
+    await db.exec("RESET ROLE");
+    expect((await db.query<{ customer_id: string | null }>(
+      "select customer_id from public.conversations where id=$1",
+      [conversationId],
+    )).rows).toEqual([{ customer_id: conversion.rows[0]!.customer_id }]);
+
     expect((await start(db)).rows[0]?.contact_saved).toBe(true);
     expect((await history(db)).rows.map((row) => row.body)).toEqual([
       "Need help with my boiler",
@@ -240,6 +253,8 @@ describe("Production Website Chat security and canonical integration", () => {
       [widgetA, hashA],
     )).rejects.toThrow(/permission denied/);
 
+    await db.exec("ROLLBACK TO SAVEPOINT website_chat_case; SAVEPOINT website_chat_case");
+    await asUser(db, f.ownerA);
     expect((await db.query(
       "select pg_has_role('authenticated','codeedge_chat_api','MEMBER') as member",
     )).rows).toEqual([{ member: false }]);

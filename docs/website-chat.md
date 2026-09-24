@@ -92,7 +92,7 @@ Internal notes are `direction = internal` and the public history capability expl
 
 ## Lead capture
 
-If enabled, a visitor can submit name plus phone or email. Contact validation reuses the existing CRM Lead validation rules. The database derives the tenant from the widget/session, creates one Website Chat-source Lead for the conversation, and links the existing canonical Conversation to that Lead. Submitting updated contact details later updates the same Lead instead of creating a new Lead, preserving all prior chat history.
+If enabled, a visitor can submit name plus phone or email. Contact validation reuses the existing CRM Lead validation rules. The database derives the tenant from the widget/session, creates one Website Chat-source Lead for the conversation, and links the existing canonical Conversation to that Lead. Submitting updated contact details later updates the same Lead instead of creating a new Lead, preserving all prior chat history. If that Lead is later converted through the existing CRM conversion workflow, the resulting Customer is automatically linked back to the same canonical conversation.
 
 ## Abuse and resource bounds
 

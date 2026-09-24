@@ -702,3 +702,28 @@ grant execute on function public.website_chat_history(uuid, text) to codeedge_ch
 grant execute on function public.website_chat_send(uuid, text, uuid, text) to codeedge_chat_api;
 grant execute on function public.website_chat_capture_lead(uuid, text, text, text, text)
   to codeedge_chat_api;
+
+
+-- Keep canonical Conversations linked when a captured Lead is later converted.
+create function private.link_customer_conversations()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.conversations
+  set customer_id = new.id
+  where business_id = new.business_id
+    and lead_id = new.source_lead_id
+    and customer_id is null;
+  return new;
+end;
+$$;
+
+revoke all on function private.link_customer_conversations()
+  from public, anon, authenticated, codeedge_chat_api;
+
+create trigger customers_link_conversations
+after insert on public.customers
+for each row execute function private.link_customer_conversations();
