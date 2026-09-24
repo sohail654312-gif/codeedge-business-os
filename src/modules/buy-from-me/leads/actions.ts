@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema, quoteRequestCreateFormSchema, quoteRequestStatusFormSchema } from "./validation";
+import { erpnextCustomerAdapter } from "@/integrations/customers";
+import { getERPNextConfig } from "@/integrations/erpnext";
+import { syncCustomerBackOffice } from "@/modules/buy-from-me/customers/sync";
+import { leadConversionSchema, leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema, quoteRequestCreateFormSchema, quoteRequestStatusFormSchema } from "./validation";
 import { buildLeadInsert, buildLeadUpdate } from "./persistence";
 
 export type LeadFormState = {
@@ -339,4 +342,90 @@ export async function updateQuoteRequestStatus(
 
   revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
   return {};
+}
+
+
+export async function convertLeadToCustomer(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState & { success?: string }> {
+  const parsed = leadConversionSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Invalid Lead conversion request." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  const { data: lead, error: leadError } = await client
+    .from("leads")
+    .select("id,contact_name,phone,email")
+    .eq("business_id", context.business.id)
+    .eq("id", parsed.data.lead_id)
+    .maybeSingle();
+
+  if (leadError || !lead) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  const { data: conversionRows, error: conversionError } = await client
+    .rpc("convert_lead_to_customer", { target_lead_id: lead.id });
+
+  const conversion = conversionRows?.[0];
+  if (conversionError || !conversion) {
+    return { error: "Unable to convert this Lead. Please try again." };
+  }
+
+  const { data: customer, error: customerError } = await client
+    .from("customers")
+    .select("id,contact_name,phone,email,erpnext_customer_id,erpnext_sync_status")
+    .eq("business_id", context.business.id)
+    .eq("id", conversion.customer_id)
+    .maybeSingle();
+
+  if (customerError || !customer) {
+    return { error: "Customer conversion completed, but the Customer could not be reloaded." };
+  }
+
+  let syncMessage = "";
+  if (!customer.erpnext_customer_id && getERPNextConfig()) {
+    const sync = await syncCustomerBackOffice(erpnextCustomerAdapter, {
+      customerId: customer.id,
+      name: customer.contact_name,
+      phone: customer.phone,
+      email: customer.email,
+    });
+
+    const nextStatus = sync.status === "synced" ? "synced" : "failed";
+    const { error: syncUpdateError } = await client
+      .from("customers")
+      .update({
+        erpnext_customer_id: sync.externalId,
+        erpnext_sync_status: nextStatus,
+      })
+      .eq("business_id", context.business.id)
+      .eq("id", customer.id);
+
+    if (syncUpdateError) {
+      syncMessage = " Back-office sync status could not be saved.";
+    } else {
+      syncMessage = sync.status === "synced"
+        ? " ERPNext sync completed."
+        : " ERPNext is currently unavailable; the CodeEdge Customer is safe and can be synced later.";
+    }
+  } else if (!customer.erpnext_customer_id) {
+    syncMessage = " ERPNext is not configured; the Customer is safely stored in CodeEdge CRM.";
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/buy-from-me/customers");
+  revalidatePath(`/dashboard/buy-from-me/leads/${lead.id}`);
+
+  return {
+    success: conversion.created
+      ? `Lead converted to Customer.${syncMessage}`
+      : `This Lead was already converted; no duplicate Customer was created.${syncMessage}`,
+  };
 }
