@@ -1,36 +1,33 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildLeadSearchOr,
-  hasLeadFilters,
-  parseLeadFilters,
-} from "../../src/modules/buy-from-me/leads/filters";
+import { buildLeadSearchOr, hasLeadFilters } from "../../src/modules/buy-from-me/leads/filters";
+import { leadFilterSchema } from "../../src/modules/buy-from-me/leads/validation";
 
 describe("Lead search and filters", () => {
   it("parses shareable URL filters", () => {
-    expect(parseLeadFilters({
+    expect(leadFilterSchema.parse({
       q: "boiler",
       status: "qualified",
       source: "google",
-      service: "30000000-0000-4000-8000-000000000001",
+      service_id: "30000000-0000-4000-8000-000000000001",
     })).toEqual({
       q: "boiler",
       status: "qualified",
       source: "google",
-      service: "30000000-0000-4000-8000-000000000001",
+      service_id: "30000000-0000-4000-8000-000000000001",
     });
   });
 
-  it("fails closed to no filters when URL values are invalid", () => {
-    expect(parseLeadFilters({
-      q: "x".repeat(101),
+  it("drops invalid individual URL filters instead of widening tenant scope", () => {
+    expect(leadFilterSchema.parse({
+      q: "x".repeat(121),
       status: "admin",
       source: "erpnext",
-      service: "not-a-uuid",
+      service_id: "not-a-uuid",
     })).toEqual({
-      q: "",
+      q: null,
       status: null,
       source: null,
-      service: null,
+      service_id: null,
     });
   });
 
@@ -47,7 +44,7 @@ describe("Lead search and filters", () => {
   });
 
   it("reports whether a filtered inbox is active", () => {
-    expect(hasLeadFilters({ q: "", status: null, source: null, service: null })).toBe(false);
-    expect(hasLeadFilters({ q: "phone", status: null, source: null, service: null })).toBe(true);
+    expect(hasLeadFilters({ q: null, status: null, source: null, service_id: null })).toBe(false);
+    expect(hasLeadFilters({ q: "phone", status: null, source: null, service_id: null })).toBe(true);
   });
 });
