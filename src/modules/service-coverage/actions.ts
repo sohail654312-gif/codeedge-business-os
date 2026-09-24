@@ -134,12 +134,12 @@ export async function saveOpeningHours(
     closes_at: formData.get("closes_at"),
   });
 
-  if (!weekday.success || !parsed.success) {
-    return {
-      error: !weekday.success
-        ? "Select a valid weekday."
-        : parsed.error.issues[0]?.message ?? "Check the Opening Hours.",
-    };
+  if (!weekday.success) {
+    return { error: "Select a valid weekday." };
+  }
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the Opening Hours." };
   }
 
   const { client, context } = await requireDashboardTenant();
