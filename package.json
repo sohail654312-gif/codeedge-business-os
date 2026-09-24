@@ -11,7 +11,8 @@
     "erpnext:demo:reset": "bash scripts/erpnext-demo-reset.sh",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:security": "vitest run tests/security"
   },
   "dependencies": {
     "next": "15.5.2",
@@ -27,6 +28,7 @@
     "eslint": "^9.35.0",
     "eslint-config-next": "15.5.2",
     "vitest": "^3.2.4",
-    "@eslint/eslintrc": "^3.3.1"
+    "@eslint/eslintrc": "^3.3.1",
+    "@electric-sql/pglite": "^0.5.8"
   }
 }
