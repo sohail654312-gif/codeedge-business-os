@@ -1,26 +1,31 @@
-import { customers } from "@/data/demo";
+import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
 
-export default function CustomersPage() {
+export default async function CustomersPage() {
+  const directory = await getCustomerDirectoryData();
+  const isLive = directory.mode === "erpnext";
+  const activeCount = directory.rows.filter((customer) => customer.status === "Active").length;
+
   return (
     <>
       <div className="pageHead">
         <div>
           <div className="eyebrow">Buy From Me</div>
           <h1>Customers</h1>
-          <p className="muted">
-            Demo customer records are shown here before the ERPNext connection replaces them with live data.
-          </p>
+          <p className="muted">{directory.note}</p>
         </div>
-        <button className="btn primary" type="button" disabled title="Enabled in a later step">
-          + Add customer
-        </button>
+        <div className="row">
+          <span className="pill">{isLive ? "ERPNext live" : "Demo fallback"}</span>
+          <button className="btn primary" type="button" disabled title="Enabled in a later step">
+            + Add customer
+          </button>
+        </div>
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">4</div></div>
-        <div className="stat"><div className="statLabel">Active</div><div className="statValue">3</div></div>
-        <div className="stat"><div className="statLabel">New this month</div><div className="statValue">1</div></div>
-        <div className="stat"><div className="statLabel">Customer value</div><div className="statValue">£7,990</div></div>
+        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">{directory.rows.length}</div></div>
+        <div className="stat"><div className="statLabel">Active</div><div className="statValue">{activeCount}</div></div>
+        <div className="stat"><div className="statLabel">New this month</div><div className="statValue">{isLive ? "—" : "1"}</div></div>
+        <div className="stat"><div className="statLabel">Customer value</div><div className="statValue">{isLive ? "—" : "£7,990"}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -28,7 +33,9 @@ export default function CustomersPage() {
           <div>
             <h2>Customer directory</h2>
             <p className="muted customerSubtext">
-              Four sample customers are loaded so you can see the finished directory before ERPNext goes live.
+              {isLive
+                ? "Live customer records are coming from ERPNext."
+                : "Demo records remain visible until ERPNext credentials are configured and reachable."}
             </p>
           </div>
           <div className="customerFilters">
@@ -42,8 +49,8 @@ export default function CustomersPage() {
             <thead>
               <tr>
                 <th>Customer</th>
-                <th>Company</th>
-                <th>Contact</th>
+                <th>Company / Group</th>
+                <th>Contact / Territory</th>
                 <th>Status</th>
                 <th>Source</th>
                 <th>Value</th>
@@ -51,8 +58,8 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => (
-                <tr key={customer.name}>
+              {directory.rows.map((customer) => (
+                <tr key={`${customer.name}-${customer.source}`}>
                   <td><b>{customer.name}</b></td>
                   <td>{customer.company}</td>
                   <td className="muted">{customer.contact}</td>
