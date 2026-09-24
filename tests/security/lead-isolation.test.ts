@@ -142,15 +142,14 @@ describe("Business OS Lead tenant isolation", () => {
     )).rows).toEqual([]);
   });
 
-  it("prevents immutable tenant and creator columns from being changed", async () => {
+  it.each([
+    ["business_id", f.businessB],
+    ["created_by", f.ownerB],
+  ])("prevents immutable Lead column %s from being changed", async (column, value) => {
     await asUser(db, f.ownerA);
     await expect(db.query(
-      "update public.leads set business_id=$1 where id=$2",
-      [f.businessB, f.leadA],
-    )).rejects.toThrow(/permission denied/);
-    await expect(db.query(
-      "update public.leads set created_by=$1 where id=$2",
-      [f.ownerB, f.leadA],
+      `update public.leads set ${column}=$1 where id=$2`,
+      [value, f.leadA],
     )).rejects.toThrow(/permission denied/);
   });
 
