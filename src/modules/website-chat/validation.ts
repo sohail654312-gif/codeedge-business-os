@@ -45,7 +45,7 @@ export function validateWebsiteChatContact(input: {
     contact_name: input.contact_name,
     phone: input.phone,
     email: input.email,
-    source: "website",
+    source: "website_chat",
     service_id: "",
     enquiry_summary: "Website Chat enquiry",
     estimated_value_gbp: "",

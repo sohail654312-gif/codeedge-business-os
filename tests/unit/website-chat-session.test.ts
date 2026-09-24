@@ -5,6 +5,7 @@ import {
 } from "@/server/website-chat/session";
 import { readWebsiteChatBody, websiteChatCorsHeaders } from "@/server/website-chat/http";
 import { renderWebsiteChatEmbedScript } from "@/server/website-chat/embed";
+import { websiteChatConnection } from "@/server/website-chat/capability";
 
 describe("Website Chat session and transport helpers", () => {
   it("creates unpredictable 256-bit visitor tokens and stores only hashes", () => {
@@ -38,6 +39,16 @@ describe("Website Chat session and transport helpers", () => {
     expect(websiteChatCorsHeaders["Access-Control-Allow-Origin"]).toBe("*");
     expect(websiteChatCorsHeaders["Access-Control-Allow-Headers"]).toContain("X-Codeedge-Chat-Session");
     expect(websiteChatCorsHeaders["Cache-Control"]).toBe("no-store");
+  });
+
+  it("requires a verified server-only PostgreSQL Website Chat connection", () => {
+    expect(() => websiteChatConnection(undefined)).toThrow();
+    expect(() => websiteChatConnection("https://example.test")).toThrow();
+    expect(() => websiteChatConnection("postgres://u:p@example.test/db")).toThrow();
+    expect(() => websiteChatConnection("postgres://u:p@example.test/db?sslmode=require")).toThrow();
+    expect(() => websiteChatConnection("postgres://u:p@example.test/db?sslmode=verify-full&uselibpqcompat=true")).toThrow();
+    expect(websiteChatConnection("postgres://u:p@localhost/db")).toContain("localhost");
+    expect(websiteChatConnection("postgres://u:p@example.test/db?sslmode=verify-full")).toContain("verify-full");
   });
 
   it("renders a Codeedge-native dependency-free embed loader", () => {

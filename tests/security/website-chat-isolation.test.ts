@@ -15,8 +15,13 @@ const hashOther = "c".repeat(64);
 const requestA = "72000000-0000-4000-8000-000000000001";
 const requestB = "72000000-0000-4000-8000-000000000002";
 
+async function asChatApi(db: TestDatabase) {
+  await db.exec("RESET ROLE");
+  await db.exec("SET LOCAL ROLE codeedge_chat_api");
+}
+
 async function start(db: TestDatabase, widget = widgetA, hash = hashA) {
-  await asUser(db, null);
+  await asChatApi(db);
   return db.query<{
     available: boolean;
     widget_name: string;
@@ -34,7 +39,7 @@ async function send(
   widget = widgetA,
   hash = hashA,
 ) {
-  await asUser(db, null);
+  await asChatApi(db);
   return db.query<{ inserted: boolean }>(
     "select public.website_chat_send($1,$2,$3,$4) as inserted",
     [widget, hash, requestId, body],
@@ -42,7 +47,7 @@ async function send(
 }
 
 async function history(db: TestDatabase, widget = widgetA, hash = hashA) {
-  await asUser(db, null);
+  await asChatApi(db);
   return db.query<{
     sender_type: string;
     direction: string;
@@ -141,7 +146,7 @@ describe("Production Website Chat security and canonical integration", () => {
       "sender_type",
     ]);
 
-    await asUser(db, null);
+    await asChatApi(db);
     expect((await db.query<{ captured: boolean }>(
       "select public.website_chat_capture_lead($1,$2,$3,$4,$5) as captured",
       [widgetA, hashA, "Fictional Visitor", "07123456789", ""],
@@ -159,7 +164,7 @@ describe("Production Website Chat security and canonical integration", () => {
     expect(lead.rows).toHaveLength(1);
     expect(lead.rows[0]).toMatchObject({
       business_id: f.businessA,
-      source: "website",
+      source: "website_chat",
       contact_name: "Fictional Visitor",
     });
 
@@ -219,6 +224,25 @@ describe("Production Website Chat security and canonical integration", () => {
       ) values ($1,$2,'customer','inbound','Forged')`,
       [f.businessA, conversation.id],
     )).rejects.toThrow(/permission denied/);
+  });
+
+  it("browser roles cannot execute or assume the server Website Chat capability", async () => {
+    await asUser(db, null);
+    await expect(db.query(
+      "select public.website_chat_start($1,$2)",
+      [widgetA, hashA],
+    )).rejects.toThrow(/permission denied/);
+
+    await db.exec("ROLLBACK TO SAVEPOINT website_chat_case; SAVEPOINT website_chat_case");
+    await asUser(db, f.ownerA);
+    await expect(db.query(
+      "select public.website_chat_start($1,$2)",
+      [widgetA, hashA],
+    )).rejects.toThrow(/permission denied/);
+
+    expect((await db.query(
+      "select pg_has_role('authenticated','codeedge_chat_api','MEMBER') as member",
+    )).rows).toEqual([{ member: false }]);
   });
 
   it("prevents forged tenant, sender and normal-table access for anonymous visitors", async () => {
@@ -346,7 +370,7 @@ describe("Production Website Chat security and canonical integration", () => {
 
   it("creates at most one Website Lead per visitor session and derives the tenant", async () => {
     await start(db, widgetB, hashB);
-    await asUser(db, null);
+    await asChatApi(db);
 
     await db.query(
       "select public.website_chat_capture_lead($1,$2,$3,$4,$5)",
@@ -369,7 +393,7 @@ describe("Production Website Chat security and canonical integration", () => {
     expect(rows.rows).toEqual([{
       business_id: f.businessB,
       contact_name: "Visitor B Updated",
-      source: "website",
+      source: "website_chat",
     }]);
   });
 

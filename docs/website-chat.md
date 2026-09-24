@@ -8,7 +8,7 @@ Website Chat is the first live external channel for Codeedge Business OS. It fee
 Client website
   -> /widget.js
   -> /api/website-chat/<public-widget-id>
-  -> narrow anonymous RPC capabilities
+  -> restricted Codeedge server capability
   -> website_chat_sessions
   -> canonical conversations(channel=website_chat)
   -> canonical messages
@@ -23,7 +23,7 @@ Sessions are bound to one public widget and therefore one tenant. They expire af
 
 ## Public database boundary
 
-The anonymous Supabase role has no direct table access to businesses, memberships, CRM records, canonical conversations/messages, widget settings, or visitor sessions. The public API can call only five narrowly scoped security-definer functions:
+The browser receives no Supabase database capability. The public HTTP API runs five narrowly scoped security-definer functions only after the Codeedge server opens a server-side PostgreSQL connection and enters the dedicated no-login `codeedge_chat_api` role:
 
 - `website_chat_start`
 - `website_chat_status`
@@ -31,9 +31,11 @@ The anonymous Supabase role has no direct table access to businesses, membership
 - `website_chat_send`
 - `website_chat_capture_lead`
 
-Each function derives widget, tenant, session and canonical conversation server-side. Authenticated dashboard users are explicitly not granted these public capability functions.
+Each function derives widget, tenant, session and canonical conversation server-side. The `anon` and `authenticated` database roles are explicitly denied these functions and cannot assume `codeedge_chat_api`.
 
 Unknown widgets, suspended businesses, expired sessions and invalid inputs fail closed with generic public errors.
+
+The restricted connection is configured only on the Codeedge server with `CHAT_DATABASE_URL`. Hosted connections require certificate-verifying TLS (`sslmode=verify-full`); this secret is never exposed in the embed snippet or browser bundle.
 
 ## Widget settings
 
@@ -90,7 +92,7 @@ Internal notes are `direction = internal` and the public history capability expl
 
 ## Lead capture
 
-If enabled, a visitor can submit name plus phone or email. Contact validation reuses the existing CRM Lead validation rules. The database derives the tenant from the widget/session, creates one Website-source Lead for the conversation, and links the existing canonical Conversation to that Lead. Submitting updated contact details later updates the same Lead instead of creating a new Lead, preserving all prior chat history.
+If enabled, a visitor can submit name plus phone or email. Contact validation reuses the existing CRM Lead validation rules. The database derives the tenant from the widget/session, creates one Website Chat-source Lead for the conversation, and links the existing canonical Conversation to that Lead. Submitting updated contact details later updates the same Lead instead of creating a new Lead, preserving all prior chat history.
 
 ## Abuse and resource bounds
 

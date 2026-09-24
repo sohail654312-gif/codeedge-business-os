@@ -1,3 +1,17 @@
+-- Dedicated Website Chat server capability. Browser roles cannot assume this role.
+do $$ begin
+  if not exists(select 1 from pg_roles where rolname='codeedge_chat_api') then
+    create role codeedge_chat_api nologin noinherit nobypassrls;
+  elsif exists(
+    select 1 from pg_roles where rolname='codeedge_chat_api'
+      and (rolsuper or rolbypassrls or rolcanlogin or rolinherit or rolcreaterole or rolcreatedb or rolreplication)
+  ) then
+    raise exception 'Unsafe pre-existing chat role';
+  end if;
+end $$;
+grant codeedge_chat_api to postgres;
+grant usage on schema public, private to codeedge_chat_api;
+
 -- Production Website Chat channel feeding the canonical Conversation + Message core.
 -- Public visitors receive no direct table access. Narrow security-definer RPCs are
 -- the only anonymous database capabilities, and all tenant/session identity is
@@ -640,7 +654,7 @@ begin
       clean_name,
       clean_phone,
       clean_email,
-      'website',
+      'website_chat',
       'Website Chat enquiry',
       'new',
       clock_timestamp(),
@@ -672,18 +686,19 @@ end;
 $$;
 
 revoke all on function public.website_chat_start(uuid, text)
-  from public, authenticated;
+  from public, anon, authenticated;
 revoke all on function public.website_chat_status(uuid, text)
-  from public, authenticated;
+  from public, anon, authenticated;
 revoke all on function public.website_chat_history(uuid, text)
-  from public, authenticated;
+  from public, anon, authenticated;
 revoke all on function public.website_chat_send(uuid, text, uuid, text)
-  from public, authenticated;
+  from public, anon, authenticated;
 revoke all on function public.website_chat_capture_lead(uuid, text, text, text, text)
-  from public, authenticated;
+  from public, anon, authenticated;
 
-grant execute on function public.website_chat_start(uuid, text) to anon;
-grant execute on function public.website_chat_status(uuid, text) to anon;
-grant execute on function public.website_chat_history(uuid, text) to anon;
-grant execute on function public.website_chat_send(uuid, text, uuid, text) to anon;
-grant execute on function public.website_chat_capture_lead(uuid, text, text, text, text) to anon;
+grant execute on function public.website_chat_start(uuid, text) to codeedge_chat_api;
+grant execute on function public.website_chat_status(uuid, text) to codeedge_chat_api;
+grant execute on function public.website_chat_history(uuid, text) to codeedge_chat_api;
+grant execute on function public.website_chat_send(uuid, text, uuid, text) to codeedge_chat_api;
+grant execute on function public.website_chat_capture_lead(uuid, text, text, text, text)
+  to codeedge_chat_api;
