@@ -1,8 +1,9 @@
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
+import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function CustomersPage() {
-  const directory = await getCustomerDirectoryData();
-  const isLive = directory.mode === "erpnext";
+  const { client, context } = await requireDashboardTenant();
+  const directory = await getCustomerDirectoryData(client, context.business.id);
   const activeCount = directory.rows.filter((customer) => customer.status === "Active").length;
 
   return (
@@ -14,8 +15,10 @@ export default async function CustomersPage() {
           <p className="muted">{directory.note}</p>
         </div>
         <div className="row">
-          <span className="pill">{isLive ? "ERPNext live" : "Demo fallback"}</span>
-          <button className="btn primary" type="button" disabled title="Enabled in a later step">
+          <span className="pill">
+            {directory.mode === "hybrid" ? "CodeEdge + ERPNext" : directory.mode === "erpnext" ? "ERPNext live" : "CodeEdge CRM"}
+          </span>
+          <button className="btn primary" type="button" disabled title="Direct customer creation is not enabled yet">
             + Add customer
           </button>
         </div>
@@ -24,8 +27,8 @@ export default async function CustomersPage() {
       <div className="statGrid compact">
         <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">{directory.rows.length}</div></div>
         <div className="stat"><div className="statLabel">Active</div><div className="statValue">{activeCount}</div></div>
-        <div className="stat"><div className="statLabel">New this month</div><div className="statValue">{isLive ? "—" : "1"}</div></div>
-        <div className="stat"><div className="statLabel">Customer value</div><div className="statValue">{isLive ? "—" : "£7,990"}</div></div>
+        <div className="stat"><div className="statLabel">CRM source</div><div className="statValue">{directory.mode === "erpnext" ? "ERPNext" : "CodeEdge"}</div></div>
+        <div className="stat"><div className="statLabel">Back-office</div><div className="statValue">{directory.mode === "crm" ? "Optional" : "Connected"}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -33,9 +36,7 @@ export default async function CustomersPage() {
           <div>
             <h2>Customer directory</h2>
             <p className="muted customerSubtext">
-              {isLive
-                ? "Live customer records are coming from ERPNext."
-                : "Demo records remain visible until ERPNext credentials are configured and reachable."}
+              Converted Leads remain visible in CodeEdge even when the back-office adapter is unavailable.
             </p>
           </div>
           <div className="customerFilters">
@@ -58,8 +59,8 @@ export default async function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {directory.rows.map((customer) => (
-                <tr key={`${customer.name}-${customer.source}`}>
+              {directory.rows.length ? directory.rows.map((customer) => (
+                <tr key={customer.id}>
                   <td><b>{customer.name}</b></td>
                   <td>{customer.company}</td>
                   <td className="muted">{customer.contact}</td>
@@ -72,7 +73,9 @@ export default async function CustomersPage() {
                   <td><b>{customer.value}</b></td>
                   <td className="muted">{customer.lastActivity}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr><td colSpan={7}><div className="emptyState"><h3>No Customers yet</h3><p>Convert a Lead to create a Customer.</p></div></td></tr>
+              )}
             </tbody>
           </table>
         </div>
