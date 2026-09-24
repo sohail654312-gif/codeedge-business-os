@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "erpnext:demo:start": "bash scripts/erpnext-demo.sh",
+    "erpnext:demo:stop": "bash scripts/erpnext-demo-stop.sh",
+    "erpnext:demo:reset": "bash scripts/erpnext-demo-reset.sh"
   },
   "dependencies": {
     "next": "15.5.2",
