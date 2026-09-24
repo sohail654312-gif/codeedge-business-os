@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  leadCreateFormSchema,
   leadInputSchema,
   leadNoteInputSchema,
   quoteRequestInputSchema,
@@ -62,6 +63,33 @@ describe("Business OS lead validation", () => {
 
   it("requires at least a phone number or email address", () => {
     expect(leadInputSchema.safeParse({ ...validLead, phone: "", email: "" }).success).toBe(false);
+  });
+
+  it("normalises create-form pounds to integer pence", () => {
+    expect(leadCreateFormSchema.parse({
+      contact_name: "Alex Example",
+      phone: "020 7946 0000",
+      email: "",
+      source: "manual",
+      service_id: "",
+      enquiry_summary: "Needs an estimate.",
+      estimated_value_gbp: "480.25",
+    })).toMatchObject({
+      service_id: null,
+      estimated_value_pence: 48025,
+    });
+  });
+
+  it("requires contact details in the real create form", () => {
+    expect(leadCreateFormSchema.safeParse({
+      contact_name: "Alex Example",
+      phone: "",
+      email: "",
+      source: "manual",
+      service_id: "",
+      enquiry_summary: "Needs an estimate.",
+      estimated_value_gbp: "",
+    }).success).toBe(false);
   });
 
   it("keeps quote-sent out of the lead lifecycle", () => {
