@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
+import type { Customer, Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
 import type { LeadFilters } from "./validation";
 
 export type LeadWithService = Lead & {
@@ -152,4 +152,21 @@ export async function listQuoteRequests(
 
   if (error) throw new Error("Unable to load Quote Requests.");
   return data ?? [];
+}
+
+
+export async function getLeadCustomer(
+  client: SupabaseClient<Database>,
+  businessId: string,
+  leadId: string,
+): Promise<Customer | null> {
+  const { data, error } = await client
+    .from("customers")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("source_lead_id", leadId)
+    .maybeSingle();
+
+  if (error) throw new Error("Unable to load converted Customer.");
+  return data;
 }
