@@ -123,7 +123,7 @@ export async function addConversationMessage(
     }
 
     revalidateConversationPaths(conversation.id, conversation.lead_id ?? undefined);
-    redirect(`/dashboard/contact-me/${conversation.id}`);
+    return redirect(`/dashboard/contact-me/${conversation.id}`);
   }
 
   const { error } = await client

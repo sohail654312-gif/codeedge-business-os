@@ -6,6 +6,7 @@ import {
 } from "@/modules/contact-me/conversations/actions";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { redirect } from "next/navigation";
+import { sendWhatsAppReply } from "@/server/channels/whatsapp";
 
 vi.mock("@/server/auth/session", () => ({
   requireDashboardTenant: vi.fn(),
@@ -13,6 +14,10 @@ vi.mock("@/server/auth/session", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/server/channels/whatsapp", () => ({
+  sendWhatsAppReply: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -33,7 +38,7 @@ type Recorded = {
   filters: unknown[][];
 };
 
-function setup() {
+function setup(channel: "internal" | "whatsapp" = "internal") {
   const calls: Recorded[] = [];
 
   const from = vi.fn((table: string) => {
@@ -69,7 +74,7 @@ function setup() {
       maybeSingle: vi.fn(async () => {
         if (table === "leads") return { data: { id: leadId, contact_name: "Lead A" }, error: null };
         if (table === "customers") return { data: { id: customerId }, error: null };
-        if (table === "conversations") return { data: { id: conversationId, lead_id: leadId }, error: null };
+        if (table === "conversations") return { data: { id: conversationId, lead_id: leadId, channel }, error: null };
         return { data: null, error: null };
       }),
       single: vi.fn(async () => ({ data: { id: conversationId }, error: null })),
@@ -146,6 +151,32 @@ describe("Conversation server actions", () => {
       direction: "outbound",
       body: "Hello",
     });
+  });
+
+  it("routes WhatsApp replies through the provider boundary without a local-only insert", async () => {
+    const calls = setup("whatsapp");
+    vi.mocked(sendWhatsAppReply).mockResolvedValue({
+      messageId: "90000000-0000-4000-8000-000000000001",
+      status: "sent",
+    });
+
+    const form = new FormData();
+    form.set("conversation_id", conversationId);
+    form.set("message_kind", "reply");
+    form.set("body", "WhatsApp reply");
+    form.set("request_id", "80000000-0000-4000-8000-000000000001");
+
+    await addConversationMessage({}, form);
+
+    expect(sendWhatsAppReply).toHaveBeenCalledWith({
+      businessId: own,
+      conversationId,
+      userId,
+      requestId: "80000000-0000-4000-8000-000000000001",
+      body: "WhatsApp reply",
+    });
+    expect(calls.some((call) => call.table === "messages" && call.operation === "insert")).toBe(false);
+    expect(redirect).toHaveBeenCalledWith(`/dashboard/contact-me/${conversationId}`);
   });
 
   it("stores internal-note intent as an internal direction", async () => {
