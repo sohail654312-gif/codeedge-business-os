@@ -100,6 +100,9 @@ export default async function ContactMePage({
                   {conversationStatusLabels[conversation.status]}
                 </span>
                 {conversation.crm_kind ? <span className="muted">{conversation.crm_kind === "customer" ? "Customer" : "Lead"}</span> : null}
+                {conversation.channel === "website_chat" && conversation.last_message_direction === "inbound"
+                  ? <span className="visitorWaiting">Visitor waiting</span>
+                  : null}
               </div>
 
               <p className="inboxPreview">

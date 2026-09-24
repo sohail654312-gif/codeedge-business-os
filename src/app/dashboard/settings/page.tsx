@@ -2,12 +2,14 @@ import Link from "next/link";
 import { BusinessProfilePanel, ServicesPanel } from "@/components/settings/BusinessProfileServices";
 import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/ServiceCoveragePanels";
 import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettingsPanels";
+import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSettingsPanel";
+import { getEnvironmentIfConfigured } from "@/server/env";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
 
-  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult] = await Promise.all([
+  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult, websiteChatResult] = await Promise.all([
     client
       .from("business_profiles")
       .select("*")
@@ -41,6 +43,11 @@ export default async function Settings() {
       .select("*")
       .eq("business_id", context.business.id)
       .maybeSingle(),
+    client
+      .from("website_chat_widgets")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .maybeSingle(),
   ]);
 
   if (
@@ -49,12 +56,14 @@ export default async function Settings() {
     areaResult.error ||
     hoursResult.error ||
     faqResult.error ||
-    settingsResult.error
+    settingsResult.error ||
+    websiteChatResult.error
   ) {
     throw new Error("Unable to load Business Information.");
   }
 
   const canEdit = context.role === "owner";
+  const appUrl = getEnvironmentIfConfigured()?.NEXT_PUBLIC_APP_URL ?? null;
 
   return (
     <>
@@ -117,6 +126,13 @@ export default async function Settings() {
         key={settingsResult.data?.updated_at ?? "default-settings"}
         settings={settingsResult.data}
         canEdit={canEdit}
+      />
+
+      <WebsiteChatSettingsPanel
+        key={websiteChatResult.data?.updated_at ?? "new-website-chat"}
+        widget={websiteChatResult.data}
+        canEdit={canEdit}
+        appUrl={appUrl}
       />
     </>
   );

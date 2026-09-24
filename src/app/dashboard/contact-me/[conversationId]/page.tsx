@@ -63,7 +63,7 @@ export default async function ConversationDetailPage({
             <div><dt>Channel</dt><dd>{conversationChannelLabels[conversation.channel]}</dd></div>
             <div><dt>Status</dt><dd>{conversationStatusLabels[conversation.status]}</dd></div>
             <div><dt>Last activity</dt><dd>{formatConversationTime(conversation.last_message_at, context.business.timezone)}</dd></div>
-            <div><dt>Delivery</dt><dd>Local storage only</dd></div>
+            <div><dt>Delivery</dt><dd>{conversation.channel === "website_chat" ? "Live Website Chat" : "Local storage only"}</dd></div>
           </dl>
         </section>
 
@@ -107,7 +107,7 @@ export default async function ConversationDetailPage({
 
       <section className="panel topGap">
         <h2>Add message</h2>
-        <ConversationComposer conversationId={conversation.id} />
+        <ConversationComposer conversationId={conversation.id} channel={conversation.channel} />
       </section>
     </>
   );

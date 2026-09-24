@@ -157,7 +157,23 @@ export type Message = {
   direction: MessageDirection;
   body: string;
   channel_message_id: string | null;
+  request_id: string | null;
   created_at: string;
+};
+
+export type WebsiteChatWidget = {
+  business_id: string;
+  public_id: string;
+  enabled: boolean;
+  widget_name: string;
+  launcher_label: string;
+  greeting_text: string;
+  welcome_message: string;
+  offline_message: string;
+  lead_capture_enabled: boolean;
+  accent_color: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type QuoteRequest = {
@@ -359,6 +375,31 @@ export type Database = {
           | "notify_new_leads"
         >>
       >;
+      website_chat_widgets: Table<
+        WebsiteChatWidget,
+        {
+          business_id: string;
+          enabled?: boolean;
+          widget_name?: string;
+          launcher_label?: string;
+          greeting_text?: string;
+          welcome_message?: string;
+          offline_message?: string;
+          lead_capture_enabled?: boolean;
+          accent_color?: string;
+        },
+        Partial<Pick<
+          WebsiteChatWidget,
+          | "enabled"
+          | "widget_name"
+          | "launcher_label"
+          | "greeting_text"
+          | "welcome_message"
+          | "offline_message"
+          | "lead_capture_enabled"
+          | "accent_color"
+        >>
+      >;
       conversations: Table<
         Conversation,
         {
@@ -382,6 +423,7 @@ export type Database = {
           sender_user_id: string;
           direction: MessageDirection;
           body: string;
+          request_id?: string | null;
           id?: string;
         },
         never
@@ -428,6 +470,56 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      website_chat_start: {
+        Args: { p_widget_id: string; p_session_hash: string };
+        Returns: Array<{
+          available: boolean;
+          widget_name: string;
+          launcher_label: string;
+          greeting_text: string;
+          welcome_message: string;
+          offline_message: string;
+          lead_capture_enabled: boolean;
+          accent_color: string;
+          contact_saved: boolean;
+        }>;
+      };
+      website_chat_status: {
+        Args: { p_widget_id: string; p_session_hash: string };
+        Returns: Array<{
+          available: boolean;
+          contact_saved: boolean;
+          conversation_status: ConversationStatus | null;
+        }>;
+      };
+      website_chat_history: {
+        Args: { p_widget_id: string; p_session_hash: string };
+        Returns: Array<{
+          sender_type: MessageSenderType;
+          direction: MessageDirection;
+          body: string;
+          created_at: string;
+        }>;
+      };
+      website_chat_send: {
+        Args: {
+          p_widget_id: string;
+          p_session_hash: string;
+          p_request_id: string;
+          p_body: string;
+        };
+        Returns: boolean;
+      };
+      website_chat_capture_lead: {
+        Args: {
+          p_widget_id: string;
+          p_session_hash: string;
+          p_contact_name: string;
+          p_phone: string;
+          p_email: string;
+        };
+        Returns: boolean;
+      };
       convert_lead_to_customer: {
         Args: { target_lead_id: string };
         Returns: Array<{ customer_id: string; created: boolean }>;

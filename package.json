@@ -12,7 +12,8 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:security": "vitest run tests/security"
+    "test:security": "vitest run tests/security",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "15.5.2",
@@ -21,7 +22,8 @@
     "zod": "4.5.4",
     "@supabase/ssr": "0.12.6",
     "@supabase/supabase-js": "2.116.0",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "pg": "8.16.3"
   },
   "devDependencies": {
     "@types/node": "^22",
@@ -32,6 +34,8 @@
     "eslint-config-next": "15.5.2",
     "vitest": "^3.2.4",
     "@eslint/eslintrc": "^3.3.1",
-    "@electric-sql/pglite": "^0.5.8"
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.55.0",
+    "@types/pg": "8.15.5"
   }
 }
