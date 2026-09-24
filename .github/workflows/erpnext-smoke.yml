@@ -1,9 +1,6 @@
 name: ERPNext disposable smoke test
 
 on:
-  push:
-    branches:
-      - feature/customers-erpnext-sync-test
   workflow_dispatch:
 
 permissions:
