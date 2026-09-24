@@ -23,6 +23,20 @@ export type BusinessMembership = {
   updated_at: string;
 };
 
+export type BusinessProfile = {
+  business_id: string;
+  trading_name: string;
+  phone: string;
+  email: string;
+  website: string;
+  address: string;
+  description: string;
+  category: string;
+  logo_alt: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CustomerBackofficeStatus = "pending" | "synced" | "failed";
 
 export type CrmActivityType =
@@ -63,7 +77,11 @@ export type Service = {
   id: string;
   business_id: string;
   name: string;
+  description: string;
   active: boolean;
+  starting_price_pence: number | null;
+  quote_required: boolean;
+  display_order: number;
   created_at: string;
   updated_at: string;
 };
@@ -151,10 +169,52 @@ export type Database = {
         },
         { role?: BusinessRole; status?: MembershipStatus }
       >;
+      business_profiles: Table<
+        BusinessProfile,
+        {
+          business_id: string;
+          trading_name?: string;
+          phone?: string;
+          email?: string;
+          website?: string;
+          address?: string;
+          description?: string;
+          category?: string;
+          logo_alt?: string;
+        },
+        Partial<Pick<
+          BusinessProfile,
+          | "trading_name"
+          | "phone"
+          | "email"
+          | "website"
+          | "address"
+          | "description"
+          | "category"
+          | "logo_alt"
+        >>
+      >;
       services: Table<
         Service,
-        { business_id: string; name: string; active?: boolean; id?: string },
-        { name?: string; active?: boolean }
+        {
+          business_id: string;
+          name: string;
+          description?: string;
+          active?: boolean;
+          starting_price_pence?: number | null;
+          quote_required?: boolean;
+          display_order?: number;
+          id?: string;
+        },
+        Partial<Pick<
+          Service,
+          | "name"
+          | "description"
+          | "active"
+          | "starting_price_pence"
+          | "quote_required"
+          | "display_order"
+        >>
       >;
       quote_requests: Table<
         QuoteRequest,
