@@ -121,21 +121,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          GROUP="$(curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Customer%20Group | jq -r '.data[0].name')"
+          cat >/tmp/customer-group.json <<'JSON'
+          {
+            "customer_group_name": "All Customer Groups",
+            "is_group": 1
+          }
+          JSON
 
-          TERRITORY="$(curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name"]'             --data-urlencode 'limit_page_length=1'             http://127.0.0.1:8080/api/resource/Territory | jq -r '.data[0].name')"
+          cat >/tmp/territory.json <<'JSON'
+          {
+            "territory_name": "All Territories",
+            "is_group": 1
+          }
+          JSON
 
-          test -n "$GROUP"
-          test "$GROUP" != "null"
-          test -n "$TERRITORY"
-          test "$TERRITORY" != "null"
+          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer-group.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-created.json
 
-          jq -n             --arg name "CodeEdge Sync Test Customer"             --arg group "$GROUP"             --arg territory "$TERRITORY"             '{
-              customer_name: $name,
-              customer_type: "Individual",
-              customer_group: $group,
-              territory: $territory
-            }' >/tmp/customer.json
+          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/territory.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-created.json
+
+          cat >/tmp/customer.json <<'JSON'
+          {
+            "customer_name": "CodeEdge Sync Test Customer",
+            "customer_type": "Individual",
+            "customer_group": "All Customer Groups",
+            "territory": "All Territories"
+          }
+          JSON
 
           curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer.json             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/created-customer.json
 
