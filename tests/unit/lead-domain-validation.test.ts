@@ -3,6 +3,8 @@ import {
   leadCreateFormSchema,
   leadEditFormSchema,
   leadInputSchema,
+  leadNoteDeleteSchema,
+  leadNoteFormSchema,
   leadNoteInputSchema,
   leadStatusFormSchema,
   quoteRequestInputSchema,
@@ -150,6 +152,26 @@ describe("Business OS lead validation", () => {
 
   it("keeps quote-sent out of the lead lifecycle", () => {
     expect(leadStatuses).not.toContain("quote_sent");
+  });
+
+  it("validates tenant-safe internal note action identifiers", () => {
+    expect(leadNoteFormSchema.parse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      body: " Follow up tomorrow. ",
+    })).toEqual({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      body: "Follow up tomorrow.",
+    });
+
+    expect(leadNoteDeleteSchema.safeParse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      note_id: "50000000-0000-4000-8000-000000000001",
+    }).success).toBe(true);
+
+    expect(leadNoteFormSchema.safeParse({
+      lead_id: "not-a-uuid",
+      body: "Valid note",
+    }).success).toBe(false);
   });
 
   it("validates future internal notes and quote requests with the MVP limits", () => {
