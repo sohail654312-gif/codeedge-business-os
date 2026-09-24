@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatLeadDate, formatLeadValue, listActiveServices, listLeads } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadSources, leadStatusLabels, leadStatuses } from "@/modules/buy-from-me/leads/domain";
+import { hasLeadFilters } from "@/modules/buy-from-me/leads/filters";
 import { leadFilterSchema } from "@/modules/buy-from-me/leads/validation";
 import { requireDashboardTenant } from "@/server/auth/session";
 
@@ -18,7 +19,7 @@ export default async function LeadsPage({
     listActiveServices(client, context.business.id),
   ]);
 
-  const hasFilters = Boolean(filters.q || filters.status || filters.source || filters.service_id);
+  const hasFilters = hasLeadFilters(filters);
   const potentialValue = leads.reduce((total, lead) => total + (lead.estimated_value_pence ?? 0), 0);
   const newCount = leads.filter((lead) => lead.status === "new").length;
   const qualifiedCount = leads.filter((lead) => lead.status === "qualified").length;
