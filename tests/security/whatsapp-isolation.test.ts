@@ -150,7 +150,7 @@ describe("WhatsApp tenant security and canonical integration", () => {
     const inbound = await receive(db);
     const conversationId = inbound.rows[0]!.conversation_id;
 
-    await db.exec("RESET ROLE");
+    await db.exec("RESET ROLE; SAVEPOINT whatsapp_outbound_denial");
     await asUser(db, f.staffA);
 
     await expect(db.query(
@@ -160,7 +160,7 @@ describe("WhatsApp tenant security and canonical integration", () => {
       [f.businessA, conversationId, f.staffA],
     )).rejects.toThrow(/row-level security/);
 
-    await db.exec("ROLLBACK TO SAVEPOINT whatsapp_security_case; SAVEPOINT whatsapp_security_case");
+    await db.exec("ROLLBACK TO SAVEPOINT whatsapp_outbound_denial; RELEASE SAVEPOINT whatsapp_outbound_denial");
     await asUser(db, f.staffA);
 
     await db.query(
