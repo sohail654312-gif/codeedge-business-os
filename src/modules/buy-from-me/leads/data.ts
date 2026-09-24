@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Lead, LeadNote, Service } from "@/types/database";
+import type { Database, Lead, LeadNote, QuoteRequest, Service } from "@/types/database";
 
 export type LeadWithService = Lead & {
   service_name: string | null;
@@ -131,4 +131,21 @@ export function formatNoteDate(value: string) {
     timeStyle: "short",
     timeZone: "UTC",
   }).format(new Date(value));
+}
+
+
+export async function listQuoteRequests(
+  client: SupabaseClient<Database>,
+  businessId: string,
+  leadId: string,
+): Promise<QuoteRequest[]> {
+  const { data, error } = await client
+    .from("quote_requests")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Unable to load Quote Requests.");
+  return data ?? [];
 }
