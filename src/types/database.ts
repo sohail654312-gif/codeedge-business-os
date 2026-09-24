@@ -1,4 +1,5 @@
 import type { LeadSource, LeadStatus, QuoteRequestStatus } from "@/modules/buy-from-me/leads/domain";
+import type { ConversationChannel, ConversationStatus, MessageDirection, MessageSenderType } from "@/modules/contact-me/conversations/domain";
 
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
@@ -126,6 +127,34 @@ export type BusinessSettings = {
   notify_new_leads: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type Conversation = {
+  id: string;
+  business_id: string;
+  lead_id: string | null;
+  customer_id: string | null;
+  channel: ConversationChannel;
+  status: ConversationStatus;
+  subject: string;
+  external_thread_id: string | null;
+  assigned_user_id: string | null;
+  last_message_at: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Message = {
+  id: string;
+  business_id: string;
+  conversation_id: string;
+  sender_type: MessageSenderType;
+  sender_user_id: string | null;
+  direction: MessageDirection;
+  body: string;
+  channel_message_id: string | null;
+  created_at: string;
 };
 
 export type QuoteRequest = {
@@ -327,6 +356,33 @@ export type Database = {
           | "notify_new_leads"
         >>
       >;
+      conversations: Table<
+        Conversation,
+        {
+          business_id: string;
+          lead_id?: string | null;
+          customer_id?: string | null;
+          channel?: ConversationChannel;
+          status?: ConversationStatus;
+          subject?: string;
+          created_by: string;
+          id?: string;
+        },
+        { status?: ConversationStatus }
+      >;
+      messages: Table<
+        Message,
+        {
+          business_id: string;
+          conversation_id: string;
+          sender_type: MessageSenderType;
+          sender_user_id: string;
+          direction: MessageDirection;
+          body: string;
+          id?: string;
+        },
+        never
+      >;
       quote_requests: Table<
         QuoteRequest,
         {
@@ -392,6 +448,10 @@ export type Database = {
       crm_activity_type: CrmActivityType;
       lead_status: LeadStatus;
       quote_request_status: QuoteRequestStatus;
+      conversation_channel: ConversationChannel;
+      conversation_status: ConversationStatus;
+      message_sender_type: MessageSenderType;
+      message_direction: MessageDirection;
     };
     CompositeTypes: { [_ in never]: never };
   };
