@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { addConversationMessage, type ConversationActionState } from "@/modules/contact-me/conversations/actions";
 
 const initialState: ConversationActionState = {};
@@ -13,10 +13,12 @@ export function ConversationComposer({
   channel: "website_chat" | "whatsapp" | "email" | "sms" | "voice" | "internal";
 }) {
   const [state, action, pending] = useActionState(addConversationMessage, initialState);
+  const [requestId] = useState(() => crypto.randomUUID());
 
   return (
     <form action={action} className="conversationComposer">
       <input type="hidden" name="conversation_id" value={conversationId} />
+      <input type="hidden" name="request_id" value={requestId} />
 
       <div className="field">
         <label htmlFor="message_kind">Message type</label>
@@ -41,13 +43,21 @@ export function ConversationComposer({
       <p className="muted formHelp">
         {channel === "website_chat"
           ? "Website Chat delivery is live: the visitor receives public outbound replies through the secure widget. Internal notes remain private."
-          : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
+          : channel === "whatsapp"
+            ? "WhatsApp delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
+            : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
       </p>
 
       {state.error ? <div className="formError" role="alert">{state.error}</div> : null}
 
       <button className="btn primary" type="submit" disabled={pending}>
-        {pending ? "Saving..." : channel === "website_chat" ? "Reply to visitor" : "Store message"}
+        {pending
+          ? (channel === "whatsapp" ? "Sending..." : "Saving...")
+          : channel === "website_chat"
+            ? "Reply to visitor"
+            : channel === "whatsapp"
+              ? "Reply on WhatsApp"
+              : "Store message"}
       </button>
     </form>
   );

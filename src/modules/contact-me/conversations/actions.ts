@@ -1,8 +1,10 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
+import { sendWhatsAppReply } from "@/server/channels/whatsapp";
 import {
   conversationStatusFormSchema,
   localMessageFormSchema,
@@ -87,6 +89,7 @@ export async function addConversationMessage(
     conversation_id: formData.get("conversation_id"),
     message_kind: formData.get("message_kind"),
     body: formData.get("body"),
+    request_id: formData.get("request_id"),
   });
 
   if (!parsed.success) {
@@ -97,13 +100,30 @@ export async function addConversationMessage(
 
   const { data: conversation, error: conversationError } = await client
     .from("conversations")
-    .select("id,lead_id")
+    .select("id,lead_id,channel")
     .eq("business_id", context.business.id)
     .eq("id", parsed.data.conversation_id)
     .maybeSingle();
 
   if (conversationError || !conversation) {
     return { error: "Conversation unavailable in this workspace." };
+  }
+
+  if (parsed.data.message_kind === "reply" && conversation.channel === "whatsapp") {
+    try {
+      await sendWhatsAppReply({
+        businessId: context.business.id,
+        conversationId: conversation.id,
+        userId: context.userId,
+        requestId: parsed.data.request_id ?? randomUUID(),
+        body: parsed.data.body,
+      });
+    } catch {
+      return { error: "Unable to send the WhatsApp reply. Check the channel connection and try again." };
+    }
+
+    revalidateConversationPaths(conversation.id, conversation.lead_id ?? undefined);
+    redirect(`/dashboard/contact-me/${conversation.id}`);
   }
 
   const { error } = await client

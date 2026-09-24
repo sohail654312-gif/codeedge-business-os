@@ -5,6 +5,7 @@ import { ConversationStatusForm } from "@/components/conversations/ConversationS
 import {
   conversationChannelLabels,
   conversationStatusLabels,
+  deliveryStatusLabels,
 } from "@/modules/contact-me/conversations/domain";
 import {
   formatConversationTime,
@@ -63,7 +64,16 @@ export default async function ConversationDetailPage({
             <div><dt>Channel</dt><dd>{conversationChannelLabels[conversation.channel]}</dd></div>
             <div><dt>Status</dt><dd>{conversationStatusLabels[conversation.status]}</dd></div>
             <div><dt>Last activity</dt><dd>{formatConversationTime(conversation.last_message_at, context.business.timezone)}</dd></div>
-            <div><dt>Delivery</dt><dd>{conversation.channel === "website_chat" ? "Live Website Chat" : "Local storage only"}</dd></div>
+            <div>
+              <dt>Delivery</dt>
+              <dd>
+                {conversation.channel === "website_chat"
+                  ? "Live Website Chat"
+                  : conversation.channel === "whatsapp"
+                    ? "Live WhatsApp"
+                    : "Local storage only"}
+              </dd>
+            </div>
           </dl>
         </section>
 
@@ -98,6 +108,11 @@ export default async function ConversationDetailPage({
                 <time className="muted">{formatConversationTime(message.created_at, context.business.timezone)}</time>
               </div>
               <p>{message.body}</p>
+              {message.delivery_status ? (
+                <p className="muted formHelp">
+                  Delivery: {deliveryStatusLabels[message.delivery_status]}
+                </p>
+              ) : null}
             </article>
           )) : (
             <div className="noteEmpty">No messages yet. Add the first local reply or internal note below.</div>
