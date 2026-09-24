@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
 import { formatLeadDate, formatLeadValue, getLead } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
@@ -51,6 +52,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
           </dl>
         </section>
       </div>
+
+      <section className="panel topGap leadStatusPanel">
+        <div>
+          <h2>Lead status</h2>
+          <p className="muted">
+            Move this Lead through the sales lifecycle without changing its contact details.
+          </p>
+        </div>
+        <LeadStatusForm leadId={lead.id} currentStatus={lead.status} />
+      </section>
 
       <section className="panel topGap">
         <h2>Enquiry summary</h2>

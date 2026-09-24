@@ -4,6 +4,7 @@ import {
   leadEditFormSchema,
   leadInputSchema,
   leadNoteInputSchema,
+  leadStatusFormSchema,
   quoteRequestInputSchema,
 } from "../../src/modules/buy-from-me/leads/validation";
 import { leadSources, leadStatuses } from "../../src/modules/buy-from-me/leads/domain";
@@ -125,6 +126,25 @@ describe("Business OS lead validation", () => {
       service_id: "",
       enquiry_summary: "Needs an estimate.",
       estimated_value_gbp: "",
+    }).success).toBe(false);
+  });
+
+  it("validates the dedicated Lead status workflow", () => {
+    for (const status of leadStatuses) {
+      expect(leadStatusFormSchema.safeParse({
+        lead_id: "40000000-0000-4000-8000-000000000001",
+        status,
+      }).success).toBe(true);
+    }
+
+    expect(leadStatusFormSchema.safeParse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      status: "quote_sent",
+    }).success).toBe(false);
+
+    expect(leadStatusFormSchema.safeParse({
+      lead_id: "not-a-uuid",
+      status: "qualified",
     }).success).toBe(false);
   });
 
