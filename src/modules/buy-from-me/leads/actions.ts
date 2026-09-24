@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema } from "./validation";
+import { leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema, quoteRequestCreateFormSchema, quoteRequestStatusFormSchema } from "./validation";
 import { buildLeadInsert, buildLeadUpdate } from "./persistence";
 
 export type LeadFormState = {
@@ -258,4 +258,85 @@ export async function deleteLeadNote(
 
   revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
   redirect(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}#internal-notes`);
+}
+
+
+export async function createQuoteRequest(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState> {
+  const parsed = quoteRequestCreateFormSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+    details: formData.get("details"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the Quote Request details." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  if (!await leadExistsInTenant(client, context.business.id, parsed.data.lead_id)) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  const { data: quote, error } = await client
+    .from("quote_requests")
+    .insert({
+      business_id: context.business.id,
+      lead_id: parsed.data.lead_id,
+      details: parsed.data.details,
+      status: "requested",
+      created_by: context.userId,
+    })
+    .select("id")
+    .single();
+
+  if (error || !quote) {
+    return { error: "Unable to create the Quote Request. Please try again." };
+  }
+
+  revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
+  redirect(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}#quote-requests`);
+}
+
+export async function updateQuoteRequestStatus(
+  _state: LeadFormState,
+  formData: FormData,
+): Promise<LeadFormState> {
+  const parsed = quoteRequestStatusFormSchema.safeParse({
+    lead_id: formData.get("lead_id"),
+    quote_request_id: formData.get("quote_request_id"),
+    status: formData.get("status"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Select a valid Quote Request status." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+
+  if (!await leadExistsInTenant(client, context.business.id, parsed.data.lead_id)) {
+    return { error: "Lead unavailable in this workspace." };
+  }
+
+  const { data: quote, error } = await client
+    .from("quote_requests")
+    .update({ status: parsed.data.status })
+    .eq("business_id", context.business.id)
+    .eq("lead_id", parsed.data.lead_id)
+    .eq("id", parsed.data.quote_request_id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: "Unable to update the Quote Request. Please try again." };
+  }
+
+  if (!quote) {
+    return { error: "Quote Request unavailable in this workspace." };
+  }
+
+  revalidatePath(`/dashboard/buy-from-me/leads/${parsed.data.lead_id}`);
+  return {};
 }
