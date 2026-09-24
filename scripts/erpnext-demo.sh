@@ -27,7 +27,7 @@ echo
 echo "Waiting for http://localhost:8080 to respond..."
 
 for i in $(seq 1 120); do
-  if curl -fsS http://localhost:8080 >/dev/null 2>&1; then
+  if curl --connect-timeout 2 --max-time 5 -fsS http://localhost:8080 >/dev/null 2>&1; then
     echo
     echo "ERPNext is responding on port 8080."
     echo "Open the forwarded port named 'ERPNext Demo' in Codespaces."
@@ -37,8 +37,13 @@ for i in $(seq 1 120); do
 done
 
 echo
-echo "ERPNext is still starting. This can happen on the first run."
-echo "Check progress with:"
-echo "  cd $FRAPPE_DIR"
-echo "  docker compose -f pwd.yml ps"
-echo "  docker compose -f pwd.yml logs create-site"
+echo "ERPNext did not become ready within the expected window."
+echo "Showing diagnostics:"
+docker compose -f pwd.yml ps || true
+echo
+echo "create-site logs:"
+docker compose -f pwd.yml logs create-site --tail=80 || true
+echo
+echo "backend logs:"
+docker compose -f pwd.yml logs backend --tail=80 || true
+exit 1
