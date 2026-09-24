@@ -73,3 +73,11 @@ export const leadSourceLabels: Record<LeadSource, string> = {
   referral: "Referral",
   other: "Other",
 };
+
+
+export const quoteRequestStatusLabels: Record<QuoteRequestStatus, string> = {
+  requested: "Requested",
+  reviewing: "Reviewing",
+  quoted: "Quoted",
+  declined: "Declined",
+};

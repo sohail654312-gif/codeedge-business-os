@@ -1,4 +1,4 @@
-import type { LeadSource, LeadStatus } from "@/modules/buy-from-me/leads/domain";
+import type { LeadSource, LeadStatus, QuoteRequestStatus } from "@/modules/buy-from-me/leads/domain";
 
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
@@ -28,6 +28,17 @@ export type Service = {
   business_id: string;
   name: string;
   active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QuoteRequest = {
+  id: string;
+  business_id: string;
+  lead_id: string;
+  details: string;
+  status: QuoteRequestStatus;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -89,6 +100,18 @@ export type Database = {
         { business_id: string; name: string; active?: boolean; id?: string },
         { name?: string; active?: boolean }
       >;
+      quote_requests: Table<
+        QuoteRequest,
+        {
+          business_id: string;
+          lead_id: string;
+          details: string;
+          status?: QuoteRequestStatus;
+          created_by: string | null;
+          id?: string;
+        },
+        { status?: QuoteRequestStatus }
+      >;
       lead_notes: Table<
         LeadNote,
         {
@@ -124,6 +147,7 @@ export type Database = {
       business_status: BusinessStatus;
       membership_status: MembershipStatus;
       lead_status: LeadStatus;
+      quote_request_status: QuoteRequestStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

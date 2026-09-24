@@ -108,6 +108,17 @@ export const quoteRequestInputSchema = z.object({
   status: z.enum(quoteRequestStatuses),
 });
 
+export const quoteRequestCreateFormSchema = z.object({
+  lead_id: z.uuid(),
+  details: z.string().trim().min(1, "Quote request details are required.").max(5000),
+});
+
+export const quoteRequestStatusFormSchema = z.object({
+  lead_id: z.uuid(),
+  quote_request_id: z.uuid(),
+  status: z.enum(quoteRequestStatuses),
+});
+
 export type LeadInput = z.infer<typeof leadInputSchema>;
 export type LeadCreateInput = z.infer<typeof leadCreateFormSchema>;
 export type LeadEditInput = z.infer<typeof leadEditFormSchema>;
@@ -116,3 +127,5 @@ export type LeadNoteInput = z.infer<typeof leadNoteInputSchema>;
 export type LeadNoteFormInput = z.infer<typeof leadNoteFormSchema>;
 export type LeadNoteDeleteInput = z.infer<typeof leadNoteDeleteSchema>;
 export type QuoteRequestInput = z.infer<typeof quoteRequestInputSchema>;
+export type QuoteRequestCreateInput = z.infer<typeof quoteRequestCreateFormSchema>;
+export type QuoteRequestStatusInput = z.infer<typeof quoteRequestStatusFormSchema>;

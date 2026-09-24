@@ -3,16 +3,19 @@ import { notFound } from "next/navigation";
 import { DeleteLeadNoteForm } from "@/components/leads/DeleteLeadNoteForm";
 import { LeadNoteForm } from "@/components/leads/LeadNoteForm";
 import { LeadStatusForm } from "@/components/leads/LeadStatusForm";
-import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, listLeadNotes } from "@/modules/buy-from-me/leads/data";
-import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
+import { QuoteRequestCreateForm } from "@/components/leads/QuoteRequestCreateForm";
+import { QuoteRequestStatusForm } from "@/components/leads/QuoteRequestStatusForm";
+import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
+import { leadSourceLabels, leadStatusLabels, quoteRequestStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const [lead, notes] = await Promise.all([
+  const [lead, notes, quoteRequests] = await Promise.all([
     getLead(client, context.business.id, leadId),
     listLeadNotes(client, context.business.id, leadId),
+    listQuoteRequests(client, context.business.id, leadId),
   ]);
 
   if (!lead) notFound();
@@ -102,9 +105,39 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
             )}
           </div>
         </section>
-        <section className="panel">
-          <h2>Quote requests</h2>
-          <p className="muted">Quote requests are not enabled yet. They remain separate from the Lead lifecycle.</p>
+        <section className="panel" id="quote-requests">
+          <div className="noteSectionHead">
+            <div>
+              <h2>Quote requests</h2>
+              <p className="muted">Commercial requests tracked separately from the Lead lifecycle.</p>
+            </div>
+            <span className="pill">{quoteRequests.length} {quoteRequests.length === 1 ? "request" : "requests"}</span>
+          </div>
+
+          <QuoteRequestCreateForm leadId={lead.id} />
+
+          <div className="quoteRequestList">
+            {quoteRequests.length ? quoteRequests.map((quote) => (
+              <article className="quoteRequestCard" key={quote.id}>
+                <div className="quoteRequestHead">
+                  <div>
+                    <span className={"quoteStatus quoteStatus" + quote.status.replace(/\s+/g, "")}>
+                      {quoteRequestStatusLabels[quote.status]}
+                    </span>
+                    <div className="muted quoteDate">{formatNoteDate(quote.created_at)}</div>
+                  </div>
+                  <QuoteRequestStatusForm
+                    leadId={lead.id}
+                    quoteRequestId={quote.id}
+                    currentStatus={quote.status}
+                  />
+                </div>
+                <p>{quote.details}</p>
+              </article>
+            )) : (
+              <div className="noteEmpty">No Quote Requests yet.</div>
+            )}
+          </div>
         </section>
       </div>
     </>

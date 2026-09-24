@@ -7,7 +7,9 @@ import {
   leadNoteFormSchema,
   leadNoteInputSchema,
   leadStatusFormSchema,
+  quoteRequestCreateFormSchema,
   quoteRequestInputSchema,
+  quoteRequestStatusFormSchema,
 } from "../../src/modules/buy-from-me/leads/validation";
 import { leadSources, leadStatuses } from "../../src/modules/buy-from-me/leads/domain";
 
@@ -171,6 +173,35 @@ describe("Business OS lead validation", () => {
     expect(leadNoteFormSchema.safeParse({
       lead_id: "not-a-uuid",
       body: "Valid note",
+    }).success).toBe(false);
+  });
+
+  it("validates Quote Request creation and status updates", () => {
+    expect(quoteRequestCreateFormSchema.parse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      details: " Prepare an itemised estimate. ",
+    })).toEqual({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      details: "Prepare an itemised estimate.",
+    });
+
+    expect(quoteRequestCreateFormSchema.safeParse({
+      lead_id: "not-a-uuid",
+      details: "Valid details",
+    }).success).toBe(false);
+
+    for (const status of ["requested", "reviewing", "quoted", "declined"]) {
+      expect(quoteRequestStatusFormSchema.safeParse({
+        lead_id: "40000000-0000-4000-8000-000000000001",
+        quote_request_id: "60000000-0000-4000-8000-000000000001",
+        status,
+      }).success).toBe(true);
+    }
+
+    expect(quoteRequestStatusFormSchema.safeParse({
+      lead_id: "40000000-0000-4000-8000-000000000001",
+      quote_request_id: "60000000-0000-4000-8000-000000000001",
+      status: "paid",
     }).success).toBe(false);
   });
 
