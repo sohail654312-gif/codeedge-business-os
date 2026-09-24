@@ -1,25 +1,27 @@
 import Link from "next/link";
 import { formatLeadDate, formatLeadValue, listActiveServices, listLeads } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadSources, leadStatusLabels, leadStatuses } from "@/modules/buy-from-me/leads/domain";
-import { hasLeadFilters, parseLeadFilters } from "@/modules/buy-from-me/leads/filters";
+import { leadFilterSchema } from "@/modules/buy-from-me/leads/validation";
 import { requireDashboardTenant } from "@/server/auth/session";
+
+type LeadSearchParams = Record<string, string | string[] | undefined>;
 
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<LeadSearchParams>;
 }) {
   const { client, context } = await requireDashboardTenant();
-  const filters = parseLeadFilters(await searchParams);
+  const filters = leadFilterSchema.parse(await searchParams);
   const [leads, services] = await Promise.all([
     listLeads(client, context.business.id, filters),
     listActiveServices(client, context.business.id),
   ]);
 
+  const hasFilters = Boolean(filters.q || filters.status || filters.source || filters.service_id);
   const potentialValue = leads.reduce((total, lead) => total + (lead.estimated_value_pence ?? 0), 0);
   const newCount = leads.filter((lead) => lead.status === "new").length;
   const qualifiedCount = leads.filter((lead) => lead.status === "qualified").length;
-  const filtered = hasLeadFilters(filters);
 
   return (
     <>
@@ -37,7 +39,7 @@ export default async function LeadsPage({
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">{filtered ? "Matching leads" : "Total leads"}</div><div className="statValue">{leads.length}</div></div>
+        <div className="stat"><div className="statLabel">{hasFilters ? "Matching leads" : "Total leads"}</div><div className="statValue">{leads.length}</div></div>
         <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
         <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
         <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
@@ -48,26 +50,28 @@ export default async function LeadsPage({
           <div>
             <h2>Lead inbox</h2>
             <p className="muted leadSubtext">
-              Search and filter tenant-scoped Lead records without loading another workspace.
+              Search contact details and enquiry text, or filter the tenant-scoped CRM pipeline.
             </p>
           </div>
         </div>
 
         <form className="leadFilterForm" method="get">
-          <div className="field leadFilterSearch">
-            <label htmlFor="q">Search</label>
+          <div className="leadFilterSearch">
+            <label htmlFor="lead_q">Search</label>
             <input
-              id="q"
+              id="lead_q"
+              className="leadSearch"
               name="q"
-              defaultValue={filters.q}
+              type="search"
+              maxLength={120}
+              defaultValue={filters.q ?? ""}
               placeholder="Name, phone, email or enquiry..."
-              maxLength={100}
             />
           </div>
 
-          <div className="field">
-            <label htmlFor="status">Status</label>
-            <select id="status" name="status" defaultValue={filters.status ?? ""}>
+          <div>
+            <label htmlFor="lead_status_filter">Status</label>
+            <select id="lead_status_filter" name="status" defaultValue={filters.status ?? ""}>
               <option value="">All statuses</option>
               {leadStatuses.map((status) => (
                 <option key={status} value={status}>{leadStatusLabels[status]}</option>
@@ -75,9 +79,9 @@ export default async function LeadsPage({
             </select>
           </div>
 
-          <div className="field">
-            <label htmlFor="source">Source</label>
-            <select id="source" name="source" defaultValue={filters.source ?? ""}>
+          <div>
+            <label htmlFor="lead_source_filter">Source</label>
+            <select id="lead_source_filter" name="source" defaultValue={filters.source ?? ""}>
               <option value="">All sources</option>
               {leadSources.map((source) => (
                 <option key={source} value={source}>{leadSourceLabels[source]}</option>
@@ -85,9 +89,9 @@ export default async function LeadsPage({
             </select>
           </div>
 
-          <div className="field">
-            <label htmlFor="service">Service</label>
-            <select id="service" name="service" defaultValue={filters.service ?? ""}>
+          <div>
+            <label htmlFor="lead_service_filter">Service</label>
+            <select id="lead_service_filter" name="service_id" defaultValue={filters.service_id ?? ""}>
               <option value="">All services</option>
               {services.map((service) => (
                 <option key={service.id} value={service.id}>{service.name}</option>
@@ -97,7 +101,7 @@ export default async function LeadsPage({
 
           <div className="leadFilterActions">
             <button className="btn primary" type="submit">Apply</button>
-            {filtered ? <Link className="btn" href="/dashboard/buy-from-me/leads">Clear</Link> : null}
+            {hasFilters ? <Link className="btn" href="/dashboard/buy-from-me/leads">Reset</Link> : null}
           </div>
         </form>
 
@@ -139,14 +143,14 @@ export default async function LeadsPage({
                   <td colSpan={6}>
                     <div className="emptyState">
                       <div className="emptyIcon">↗</div>
-                      <h3>{filtered ? "No matching Leads" : "No Leads yet"}</h3>
+                      <h3>{hasFilters ? "No matching Leads" : "No Leads yet"}</h3>
                       <p>
-                        {filtered
-                          ? "Try changing or clearing the current search and filters."
+                        {hasFilters
+                          ? "Try a different search or reset the filters."
                           : "Create the first real Lead for this workspace."}
                       </p>
-                      {filtered
-                        ? <Link className="btn topGap" href="/dashboard/buy-from-me/leads">Clear filters</Link>
+                      {hasFilters
+                        ? <Link className="btn topGap" href="/dashboard/buy-from-me/leads">Reset filters</Link>
                         : <Link className="btn primary topGap" href="/dashboard/buy-from-me/leads/new">+ Add lead</Link>}
                     </div>
                   </td>
