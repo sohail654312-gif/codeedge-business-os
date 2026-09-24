@@ -23,7 +23,7 @@ begin
     else 'My CodeEdge Business'
   end;
 
-  workspace_slug := 'workspace-' || left(replace(new.id::text, '-', ''), 20);
+  workspace_slug := 'workspace-' || replace(new.id::text, '-', '');
   workspace_id := gen_random_uuid();
 
   insert into public.businesses(id, name, slug, timezone)
