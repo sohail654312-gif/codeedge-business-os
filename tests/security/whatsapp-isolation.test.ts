@@ -235,6 +235,9 @@ describe("WhatsApp tenant security and canonical integration", () => {
       [f.businessA, "60000000-0000-4000-8000-000000000099", f.ownerA, requestA, "Attack"],
     )).rejects.toThrow(/permission denied/);
 
+    await db.exec("ROLLBACK TO SAVEPOINT whatsapp_security_case; SAVEPOINT whatsapp_security_case");
+    await asUser(db, f.ownerA);
+
     expect((await db.query(
       "select pg_has_role('authenticated','codeedge_communication_api','MEMBER') as member",
     )).rows).toEqual([{ member: false }]);

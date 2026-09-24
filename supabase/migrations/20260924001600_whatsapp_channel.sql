@@ -431,9 +431,7 @@ begin
     btrim(p_body),
     btrim(p_provider_message_id)
   )
-  on conflict (business_id, conversation_id, channel_message_id)
-    where channel_message_id is not null
-  do nothing
+  on conflict do nothing
   returning id into new_message_id;
 
   if new_message_id is null then
