@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDemoLead, formatLeadValue } from "@/modules/buy-from-me/leads/demo";
+import { formatLeadDate, formatLeadValue, getLead } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
+import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
-  const lead = getDemoLead(leadId);
+  const { client, context } = await requireDashboardTenant();
+  const lead = await getLead(client, context.business.id, leadId);
 
   if (!lead) notFound();
 
@@ -15,8 +17,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         <div>
           <Link className="backLink" href="/dashboard/buy-from-me/leads">← All leads</Link>
           <div className="eyebrow topGap">Lead details</div>
-          <h1>{lead.contactName}</h1>
-          <p className="muted">Review the enquiry before editing and workflow actions are enabled.</p>
+          <h1>{lead.contact_name}</h1>
+          <p className="muted">This record is loaded from the tenant-protected CRM database.</p>
         </div>
         <div className="row">
           <span className={"leadStatus leadStatus" + leadStatusLabels[lead.status].replace(/\s+/g, "")}>
@@ -32,9 +34,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         <section className="panel">
           <h2>Contact</h2>
           <dl className="detailList">
-            <div><dt>Name</dt><dd>{lead.contactName}</dd></div>
-            <div><dt>Phone</dt><dd>{lead.phone}</dd></div>
-            <div><dt>Email</dt><dd>{lead.email}</dd></div>
+            <div><dt>Name</dt><dd>{lead.contact_name}</dd></div>
+            <div><dt>Phone</dt><dd>{lead.phone || "—"}</dd></div>
+            <div><dt>Email</dt><dd>{lead.email || "—"}</dd></div>
             <div><dt>Source</dt><dd>{leadSourceLabels[lead.source]}</dd></div>
           </dl>
         </section>
@@ -42,17 +44,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         <section className="panel">
           <h2>Opportunity</h2>
           <dl className="detailList">
-            <div><dt>Service</dt><dd>{lead.serviceName}</dd></div>
+            <div><dt>Service</dt><dd>{lead.service_name ?? "—"}</dd></div>
             <div><dt>Status</dt><dd>{leadStatusLabels[lead.status]}</dd></div>
-            <div><dt>Estimated value</dt><dd>{formatLeadValue(lead.estimatedValuePence)}</dd></div>
-            <div><dt>Last contact</dt><dd>{lead.lastContactLabel}</dd></div>
+            <div><dt>Estimated value</dt><dd>{formatLeadValue(lead.estimated_value_pence)}</dd></div>
+            <div><dt>Last contact</dt><dd>{formatLeadDate(lead.last_contact_at)}</dd></div>
           </dl>
         </section>
       </div>
 
       <section className="panel topGap">
         <h2>Enquiry summary</h2>
-        <p className="leadSummaryText">{lead.enquirySummary}</p>
+        <p className="leadSummaryText">{lead.enquiry_summary}</p>
       </section>
 
       <div className="twoCol topGap">
@@ -62,7 +64,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         </section>
         <section className="panel">
           <h2>Quote requests</h2>
-          <p className="muted">Quote requests are not enabled yet. They remain separate from the lead lifecycle.</p>
+          <p className="muted">Quote requests are not enabled yet. They remain separate from the Lead lifecycle.</p>
         </section>
       </div>
     </>
