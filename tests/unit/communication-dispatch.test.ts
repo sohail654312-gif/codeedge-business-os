@@ -34,9 +34,11 @@ vi.mock("@/server/channels/capability", () => ({
           rows: [{
             business_id: "20000000-0000-4000-8000-000000000001",
             execution_mode: state.executionMode,
+            prepared_execution_mode: state.executionMode,
             channel: state.channel,
             provider,
             provider_environment: state.providerEnvironment,
+            prepared_provider_environment: state.providerEnvironment,
             correlation_id: "80000000-0000-4000-8000-000000000001",
             simulated: false,
           }],
