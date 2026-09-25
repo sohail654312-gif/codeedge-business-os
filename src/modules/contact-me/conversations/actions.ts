@@ -7,6 +7,7 @@ import { requireDashboardTenant } from "@/server/auth/session";
 import { sendEmailReply } from "@/server/channels/email";
 import { sendSmsReply } from "@/server/channels/sms";
 import { sendWhatsAppReply } from "@/server/channels/whatsapp";
+import { ExternalEffectBlockedError } from "@/server/execution/external-effects";
 import {
   conversationStatusFormSchema,
   localMessageFormSchema,
@@ -120,7 +121,10 @@ export async function addConversationMessage(
         requestId: parsed.data.request_id ?? randomUUID(),
         body: parsed.data.body,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ExternalEffectBlockedError) {
+        return { error: "External delivery is blocked by this workspace's execution safety policy." };
+      }
       return { error: "Unable to send the WhatsApp reply. Check the channel connection and try again." };
     }
 
@@ -137,7 +141,10 @@ export async function addConversationMessage(
         requestId: parsed.data.request_id ?? randomUUID(),
         body: parsed.data.body,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ExternalEffectBlockedError) {
+        return { error: "External delivery is blocked by this workspace's execution safety policy." };
+      }
       return { error: "Unable to send the Email reply. Check the channel connection and try again." };
     }
 
@@ -154,7 +161,10 @@ export async function addConversationMessage(
         requestId: parsed.data.request_id ?? randomUUID(),
         body: parsed.data.body,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ExternalEffectBlockedError) {
+        return { error: "External delivery is blocked by this workspace's execution safety policy." };
+      }
       return { error: "Unable to send the SMS reply. Check the channel connection and try again." };
     }
 
