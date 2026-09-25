@@ -66,11 +66,11 @@ export async function dispatchPreparedExternalMessage<TResult>(
       provider: prepared.provider,
     });
   } catch (error) {
-    const code = error instanceof ExternalEffectBlockedError
-      ? error.code
-      : "external_effect_invalid_context";
-    await bestEffortFailure(options.fail, code);
-    throw new Error(options.deliveryFailureMessage);
+    const blocked = error instanceof ExternalEffectBlockedError
+      ? error
+      : new ExternalEffectBlockedError("external_effect_invalid_context");
+    await bestEffortFailure(options.fail, blocked.code);
+    throw blocked;
   }
 
   let result: TResult;
