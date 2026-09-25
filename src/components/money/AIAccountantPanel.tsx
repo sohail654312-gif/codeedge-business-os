@@ -18,6 +18,11 @@ import type {
 
 const initialState: AIAccountantActionState = {};
 
+export type AIAccountantFormAction = (
+  state: AIAccountantActionState,
+  formData: FormData,
+) => Promise<AIAccountantActionState>;
+
 const suggestions=[
   "Give me a finance summary.",
   "What invoices are outstanding?",
@@ -32,12 +37,14 @@ const suggestions=[
 function ProposalCard(input: {
   proposal: AIActionProposalRecord;
   owner: boolean;
+  approveAction: AIAccountantFormAction;
+  rejectAction: AIAccountantFormAction;
 }) {
   const [approveState,approveAction,approvePending]=useActionState(
-    approveAIProposalAction,initialState,
+    input.approveAction,initialState,
   );
   const [rejectState,rejectAction,rejectPending]=useActionState(
-    rejectAIProposalAction,initialState,
+    input.rejectAction,initialState,
   );
   const localDone=Boolean(approveState.success || rejectState.success);
   const pending=input.proposal.status==="proposed" && !localDone;
@@ -104,9 +111,15 @@ export function AIAccountantPanel(input: {
   executionMode: string;
   currency: string;
   owner: boolean;
+  submitAction?: AIAccountantFormAction;
+  approveAction?: AIAccountantFormAction;
+  rejectAction?: AIAccountantFormAction;
 }) {
+  const submitAction=input.submitAction ?? submitAIAccountantMessage;
+  const approveAction=input.approveAction ?? approveAIProposalAction;
+  const rejectAction=input.rejectAction ?? rejectAIProposalAction;
   const [state,action,pending]=useActionState(
-    submitAIAccountantMessage,initialState,
+    submitAction,initialState,
   );
   const [prompt,setPrompt]=useState("");
   const sessionId=state.sessionId ?? input.initialSessionId ?? "";
@@ -209,7 +222,13 @@ export function AIAccountantPanel(input: {
           </p>
         </section>
         {proposals.length ? proposals.map((proposal) => (
-          <ProposalCard proposal={proposal} owner={input.owner} key={proposal.id} />
+          <ProposalCard
+            proposal={proposal}
+            owner={input.owner}
+            approveAction={approveAction}
+            rejectAction={rejectAction}
+            key={proposal.id}
+          />
         )) : (
           <section className="panel">
             <p className="muted">No financial action proposals in this session.</p>
