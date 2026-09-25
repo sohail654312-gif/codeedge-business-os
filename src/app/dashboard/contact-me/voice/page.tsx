@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DemoReceptionistForm } from "@/components/voice/DemoReceptionistForm";
+import { VoiceSettingsForm } from "@/components/voice/VoiceSettingsForm";
 import {
   getBookingAvailability,
   listBookingServices,
@@ -14,7 +15,36 @@ export default async function VoiceReceptionistPage({
 }) {
   const query = await searchParams;
   const { client, context } = await requireDashboardTenant();
-  const services = await listBookingServices(client, context.business.id);
+  const [services, settingsResult] = await Promise.all([
+    listBookingServices(client, context.business.id),
+    client
+      .from("voice_receptionist_settings")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .maybeSingle(),
+  ]);
+  if (settingsResult.error) throw new Error("Unable to load AI Voice settings.");
+  const settings = settingsResult.data ?? {
+    business_id: context.business.id,
+    enabled: false,
+    greeting: "Hello, how can I help you today?",
+    provider: "demo_voice",
+    voice: "",
+    preferred_language: "en",
+    allowed_tools: [
+      "business_knowledge",
+      "appointment_availability",
+      "get_appointment",
+      "create_appointment",
+      "reschedule_appointment",
+      "cancel_appointment",
+      "human_handoff",
+    ],
+    handoff_behavior: "shared_inbox" as const,
+    additional_instructions: "",
+    created_at: "",
+    updated_at: "",
+  };
   const service = services.find((item) => item.id === query.service) ?? services[0] ?? null;
   const today = localDateFromInstant(new Date(), context.business.timezone);
   const date = /^\d{4}-\d{2}-\d{2}$/.test(query.date ?? "") ? query.date! : today;
@@ -47,6 +77,9 @@ export default async function VoiceReceptionistPage({
         </div>
         <span className="pill">{context.business.execution_mode} workspace</span>
       </div>
+
+      <VoiceSettingsForm settings={settings} role={context.role} />
+      <div className="topGap" />
 
       {context.business.execution_mode !== "demo" ? (
         <section className="panel">
