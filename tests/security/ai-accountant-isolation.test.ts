@@ -179,6 +179,27 @@ describe("AI Accountant tenant approval and replay safety", () => {
     ));
   });
 
+  it("proposal creation itself causes zero Finance document writes", async () => {
+    await db.exec("RESET ROLE");
+    const before=Number((await db.query<{ count:string }>(
+      "select count(*)::text as count from public.demo_finance_documents where business_id=$1",
+      [f.businessA],
+    )).rows[0]?.count ?? "0");
+
+    await createProposal(db,{
+      proposalId:"82000000-0000-4000-8000-000000000089",
+      payloadHash:"d".repeat(64),
+    });
+
+    await db.exec("RESET ROLE");
+    const after=Number((await db.query<{ count:string }>(
+      "select count(*)::text as count from public.demo_finance_documents where business_id=$1",
+      [f.businessA],
+    )).rows[0]?.count ?? "0");
+
+    expect(after).toBe(before);
+  });
+
   it("allows staff to ask/propose but never to approve a consequential Finance write", async () => {
     const staffSession="81000000-0000-4000-8000-000000000090";
     const staffProposal="82000000-0000-4000-8000-000000000090";
