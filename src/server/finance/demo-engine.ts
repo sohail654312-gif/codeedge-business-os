@@ -394,6 +394,13 @@ export const demoFinanceEngine: FinanceEngine = {
 
   async recordPayment(context, input: RecordFinancePaymentInput) {
     assertDemo(context);
+
+    const existingPayment = (await listDocuments(context.businessId,"payment"))
+      .find((item) => item.request_id === input.requestId);
+    if (existingPayment) {
+      return financePaymentFromDemo(existingPayment);
+    }
+
     const invoices = await listDocuments(context.businessId,"invoice");
     const invoice = invoices.find((item) => item.id === input.invoiceId);
     if (!invoice) throw new Error("finance_invoice_unavailable");
