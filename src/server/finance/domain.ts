@@ -207,5 +207,6 @@ export type FinanceExecutionContext = {
   engine: FinanceEngineId;
   connectionId: string | null;
   credentialEnvironment: "sandbox" | "production" | null;
+  defaultCurrency: string;
   correlationId: string;
 };
