@@ -29,8 +29,8 @@ describe("Codeedge Money finance contracts", () => {
   it("uses exact decimal strings and integer minor-unit arithmetic", () => {
     expect(decimalMoneySchema.parse("123.45")).toBe("123.45");
     expect(currencyCodeSchema.parse("PKR")).toBe("PKR");
-    expect(moneyToMinorUnits("0.10") + moneyToMinorUnits("0.20")).toBe(30n);
-    expect(minorUnitsToMoney(30n)).toBe("0.30");
+    expect(moneyToMinorUnits("0.10") + moneyToMinorUnits("0.20")).toBe(BigInt(30));
+    expect(minorUnitsToMoney(BigInt(30))).toBe("0.30");
     expect(addMoney(["0.10","0.20","10.00"])).toBe("10.30");
     expect(() => decimalMoneySchema.parse("0.001")).toThrow();
     expect(() => currencyCodeSchema.parse("gbp")).toThrow();
