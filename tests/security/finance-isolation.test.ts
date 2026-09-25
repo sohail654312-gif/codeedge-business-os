@@ -24,6 +24,20 @@ async function asFinanceApi(db: TestDatabase) {
   await db.exec("RESET ROLE; SET LOCAL ROLE codeedge_finance_api");
 }
 
+async function expectDbReject(
+  db: TestDatabase,
+  work: () => Promise<unknown>,
+) {
+  await db.exec("SAVEPOINT expected_finance_failure");
+  try {
+    await expect(work()).rejects.toThrow();
+  } finally {
+    await db.exec(
+      "ROLLBACK TO SAVEPOINT expected_finance_failure; RELEASE SAVEPOINT expected_finance_failure",
+    );
+  }
+}
+
 describe("Codeedge Money tenant and execution safety", () => {
   let db: TestDatabase;
   let customerA = "";
@@ -83,12 +97,12 @@ describe("Codeedge Money tenant and execution safety", () => {
 
   it("does not let staff create or switch Finance engines", async () => {
     await asUser(db,f.staffA);
-    await expect(db.query(
+    await expectDbReject(db, () => db.query(
       `insert into public.finance_connections(
         business_id,engine,enabled,default_currency
       ) values ($1,'demo_finance',false,'USD')`,
       [f.businessA],
-    )).rejects.toThrow();
+    ));
   });
 
   it("keeps Demo engine internal documents inaccessible to browser roles", async () => {
@@ -102,18 +116,18 @@ describe("Codeedge Money tenant and execution safety", () => {
     );
 
     await asUser(db,f.ownerA);
-    await expect(db.query(
+    await expectDbReject(db, () => db.query(
       "select * from public.demo_finance_documents where business_id=$1",
       [f.businessA],
-    )).rejects.toThrow();
+    ));
   });
 
   it("rejects a forged cross-tenant CRM Customer mapping", async () => {
     await asFinanceApi(db);
-    await expect(db.query(
+    await expectDbReject(db, () => db.query(
       "select public.finance_upsert_customer_mapping($1,$2,$3,'demo_finance',$4)",
       [f.businessA,connectionA,customerB,"demo:forged"],
-    )).rejects.toThrow();
+    ));
   });
 
   it("prepares the same financial request only once", async () => {
@@ -192,10 +206,10 @@ describe("Codeedge Money tenant and execution safety", () => {
     );
     await asFinanceApi(db);
 
-    await expect(db.query(
+    await expectDbReject(db, () => db.query(
       "select public.finance_demo_assert_business($1)",
       [f.businessA],
-    )).rejects.toThrow();
+    ));
   });
 
   it("keeps the Finance capability role non-login, non-inheriting and non-bypass", async () => {
