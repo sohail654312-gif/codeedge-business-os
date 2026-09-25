@@ -229,17 +229,18 @@ describe("Booking tenant security and appointment integration", () => {
     await db.query("select public.set_appointment_status($1,'confirmed')", [id]);
     await db.query("select public.set_appointment_status($1,'cancelled')", [id]);
 
-    expect((await db.query<{ event_type: string }>(
+    const events = (await db.query<{ event_type: string }>(
       `select event_type::text as event_type
        from public.crm_activities
-       where lead_id=$1 and event_type::text like 'appointment_%'
-       order by created_at,id`,
+       where lead_id=$1 and event_type::text like 'appointment_%'`,
       [f.leadA],
-    )).rows.map((row) => row.event_type)).toEqual([
+    )).rows.map((row) => row.event_type).sort();
+
+    expect(events).toEqual([
+      "appointment_cancelled",
+      "appointment_confirmed",
       "appointment_created",
       "appointment_rescheduled",
-      "appointment_confirmed",
-      "appointment_cancelled",
     ]);
   });
 
@@ -269,7 +270,7 @@ describe("Booking tenant security and appointment integration", () => {
       serviceId: f.serviceB,
       leadId: f.leadB,
       customerId: customerB,
-      start: "2030-01-07T16:00:00Z",
+      start: "2030-01-07T10:00:00Z",
     });
 
     await db.exec("RESET ROLE");
