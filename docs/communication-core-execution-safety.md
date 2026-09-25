@@ -111,7 +111,7 @@ Outbound communication creates its canonical Message and MessageDelivery first. 
 - request/correlation UUID
 - simulated/live marker
 
-Immediately before provider resolution, Codeedge loads that snapshot through the restricted `communication_execution_context` RPC and enforces the central external-effect policy.
+Immediately before provider resolution, Codeedge loads both the current workspace/provider environment and the preparation snapshot through the restricted `communication_execution_context` RPC. If either changed between preparation and dispatch, Codeedge fails closed instead of trusting stale Production state.
 
 The browser cannot provide or override those values.
 
