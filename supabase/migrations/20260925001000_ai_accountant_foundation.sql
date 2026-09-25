@@ -665,6 +665,117 @@ begin
 end;
 $$;
 
+create or replace function public.ai_recent_sessions(
+  p_business_id uuid,
+  p_user_id uuid,
+  p_limit integer default 10
+)
+returns setof public.ai_sessions
+language plpgsql
+stable
+security definer
+set search_path=''
+as $$
+begin
+  if not exists(
+    select 1
+    from public.business_memberships m
+    join public.businesses b on b.id=m.business_id
+    where m.business_id=p_business_id
+      and m.user_id=p_user_id
+      and m.status='active'
+      and m.role in ('owner','staff')
+      and b.status='active'
+  ) then
+    raise exception 'AI history unavailable' using errcode='42501';
+  end if;
+
+  return query
+    select s.*
+    from public.ai_sessions s
+    where s.business_id=p_business_id
+      and s.agent_type='accountant'
+    order by s.updated_at desc,s.id desc
+    limit least(greatest(coalesce(p_limit,10),1),20);
+end;
+$$;
+
+create or replace function public.ai_session_messages(
+  p_business_id uuid,
+  p_user_id uuid,
+  p_session_id uuid,
+  p_limit integer default 20
+)
+returns setof public.ai_messages
+language plpgsql
+stable
+security definer
+set search_path=''
+as $$
+begin
+  if not exists(
+    select 1
+    from public.ai_sessions s
+    join public.business_memberships m
+      on m.business_id=s.business_id and m.user_id=p_user_id
+    where s.business_id=p_business_id
+      and s.id=p_session_id
+      and m.status='active'
+      and m.role in ('owner','staff')
+  ) then
+    raise exception 'AI session unavailable' using errcode='42501';
+  end if;
+
+  return query
+    select x.*
+    from (
+      select m.*
+      from public.ai_messages m
+      where m.business_id=p_business_id
+        and m.session_id=p_session_id
+      order by m.created_at desc,m.id desc
+      limit least(greatest(coalesce(p_limit,20),1),40)
+    ) x
+    order by x.created_at asc,x.id asc;
+end;
+$$;
+
+create or replace function public.ai_session_proposals(
+  p_business_id uuid,
+  p_user_id uuid,
+  p_session_id uuid,
+  p_limit integer default 20
+)
+returns setof public.ai_action_proposals
+language plpgsql
+stable
+security definer
+set search_path=''
+as $$
+begin
+  if not exists(
+    select 1
+    from public.ai_sessions s
+    join public.business_memberships m
+      on m.business_id=s.business_id and m.user_id=p_user_id
+    where s.business_id=p_business_id
+      and s.id=p_session_id
+      and m.status='active'
+      and m.role in ('owner','staff')
+  ) then
+    raise exception 'AI proposal history unavailable' using errcode='42501';
+  end if;
+
+  return query
+    select p.*
+    from public.ai_action_proposals p
+    where p.business_id=p_business_id
+      and p.session_id=p_session_id
+    order by p.created_at desc,p.id desc
+    limit least(greatest(coalesce(p_limit,20),1),40);
+end;
+$$;
+
 revoke all on function public.ai_consume_request(uuid,uuid)
 from public,anon,authenticated;
 revoke all on function public.ai_start_session(uuid,uuid,uuid,text,text,text)
@@ -682,6 +793,12 @@ from public,anon,authenticated;
 revoke all on function public.ai_reject_action_proposal(uuid,uuid,uuid)
 from public,anon,authenticated;
 revoke all on function public.ai_complete_action_proposal(uuid,uuid,text,text,text)
+from public,anon,authenticated;
+revoke all on function public.ai_recent_sessions(uuid,uuid,integer)
+from public,anon,authenticated;
+revoke all on function public.ai_session_messages(uuid,uuid,uuid,integer)
+from public,anon,authenticated;
+revoke all on function public.ai_session_proposals(uuid,uuid,uuid,integer)
 from public,anon,authenticated;
 
 grant execute on function public.ai_consume_request(uuid,uuid)
@@ -701,4 +818,10 @@ to codeedge_ai_api;
 grant execute on function public.ai_reject_action_proposal(uuid,uuid,uuid)
 to codeedge_ai_api;
 grant execute on function public.ai_complete_action_proposal(uuid,uuid,text,text,text)
+to codeedge_ai_api;
+grant execute on function public.ai_recent_sessions(uuid,uuid,integer)
+to codeedge_ai_api;
+grant execute on function public.ai_session_messages(uuid,uuid,uuid,integer)
+to codeedge_ai_api;
+grant execute on function public.ai_session_proposals(uuid,uuid,uuid,integer)
 to codeedge_ai_api;
