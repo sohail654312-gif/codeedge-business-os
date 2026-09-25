@@ -33,6 +33,10 @@ export const serviceSchema = z.object({
   description: text(3000),
   active: z.boolean(),
   quote_required: z.boolean(),
+  duration_minutes: z.string().trim()
+    .regex(/^[0-9]{1,3}$/, "Duration must be a whole number of minutes.")
+    .transform(Number)
+    .pipe(z.number().int().min(5).max(480)),
   starting_price_gbp: priceSchema,
   display_order: z.string().trim().regex(/^[0-9]{1,5}$/, "Display order must be a whole number.")
     .transform(Number)
