@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { receptionistToolNames } from "@/server/voice/receptionist";
+import { receptionistToolNames } from "@/modules/voice/domain";
 
 export type VoiceSettingsState = { error?: string; success?: string };
 
