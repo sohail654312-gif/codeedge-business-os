@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
 import { requireDashboardTenant } from "@/server/auth/session";
 
@@ -77,7 +78,7 @@ export default async function CustomersPage() {
                     {customer.id.startsWith("erpnext:") ? (
                       <span className="muted">—</span>
                     ) : (
-                      <a className="backLink" href={`/dashboard/bookings?customer=${customer.id}`}>View</a>
+                      <Link className="backLink" href={`/dashboard/bookings?customer=${customer.id}`}>View</Link>
                     )}
                   </td>
                 </tr>
