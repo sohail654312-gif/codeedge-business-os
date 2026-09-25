@@ -52,3 +52,48 @@
 
 /* Booking / Appointments */
 .bookingCreateGrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px}.bookingFilterForm,.bookingDateJump{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}.bookingFilterForm .field,.bookingDateJump .field{margin:0}.appointmentList{display:grid;gap:10px}.appointmentCard{display:grid;grid-template-columns:minmax(180px,1.1fr) minmax(220px,1fr) auto;gap:18px;align-items:center;border:1px solid #173b59;background:#081825;border-radius:14px;padding:15px 16px}.appointmentCard:hover{border-color:#2d6389;background:#0a1d2e}.appointmentStatus{display:inline-flex;justify-self:start;padding:5px 9px;border-radius:999px;border:1px solid #355f8c;background:#102a45;color:#8ed8ff;font-size:12px;font-weight:800}.appointmentStatusconfirmed{border-color:#286847;background:#0f2f24;color:#91e7b2}.appointmentStatuscompleted{border-color:#355f8c;background:#102a45;color:#8ed8ff}.appointmentStatuscancelled{border-color:#6f3030;background:#2a1417;color:#ffb4ae}.appointmentStatusno_show{border-color:#725a2e;background:#2d2412;color:#ffd88a}.bookingStatusForm{display:grid;gap:8px}.bookingStatusForm .field{margin:0}.bookingDateJump{margin-bottom:16px;max-width:720px}.bookingFilterForm+ .formHelp{margin-top:12px}@media(max-width:900px){.bookingCreateGrid{grid-template-columns:1fr}.appointmentCard{grid-template-columns:1fr auto}.appointmentCard>div:nth-child(2){grid-column:1/-1;grid-row:2}.bookingFilterForm,.bookingDateJump{grid-template-columns:1fr 1fr}}@media(max-width:620px){.appointmentCard,.bookingFilterForm,.bookingDateJump{grid-template-columns:1fr}.appointmentStatus{justify-self:start}}
+
+
+/* Codeedge Money / AI Accountant */
+.aiAccountantGrid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.8fr);gap:16px;align-items:start}
+.aiChatPanel{min-width:0}
+.aiStatusRow{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.aiStatusRow h2,.aiHistoryStrip h2,.aiProposalList h2{margin:0 0 6px}
+.aiStatusRow p,.aiHistoryStrip p,.aiProposalList p{margin:0}
+.aiStatusPills{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.aiSuggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.aiSuggestion,.aiSessionLink{border:1px solid #28506e;background:#0c2740;color:#b8ddf5;border-radius:999px;padding:8px 11px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.aiSuggestion:hover,.aiSessionLink:hover,.aiSessionLinkActive{border-color:#23bdf0;color:#e8f8ff;background:#10334f}
+.aiConversation{display:grid;gap:10px;margin-top:18px;max-height:540px;overflow:auto;padding-right:4px}
+.aiMessage{max-width:88%;border:1px solid #234560;border-radius:14px;padding:14px;background:#081825}
+.aiMessageuser{margin-left:auto;background:#0d2940;border-color:#28506e}
+.aiMessageassistant{margin-right:auto}
+.aiMessage b{font-size:12px;color:#8ed8ff}
+.aiMessage p{margin:8px 0 0;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.aiEmpty{padding:30px 20px;border:1px dashed #274964;border-radius:14px;color:#8fa8bd;text-align:center}
+.aiComposer{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #17344e}
+.aiComposer .field{margin:0}
+.aiComposer textarea{min-height:105px}
+.aiEvidence{display:grid;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid #17344e}
+.aiEvidence h3{margin:0 0 4px}
+.aiEvidenceRow{display:flex;justify-content:space-between;gap:14px;padding:10px 12px;border:1px solid #173b59;border-radius:11px;background:#081825;font-size:12px}
+.aiEvidenceRow span{color:#7893aa;text-align:right}
+.aiProposalList{display:grid;gap:12px}
+.aiProposalCard{border:1px solid #284e6b;border-radius:14px;background:#081825;padding:16px}
+.aiProposalHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.aiProposalHead h3{margin:10px 0 0}
+.aiProposalStatus{display:inline-flex;padding:5px 9px;border-radius:999px;border:1px solid #725a2e;background:#2d2412;color:#ffd88a;font-size:12px;font-weight:800}
+.aiProposalStatussucceeded{border-color:#286847;background:#0f2f24;color:#91e7b2}
+.aiProposalStatusfailed,.aiProposalStatusrejected,.aiProposalStatusexpired{border-color:#6f3030;background:#2a1417;color:#ffb4ae}
+.aiProposalStatusexecuting{border-color:#355f8c;background:#102a45;color:#8ed8ff}
+.aiProposalDetails{display:grid;gap:0;margin:14px 0}
+.aiProposalDetails>div{display:grid;grid-template-columns:minmax(110px,.55fr) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid #17344e}
+.aiProposalDetails>div:last-child{border-bottom:0}
+.aiProposalDetails dt{font-size:12px;color:#7893aa}
+.aiProposalDetails dd{margin:0;overflow-wrap:anywhere;font-size:13px;font-weight:700}
+.aiProposalActions{display:flex;gap:9px;flex-wrap:wrap}
+.aiProposalActions .secondary{background:#152331;border-color:#35506a;color:#c4d6e5}
+.aiHistoryStrip{display:grid;gap:12px}
+.aiSessionLinks{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:1000px){.aiAccountantGrid{grid-template-columns:1fr}.aiProposalList{grid-template-columns:1fr 1fr}.aiProposalList>.panel:first-child{grid-column:1/-1}}
+@media(max-width:680px){.aiStatusRow,.aiEvidenceRow,.aiProposalHead{flex-direction:column}.aiStatusPills{justify-content:flex-start}.aiProposalList{grid-template-columns:1fr}.aiProposalList>.panel:first-child{grid-column:auto}.aiMessage{max-width:100%}.aiEvidenceRow span{text-align:left}.aiProposalDetails>div{grid-template-columns:1fr;gap:4px}}
