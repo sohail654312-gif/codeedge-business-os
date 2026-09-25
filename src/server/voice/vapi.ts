@@ -118,18 +118,23 @@ function callDirection(value: string | undefined) {
 
 function transcriptFromArtifact(
   artifact: z.infer<typeof serverMessageSchema>["message"]["artifact"],
-) {
-  return (artifact?.messages ?? [])
-    .filter((item) => item.message.trim())
-    .flatMap((item) => {
-      if (item.role === "user") {
-        return [{ speaker: "caller" as const, text: item.message.trim() }];
-      }
-      if (item.role === "assistant") {
-        return [{ speaker: "assistant" as const, text: item.message.trim() }];
-      }
-      return [];
-    });
+): Array<{ speaker: "caller" | "assistant"; text: string }> {
+  const transcript: Array<{
+    speaker: "caller" | "assistant";
+    text: string;
+  }> = [];
+
+  for (const item of artifact?.messages ?? []) {
+    const text = item.message.trim();
+    if (!text) continue;
+    if (item.role === "user") {
+      transcript.push({ speaker: "caller", text });
+    } else if (item.role === "assistant") {
+      transcript.push({ speaker: "assistant", text });
+    }
+  }
+
+  return transcript;
 }
 
 export function parseVapiServerMessage(
