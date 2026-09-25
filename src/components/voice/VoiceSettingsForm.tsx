@@ -5,7 +5,7 @@ import {
   saveVoiceReceptionistSettings,
   type VoiceSettingsState,
 } from "@/modules/voice/settings-actions";
-import { receptionistToolNames } from "@/server/voice/receptionist";
+import { receptionistToolNames } from "@/modules/voice/domain";
 
 const initialState: VoiceSettingsState = {};
 
