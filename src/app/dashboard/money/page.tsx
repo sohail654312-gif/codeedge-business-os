@@ -14,6 +14,7 @@ const sections = [
   ["Purchases","Suppliers, bills and expenses","/dashboard/money/purchases"],
   ["Accounting","Chart of Accounts, ledger and trial balance","/dashboard/money/accounting"],
   ["Reports","Profit & Loss, Balance Sheet and Cash Flow","/dashboard/money/reports"],
+  ["AI Accountant","Grounded finance questions and human-approved actions","/dashboard/money/ai-accountant"],
 ];
 
 export default async function MoneyPage() {
