@@ -33,15 +33,20 @@ describe("Codeedge Money tenant and execution safety", () => {
     db = await openDatabase();
     await seedDatabase(db);
 
+    await asUser(db,f.ownerA);
     customerA = (await db.query<{ customer_id: string }>(
       "select customer_id from public.convert_lead_to_customer($1)",
       [f.leadA],
     )).rows[0]!.customer_id;
+
+    await db.exec("RESET ROLE");
+    await asUser(db,f.ownerB);
     customerB = (await db.query<{ customer_id: string }>(
       "select customer_id from public.convert_lead_to_customer($1)",
       [f.leadB],
     )).rows[0]!.customer_id;
 
+    await db.exec("RESET ROLE");
     await db.query(
       `insert into public.finance_connections(
         id,business_id,engine,enabled,default_currency
