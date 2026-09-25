@@ -54,12 +54,17 @@ async function serviceNameMap(
 export async function listAppointments(
   client: SupabaseClient<Database>,
   businessId: string,
+  filters: { customerId?: string | null; leadId?: string | null } = {},
 ): Promise<AppointmentWithService[]> {
-  const { data, error } = await client
+  let query = client
     .from("appointments")
     .select("*")
-    .eq("business_id", businessId)
-    .order("starts_at", { ascending: true });
+    .eq("business_id", businessId);
+
+  if (filters.customerId) query = query.eq("customer_id", filters.customerId);
+  if (filters.leadId) query = query.eq("lead_id", filters.leadId);
+
+  const { data, error } = await query.order("starts_at", { ascending: true });
 
   if (error) throw new Error("Unable to load appointments.");
   const rows = data ?? [];
