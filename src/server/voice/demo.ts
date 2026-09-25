@@ -58,6 +58,7 @@ export class DemoVoiceProvider implements VoiceProvider {
     return {
       providerEventId,
       providerCallId,
+      providerConnectionRef: null,
       status: "completed",
       direction: "inbound",
       fromNumber: null,
