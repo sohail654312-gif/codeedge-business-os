@@ -61,7 +61,7 @@ export function ConversationComposer({
               ? "Reply on WhatsApp"
               : channel === "email"
                 ? "Reply by Email"
-                : "Store message"
+                : "Store message"}
       </button>
     </form>
   );
