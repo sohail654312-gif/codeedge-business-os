@@ -73,10 +73,24 @@ export async function loadCommunicationExecutionContext(
 export function assertCommunicationExternalEffectAllowed(
   context: CommunicationExecutionContext,
 ) {
-  const registration = getCommunicationProviderRegistration(
-    context.channel,
-    context.provider,
-  );
+  if (
+    !executionModes.includes(context.executionMode)
+    || !["sandbox", "production"].includes(context.providerEnvironment)
+    || !["whatsapp", "email", "sms"].includes(context.channel)
+    || !context.provider
+  ) {
+    throw new ExternalEffectBlockedError("external_effect_invalid_context");
+  }
+
+  let registration;
+  try {
+    registration = getCommunicationProviderRegistration(
+      context.channel,
+      context.provider,
+    );
+  } catch {
+    throw new ExternalEffectBlockedError("external_effect_unknown_provider");
+  }
 
   if (context.simulated) {
     // Simulated effects never need permission to reach a real adapter.
