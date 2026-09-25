@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TenantContext } from "@/server/authorization/tenant";
 import { sha256Json } from "@/server/ai/integrity";
+import { FinanceCapabilityError } from "@/server/finance/engine";
 
 const mocks=vi.hoisted(() => ({
   claimAIActionProposal:vi.fn(),
@@ -205,9 +206,9 @@ describe("AI Accountant human approval execution", () => {
     expect(mocks.createFinanceInvoice).not.toHaveBeenCalled();
   });
 
-  it("records a normalized failure after a claimed Finance write fails", async () => {
+  it("records a distinct unsupported-capability failure after a claimed Finance write fails", async () => {
     mocks.createFinanceInvoice.mockRejectedValue(
-      new Error("finance_capability_unavailable"),
+      new FinanceCapabilityError("demo_finance","invoices"),
     );
 
     await expect(approveAIAccountantProposal({

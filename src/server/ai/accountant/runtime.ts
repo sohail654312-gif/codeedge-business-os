@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { TenantContext } from "@/server/authorization/tenant";
+import { FinanceCapabilityError } from "@/server/finance/engine";
 import { getAIProviderForContext } from "@/server/ai/registry";
 import type {
   AIProviderMessage,
@@ -35,6 +36,9 @@ const sessionIdSchema=z.string().uuid();
 
 function normalizedError(error: unknown) {
   if (error instanceof AIProviderError) return error.code;
+  if (error instanceof FinanceCapabilityError) {
+    return "ai_finance_capability_unavailable";
+  }
   if (error instanceof Error) {
     if ([
       "ai_rate_limited",

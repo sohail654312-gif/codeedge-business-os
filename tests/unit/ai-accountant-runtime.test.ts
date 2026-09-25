@@ -292,6 +292,43 @@ describe("Codeedge AI provider/runtime foundation", () => {
     })).toThrow();
   });
 
+  it("rejects zero and negative amounts before an AI write proposal can persist", () => {
+    expect(() => invoiceProposalSchema.parse({
+      crmCustomerId:"40000000-0000-4000-8000-000000000001",
+      currency:"GBP",
+      amount:"-1.00",
+      dueAt:null,
+    })).toThrow("Amount must be greater than zero.");
+
+    expect(() => paymentProposalSchema.parse({
+      invoiceId:"INV-1",
+      currency:"GBP",
+      amount:"0.00",
+    })).toThrow("Amount must be greater than zero.");
+  });
+
+  it("rejects malformed model tool arguments before any Finance lookup or write", async () => {
+    await expect(executeAIAccountantTool({
+      businessId:businessA,
+      userId:"10000000-0000-4000-8000-000000000001",
+      businessName:"Business A",
+      timezone:"Europe/London",
+      role:"owner",
+      executionMode:"demo",
+      financeEngine:"demo_finance",
+      financeConnectionId:"71000000-0000-4000-8000-000000000001",
+      defaultCurrency:"GBP",
+      financeCapabilities:["invoices"],
+      correlationId:"80000000-0000-4000-8000-000000000001",
+      sessionId:"81000000-0000-4000-8000-000000000001",
+    },"propose_invoice",{
+      crmCustomerId:"not-a-uuid",
+      currency:"GBP",
+      amount:"500.00",
+      dueAt:null,
+    })).rejects.toThrow("ai_tool_validation_failed");
+  });
+
   it("does not expose trusted tenant or credential fields in model tool schemas", () => {
     const serialized=JSON.stringify(aiAccountantProviderTools);
     for (const forbidden of [

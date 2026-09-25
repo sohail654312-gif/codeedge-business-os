@@ -52,6 +52,8 @@ function friendlyError(error: unknown) {
       return "The AI provider is unavailable right now. No financial figures were invented and no Finance action was executed.";
     case "ai_finance_capability_unavailable":
       return "The active Finance Engine does not support the requested data.";
+    case "finance_capability_unavailable":
+      return "The active Finance Engine does not support that financial action.";
     case "ai_tool_not_allowed":
     case "ai_tool_validation_failed":
     case "ai_finance_target_unavailable":

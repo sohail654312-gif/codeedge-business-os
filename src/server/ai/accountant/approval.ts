@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { TenantContext } from "@/server/authorization/tenant";
+import { FinanceCapabilityError } from "@/server/finance/engine";
 import {
   financeProposalSchemas,
   type FinanceAIActionType,
@@ -28,6 +29,9 @@ function financeActionType(value: string): FinanceAIActionType {
 }
 
 function safeExecutionError(error: unknown) {
+  if (error instanceof FinanceCapabilityError) {
+    return "finance_capability_unavailable";
+  }
   if (error instanceof Error) {
     if (/^(finance|external_effect)_[a-z0-9_]+$/.test(error.message)) {
       return error.message;

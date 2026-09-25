@@ -2,11 +2,16 @@ import { z } from "zod";
 import {
   currencyCodeSchema,
   decimalMoneySchema,
+  moneyToMinorUnits,
 } from "@/server/finance/domain";
 
 const uuidSchema = z.string().uuid();
 const idSchema = z.string().trim().min(1).max(255);
 const instantSchema = z.string().datetime({ offset:true });
+const positiveMoneySchema = decimalMoneySchema.refine(
+  (value) => moneyToMinorUnits(value) > BigInt(0),
+  "Amount must be greater than zero.",
+);
 
 export const aiAccountantPromptVersion = "accountant-v1";
 
@@ -45,7 +50,7 @@ export const customerProposalSchema = z.object({
 export const quoteProposalSchema = z.object({
   crmCustomerId: uuidSchema,
   currency: currencyCodeSchema,
-  amount: decimalMoneySchema,
+  amount: positiveMoneySchema,
   validUntil: instantSchema.nullable(),
 }).strict();
 
@@ -53,7 +58,7 @@ export const invoiceProposalSchema = z.object({
   quoteId: idSchema.nullable().optional().default(null),
   crmCustomerId: uuidSchema,
   currency: currencyCodeSchema,
-  amount: decimalMoneySchema,
+  amount: positiveMoneySchema,
   dueAt: instantSchema.nullable(),
 }).strict();
 
@@ -66,7 +71,7 @@ export const supplierProposalSchema = z.object({
 export const billProposalSchema = z.object({
   supplierId: idSchema,
   currency: currencyCodeSchema,
-  amount: decimalMoneySchema,
+  amount: positiveMoneySchema,
   dueAt: instantSchema.nullable(),
 }).strict();
 
@@ -74,14 +79,14 @@ export const expenseProposalSchema = z.object({
   supplierId: idSchema.nullable(),
   category: z.string().trim().min(1).max(120),
   currency: currencyCodeSchema,
-  amount: decimalMoneySchema,
+  amount: positiveMoneySchema,
   incurredAt: instantSchema,
 }).strict();
 
 export const paymentProposalSchema = z.object({
   invoiceId: idSchema,
   currency: currencyCodeSchema,
-  amount: decimalMoneySchema,
+  amount: positiveMoneySchema,
 }).strict();
 
 export const financeProposalSchemas = {
