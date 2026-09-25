@@ -58,20 +58,20 @@ export function moneyToMinorUnits(value: string): bigint {
   const negative = parsed.startsWith("-");
   const unsigned = negative ? parsed.slice(1) : parsed;
   const [whole, fraction = ""] = unsigned.split(".");
-  const minor = BigInt(whole) * 100n + BigInt((fraction + "00").slice(0, 2));
+  const minor = BigInt(whole) * BigInt(100) + BigInt((fraction + "00").slice(0, 2));
   return negative ? -minor : minor;
 }
 
 export function minorUnitsToMoney(value: bigint): DecimalMoney {
-  const negative = value < 0n;
+  const negative = value < BigInt(0);
   const absolute = negative ? -value : value;
-  const whole = absolute / 100n;
-  const fraction = (absolute % 100n).toString().padStart(2, "0");
+  const whole = absolute / BigInt(100);
+  const fraction = (absolute % BigInt(100)).toString().padStart(2, "0");
   return decimalMoneySchema.parse(`${negative ? "-" : ""}${whole}.${fraction}`);
 }
 
 export function addMoney(values: readonly string[]): DecimalMoney {
-  return minorUnitsToMoney(values.reduce((sum, value) => sum + moneyToMinorUnits(value), 0n));
+  return minorUnitsToMoney(values.reduce((sum, value) => sum + moneyToMinorUnits(value), BigInt(0)));
 }
 
 export type FinanceAmount = {
