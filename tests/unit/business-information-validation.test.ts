@@ -49,7 +49,22 @@ describe("Business Information validation", () => {
     });
 
     expect(result.starting_price_gbp).toBe(5025);
+    expect(result.duration_minutes).toBe(30);
     expect(result.display_order).toBe(2);
+  });
+
+  it("accepts an explicit Booking duration for a Service", () => {
+    const result = serviceSchema.parse({
+      name: "Consultation",
+      description: "",
+      active: true,
+      quote_required: false,
+      duration_minutes: "45",
+      starting_price_gbp: "",
+      display_order: "0",
+    });
+
+    expect(result.duration_minutes).toBe(45);
   });
 
   it.each(["-1", "10.999", "1000000.01", "abc"])("rejects invalid Service price %s", (price) => {
