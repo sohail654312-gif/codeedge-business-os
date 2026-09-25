@@ -1,5 +1,6 @@
 import type { LeadSource, LeadStatus, QuoteRequestStatus } from "@/modules/buy-from-me/leads/domain";
 import type { ConversationChannel, ConversationStatus, DeliveryStatus, MessageDirection, MessageSenderType } from "@/modules/contact-me/conversations/domain";
+import type { AppointmentSource, AppointmentStatus } from "@/modules/booking/domain";
 
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
@@ -50,7 +51,13 @@ export type CrmActivityType =
   | "lead_note_added"
   | "quote_request_created"
   | "quote_request_status_changed"
-  | "lead_converted_to_customer";
+  | "lead_converted_to_customer"
+  | "appointment_created"
+  | "appointment_rescheduled"
+  | "appointment_confirmed"
+  | "appointment_cancelled"
+  | "appointment_completed"
+  | "appointment_no_show";
 
 export type CrmActivity = {
   id: string;
@@ -85,6 +92,7 @@ export type Service = {
   active: boolean;
   starting_price_pence: number | null;
   quote_required: boolean;
+  duration_minutes: number;
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -128,6 +136,26 @@ export type BusinessSettings = {
   locale: string;
   lead_notification_email: string;
   notify_new_leads: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Appointment = {
+  id: string;
+  business_id: string;
+  lead_id: string | null;
+  customer_id: string | null;
+  service_id: string | null;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  status: AppointmentStatus;
+  source: AppointmentSource;
+  notes: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -358,6 +386,7 @@ export type Database = {
           active?: boolean;
           starting_price_pence?: number | null;
           quote_required?: boolean;
+          duration_minutes?: number;
           display_order?: number;
           id?: string;
         },
@@ -368,6 +397,7 @@ export type Database = {
           | "active"
           | "starting_price_pence"
           | "quote_required"
+          | "duration_minutes"
           | "display_order"
         >>
       >;
@@ -439,6 +469,11 @@ export type Database = {
           | "lead_notification_email"
           | "notify_new_leads"
         >>
+      >;
+      appointments: Table<
+        Appointment,
+        never,
+        never
       >;
       website_chat_widgets: Table<
         WebsiteChatWidget,
@@ -583,6 +618,37 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      create_appointment: {
+        Args: {
+          p_business_id: string;
+          p_lead_id: string | null;
+          p_customer_id: string | null;
+          p_service_id: string | null;
+          p_contact_name: string;
+          p_contact_email: string;
+          p_contact_phone: string;
+          p_starts_at: string;
+          p_ends_at: string;
+          p_source: string;
+          p_notes: string;
+        };
+        Returns: string;
+      };
+      reschedule_appointment: {
+        Args: {
+          p_appointment_id: string;
+          p_starts_at: string;
+          p_ends_at: string;
+        };
+        Returns: boolean;
+      };
+      set_appointment_status: {
+        Args: {
+          p_appointment_id: string;
+          p_status: AppointmentStatus;
+        };
+        Returns: boolean;
+      };
       website_chat_start: {
         Args: { p_widget_id: string; p_session_hash: string };
         Returns: Array<{
@@ -663,6 +729,7 @@ export type Database = {
       message_sender_type: MessageSenderType;
       message_direction: MessageDirection;
       delivery_status: DeliveryStatus;
+      appointment_status: AppointmentStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };
