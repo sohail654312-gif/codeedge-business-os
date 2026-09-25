@@ -96,9 +96,11 @@ create function public.communication_execution_context(p_message_id uuid)
 returns table(
   business_id uuid,
   execution_mode public.execution_mode,
+  prepared_execution_mode public.execution_mode,
   channel public.conversation_channel,
   provider text,
   provider_environment public.credential_environment,
+  prepared_provider_environment public.credential_environment,
   correlation_id uuid,
   simulated boolean
 )
@@ -115,13 +117,17 @@ begin
   return query
   select
     d.business_id,
+    b.execution_mode,
     d.execution_mode,
     c.channel,
     d.provider,
+    cc.credential_environment,
     d.provider_environment,
     d.correlation_id,
     d.simulated
   from public.message_deliveries d
+  join public.businesses b
+    on b.id = d.business_id
   join public.conversations c
     on c.business_id = d.business_id
    and c.id = d.conversation_id
