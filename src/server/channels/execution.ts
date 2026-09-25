@@ -18,9 +18,11 @@ import {
 const executionContextRowSchema = z.object({
   business_id: z.string().uuid(),
   execution_mode: z.enum(executionModes),
+  prepared_execution_mode: z.enum(executionModes),
   channel: z.enum(["whatsapp", "email", "sms"]),
   provider: z.string().regex(/^[a-z][a-z0-9_]{1,79}$/),
   provider_environment: z.enum(credentialEnvironments),
+  prepared_provider_environment: z.enum(credentialEnvironments),
   correlation_id: z.string().uuid().nullable(),
   simulated: z.boolean(),
 });
@@ -47,6 +49,13 @@ export async function loadCommunicationExecutionContext(
   const parsed = executionContextRowSchema.safeParse(row);
   if (!parsed.success) {
     throw new ExternalEffectBlockedError("external_effect_invalid_context");
+  }
+
+  if (
+    parsed.data.execution_mode !== parsed.data.prepared_execution_mode
+    || parsed.data.provider_environment !== parsed.data.prepared_provider_environment
+  ) {
+    throw new ExternalEffectBlockedError("external_effect_context_changed");
   }
 
   return {
