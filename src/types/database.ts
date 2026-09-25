@@ -7,6 +7,16 @@ export type BusinessStatus = "active" | "suspended";
 export type MembershipStatus = "active" | "revoked";
 export type ExecutionMode = "demo" | "sandbox" | "production";
 export type CredentialEnvironment = "sandbox" | "production";
+export type VoiceCallStatus =
+  | "queued"
+  | "ringing"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "no_answer"
+  | "busy"
+  | "cancelled";
+export type VoiceCallDirection = "inbound" | "outbound";
 
 export type Business = {
   id: string;
@@ -57,7 +67,12 @@ export type CrmActivityType =
   | "appointment_confirmed"
   | "appointment_cancelled"
   | "appointment_completed"
-  | "appointment_no_show";
+  | "appointment_no_show"
+  | "voice_call_started"
+  | "voice_call_completed"
+  | "voice_call_failed"
+  | "voice_handoff_requested"
+  | "appointment_created_from_voice";
 
 export type CrmActivity = {
   id: string;
@@ -136,6 +151,47 @@ export type BusinessSettings = {
   locale: string;
   lead_notification_email: string;
   notify_new_leads: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type VoiceReceptionistSettings = {
+  business_id: string;
+  enabled: boolean;
+  greeting: string;
+  provider: string;
+  voice: string;
+  preferred_language: string;
+  allowed_tools: string[];
+  handoff_behavior: "shared_inbox" | "message_only";
+  additional_instructions: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type VoiceCall = {
+  id: string;
+  business_id: string;
+  conversation_id: string;
+  lead_id: string | null;
+  customer_id: string | null;
+  channel_connection_id: string | null;
+  provider: string;
+  provider_call_id: string | null;
+  direction: VoiceCallDirection;
+  from_number: string;
+  to_number: string;
+  status: VoiceCallStatus;
+  started_at: string;
+  answered_at: string | null;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  summary: string;
+  disposition: string;
+  handoff_required: boolean;
+  execution_mode: ExecutionMode;
+  provider_environment: CredentialEnvironment | null;
+  correlation_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -470,6 +526,36 @@ export type Database = {
           | "notify_new_leads"
         >>
       >;
+      voice_receptionist_settings: Table<
+        VoiceReceptionistSettings,
+        {
+          business_id: string;
+          enabled?: boolean;
+          greeting?: string;
+          provider?: string;
+          voice?: string;
+          preferred_language?: string;
+          allowed_tools?: string[];
+          handoff_behavior?: "shared_inbox" | "message_only";
+          additional_instructions?: string;
+        },
+        Partial<Pick<
+          VoiceReceptionistSettings,
+          | "enabled"
+          | "greeting"
+          | "provider"
+          | "voice"
+          | "preferred_language"
+          | "allowed_tools"
+          | "handoff_behavior"
+          | "additional_instructions"
+        >>
+      >;
+      voice_calls: Table<
+        VoiceCall,
+        never,
+        never
+      >;
       appointments: Table<
         Appointment,
         never,
@@ -618,6 +704,21 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      voice_start_demo_call: {
+        Args: {
+          p_business_id: string;
+          p_user_id: string;
+          p_correlation_id: string;
+          p_contact_name: string;
+          p_contact_phone: string;
+        };
+        Returns: Array<{
+          voice_call_id: string;
+          conversation_id: string;
+          lead_id: string;
+          created: boolean;
+        }>;
+      };
       create_appointment: {
         Args: {
           p_business_id: string;
@@ -730,6 +831,8 @@ export type Database = {
       message_direction: MessageDirection;
       delivery_status: DeliveryStatus;
       appointment_status: AppointmentStatus;
+      voice_call_status: VoiceCallStatus;
+      voice_call_direction: VoiceCallDirection;
     };
     CompositeTypes: { [_ in never]: never };
   };
