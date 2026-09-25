@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
 import { requireDashboardTenant } from "@/server/auth/session";
 
@@ -56,6 +57,7 @@ export default async function CustomersPage() {
                 <th>Source</th>
                 <th>Value</th>
                 <th>Last activity</th>
+                <th>Appointments</th>
               </tr>
             </thead>
             <tbody>
@@ -72,9 +74,16 @@ export default async function CustomersPage() {
                   <td>{customer.source}</td>
                   <td><b>{customer.value}</b></td>
                   <td className="muted">{customer.lastActivity}</td>
+                  <td>
+                    {customer.id.startsWith("erpnext:") ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <Link className="backLink" href={`/dashboard/bookings?customer=${customer.id}`}>View</Link>
+                    )}
+                  </td>
                 </tr>
               )) : (
-                <tr><td colSpan={7}><div className="emptyState"><h3>No Customers yet</h3><p>Convert a Lead to create a Customer.</p></div></td></tr>
+                <tr><td colSpan={8}><div className="emptyState"><h3>No Customers yet</h3><p>Convert a Lead to create a Customer.</p></div></td></tr>
               )}
             </tbody>
           </table>

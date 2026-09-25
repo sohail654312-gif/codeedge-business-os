@@ -141,6 +141,19 @@ function ServiceForm({ service }: { service?: Service }) {
           />
         </div>
         <div className="field">
+          <label htmlFor={prefix + "-duration"}>Duration (minutes)</label>
+          <input
+            id={prefix + "-duration"}
+            name="duration_minutes"
+            type="number"
+            min="5"
+            max="480"
+            step="5"
+            required
+            defaultValue={service?.duration_minutes ?? 30}
+          />
+        </div>
+        <div className="field">
           <label htmlFor={prefix + "-order"}>Display order</label>
           <input id={prefix + "-order"} name="display_order" type="number" min="0" max="10000" step="1" required defaultValue={service?.display_order ?? 0} />
         </div>
@@ -215,6 +228,7 @@ export function ServicesPanel({
                   <span>{service.active ? "Active" : "Inactive"}</span>
                   <span>{service.quote_required ? "Quote required" : "Quote optional"}</span>
                   <span>{formatPrice(service.starting_price_pence)}</span>
+                  <span>{service.duration_minutes} min</span>
                   <span>Order {service.display_order}</span>
                 </div>
               </div>

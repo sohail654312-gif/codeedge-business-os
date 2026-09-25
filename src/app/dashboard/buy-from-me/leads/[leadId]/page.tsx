@@ -10,19 +10,23 @@ import { StartConversationForm } from "@/components/conversations/StartConversat
 import { formatLeadDate, formatLeadValue, formatNoteDate, getLead, getLeadCustomer, listLeadActivities, listLeadNotes, listQuoteRequests } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels, quoteRequestStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { listLeadConversations, formatConversationTime } from "@/modules/contact-me/conversations/data";
+import { listAppointments } from "@/modules/booking/data";
+import { appointmentStatusLabels } from "@/modules/booking/domain";
+import { formatAppointmentDateTime } from "@/modules/booking/timezone";
 import { conversationChannelLabels, conversationStatusLabels } from "@/modules/contact-me/conversations/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
   const { client, context } = await requireDashboardTenant();
-  const [lead, notes, quoteRequests, customer, activities, conversations] = await Promise.all([
+  const [lead, notes, quoteRequests, customer, activities, conversations, appointments] = await Promise.all([
     getLead(client, context.business.id, leadId),
     listLeadNotes(client, context.business.id, leadId),
     listQuoteRequests(client, context.business.id, leadId),
     getLeadCustomer(client, context.business.id, leadId),
     listLeadActivities(client, context.business.id, leadId),
     listLeadConversations(client, context.business.id, leadId),
+    listAppointments(client, context.business.id, { leadId }),
   ]);
 
   if (!lead) notFound();
@@ -140,6 +144,36 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
           )) : (
             <div className="noteEmpty">No Shared Inbox conversations are linked to this Lead yet.</div>
           )}
+        </div>
+      </section>
+
+      <section className="panel topGap" id="appointments">
+        <div className="noteSectionHead">
+          <div>
+            <h2>Appointments</h2>
+            <p className="muted">Codeedge Booking history linked to this Lead.</p>
+          </div>
+          <div className="row">
+            <span className="pill">{appointments.length} {appointments.length === 1 ? "appointment" : "appointments"}</span>
+            <Link className="btn" href={`/dashboard/bookings?lead=${lead.id}`}>View calendar</Link>
+          </div>
+        </div>
+        <div className="leadConversationList">
+          {appointments.length ? appointments.slice(0, 6).map((appointment) => (
+            <Link
+              className="leadConversationRow"
+              href={`/dashboard/bookings/${appointment.id}`}
+              key={appointment.id}
+            >
+              <div>
+                <b>{appointment.service_name ?? "Appointment"}</b>
+                <div className="muted">
+                  {appointmentStatusLabels[appointment.status]} · {formatAppointmentDateTime(appointment.starts_at, appointment.timezone)}
+                </div>
+              </div>
+              <span className="muted">{appointment.source}</span>
+            </Link>
+          )) : <div className="noteEmpty">No appointments are linked to this Lead yet.</div>}
         </div>
       </section>
 
