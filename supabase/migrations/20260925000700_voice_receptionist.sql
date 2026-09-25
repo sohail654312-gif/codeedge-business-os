@@ -1206,7 +1206,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 begin
   if new.lead_id is not null and new.source = 'voice' then
     perform private.append_crm_activity(
@@ -1219,7 +1219,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 create trigger crm_activity_voice_appointments
 after insert on public.appointments
