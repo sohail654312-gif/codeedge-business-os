@@ -55,6 +55,7 @@ async function financeSession(input: {
 }) {
   const context = await loadFinanceContext(input);
   const engine = getFinanceEngine({
+    businessId: context.businessId,
     engine: context.engine,
     credentialKey: context.credentialKey,
   });
