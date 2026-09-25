@@ -227,6 +227,9 @@ describe("Conversation server actions", () => {
     form.set("message_kind", "reply");
     form.set("body", "SMS reply");
     form.set("request_id", "80000000-0000-4000-8000-000000000021");
+    form.set("execution_mode", "production");
+    form.set("provider_environment", "production");
+    form.set("provider", "attacker_provider");
 
     await addConversationMessage({}, form);
 
