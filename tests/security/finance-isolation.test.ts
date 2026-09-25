@@ -47,6 +47,11 @@ describe("Codeedge Money tenant and execution safety", () => {
     db = await openDatabase();
     await seedDatabase(db);
 
+    await db.query(
+      "update public.businesses set execution_mode='demo' where id in ($1,$2)",
+      [f.businessA,f.businessB],
+    );
+
     await asUser(db,f.ownerA);
     customerA = (await db.query<{ customer_id: string }>(
       "select customer_id from public.convert_lead_to_customer($1)",
