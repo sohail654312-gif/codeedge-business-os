@@ -1027,7 +1027,27 @@ begin
   update public.voice_calls
   set summary = left(coalesce(btrim(p_summary), ''), 3000),
       disposition = left(coalesce(btrim(p_disposition), ''), 120),
-      handoff_required = coalesce(p_handoff_required, false)
+      handoff_required = coalesce(p_handoff_required, false),
+      status = case
+        when not coalesce(p_handoff_required, false)
+          and status in ('queued','ringing','in_progress')
+          then 'completed'::public.voice_call_status
+        else status
+      end,
+      ended_at = case
+        when not coalesce(p_handoff_required, false)
+          and status in ('queued','ringing','in_progress')
+          then coalesce(ended_at, clock_timestamp())
+        else ended_at
+      end,
+      duration_seconds = case
+        when not coalesce(p_handoff_required, false)
+          and status in ('queued','ringing','in_progress')
+          then greatest(0, extract(epoch from (
+            coalesce(ended_at, clock_timestamp()) - started_at
+          ))::integer)
+        else duration_seconds
+      end
   where id = call_row.id;
 
   if coalesce(p_handoff_required, false) then
@@ -1181,6 +1201,34 @@ begin
   return query select existing.id, conversation_value, lead_value, true;
 end;
 $$;
+
+
+create function private.crm_activity_from_voice_appointment()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if new.lead_id is not null and new.source = 'voice' then
+    perform private.append_crm_activity(
+      new.business_id,
+      new.lead_id,
+      'appointment_created_from_voice',
+      'Appointment created from AI Voice',
+      jsonb_build_object('appointment_id', new.id, 'starts_at', new.starts_at)
+    );
+  end if;
+  return new;
+end;
+$;
+
+create trigger crm_activity_voice_appointments
+after insert on public.appointments
+for each row execute function private.crm_activity_from_voice_appointment();
+
+revoke all on function private.crm_activity_from_voice_appointment()
+  from public, anon, authenticated;
 
 create function private.crm_activity_from_voice_call()
 returns trigger
