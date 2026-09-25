@@ -191,6 +191,7 @@ describe("consolidated communication dispatch", () => {
   ) => {
     state.channel = channel;
     state.executionMode = "demo";
+    state.preparedExecutionMode = "demo";
 
     await expect(send()).rejects.toThrow(/blocked by workspace safety policy/i);
     expect(providerSend).not.toHaveBeenCalled();
