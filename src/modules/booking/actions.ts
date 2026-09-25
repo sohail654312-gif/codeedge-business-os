@@ -45,8 +45,9 @@ export async function createAppointmentAction(
 
   const { client, context } = await requireDashboardTenant();
 
+  let appointmentId: string;
   try {
-    const appointmentId = await createAppointmentAtSlot({
+    appointmentId = await createAppointmentAtSlot({
       client,
       context,
       serviceId: parsed.data.service_id,
@@ -59,12 +60,13 @@ export async function createAppointmentAction(
       source: "staff",
       notes: parsed.data.notes,
     });
-    revalidateBooking(appointmentId);
-    redirect(`/dashboard/bookings/${appointmentId}`);
   } catch (error) {
     if (error instanceof Error && error.message) return { error: error.message };
     return { error: "Unable to create the appointment." };
   }
+
+  revalidateBooking(appointmentId);
+  redirect(`/dashboard/bookings/${appointmentId}`);
 }
 
 export async function rescheduleAppointmentAction(
