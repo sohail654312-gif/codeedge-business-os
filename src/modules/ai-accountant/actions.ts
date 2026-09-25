@@ -10,7 +10,6 @@ import {
 } from "@/server/ai/accountant/approval";
 import {
   getAISessionMessages,
-  getAISessionProposals,
   type AIActionProposalRecord,
   type AIMessageRecord,
 } from "@/server/ai/persistence";
