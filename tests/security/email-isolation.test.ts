@@ -276,11 +276,22 @@ describe("Email tenant security and canonical integration", () => {
       [prepared.message_id, "resend.outbound.a", "<outbound-a@codeedge.test>"],
     )).rows).toEqual([{ completed: true }]);
 
+    await db.exec("SAVEPOINT email_delivery_direct_read");
+    await expect(db.query(
+      "select status from public.message_deliveries where message_id=$1",
+      [prepared.message_id],
+    )).rejects.toThrow(/permission denied/);
+    await db.exec("ROLLBACK TO SAVEPOINT email_delivery_direct_read; RELEASE SAVEPOINT email_delivery_direct_read");
+
+    await db.exec("RESET ROLE");
+    await asUser(db, f.staffA);
     expect((await db.query<{ status: string }>(
       "select status from public.message_deliveries where message_id=$1",
       [prepared.message_id],
     )).rows).toEqual([{ status: "queued" }]);
 
+    await db.exec("RESET ROLE");
+    await asCommunicationApi(db);
     expect((await db.query<{ updated: boolean }>(
       "select public.email_update_delivery($1,'sent',$2,null) as updated",
       ["resend.outbound.a", "<outbound-a@codeedge.test>"],
@@ -346,6 +357,8 @@ describe("Email tenant security and canonical integration", () => {
       [inboxA],
     )).rejects.toThrow(/permission denied/);
 
+    await db.exec("ROLLBACK TO SAVEPOINT email_security_case; SAVEPOINT email_security_case");
+    await asUser(db, f.ownerA);
     expect((await db.query(
       "select pg_has_role('authenticated','codeedge_communication_api','MEMBER') as member",
     )).rows).toEqual([{ member: false }]);
