@@ -25,3 +25,8 @@ AI Voice remains a later provider. It should plug into the same canonical Conver
 Email remains a provider-replaceable channel. Its Resend adapter feeds the same canonical Conversation + Message core, Shared Inbox and CRM used by Website Chat and WhatsApp. See `docs/email.md`.
 
 SMS remains provider-replaceable. Twilio is the first production adapter; inbound/outbound SMS and delivery callbacks feed the same Conversation + Message core, Shared Inbox and CRM. See `docs/sms.md`.
+
+
+## Execution safety
+
+External communication providers are now gated by the server-side Codeedge execution context and fail-closed external-effect policy. Existing workspaces and connections remain `production` by default. Demo workspaces cannot reach live provider adapters, and Sandbox workspaces cannot use production credential environments. See `docs/communication-core-execution-safety.md`.

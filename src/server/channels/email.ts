@@ -2,7 +2,7 @@ import "server-only";
 
 import type { DeliveryStatus } from "@/modules/contact-me/conversations/domain";
 import { withCommunicationCapability } from "./capability";
-import { ProviderDeliveryError } from "./provider";
+import { dispatchPreparedExternalMessage } from "./orchestration";
 import { getEmailCommunicationProvider } from "./registry";
 
 type InboundConnection = {
@@ -146,26 +146,14 @@ export async function sendEmailReply(input: {
 }) {
   const prepared = await prepareEmailReply(input);
 
-  if (!prepared.created) {
-    if (["queued", "sent", "delivered"].includes(prepared.delivery_status)) {
-      return { messageId: prepared.message_id, status: prepared.delivery_status };
-    }
-    if (["bounced", "failed"].includes(prepared.delivery_status)) {
-      throw new Error("The previous Email delivery attempt failed.");
-    }
-
-    // An existing "sending" request may already have reached the provider.
-    // Do not issue a second provider call.
-    return { messageId: prepared.message_id, status: prepared.delivery_status };
-  }
-
-  const provider = getEmailCommunicationProvider(prepared.provider);
-
-  let providerMessageId: string;
-  let rfcMessageId: string | null = null;
-
-  try {
-    const result = await provider.sendEmail({
+  return dispatchPreparedExternalMessage({
+    channel: "email",
+    prepared,
+    successfulExistingStatuses: ["queued", "sent", "delivered"],
+    failedExistingStatuses: ["bounced", "failed"],
+    previousFailureMessage: "The previous Email delivery attempt failed.",
+    deliveryFailureMessage: "Email delivery failed.",
+    send: () => getEmailCommunicationProvider(prepared.provider).sendEmail({
       credentialKey: prepared.credential_key,
       senderName: prepared.sender_name,
       senderEmail: prepared.sender_email,
@@ -176,36 +164,23 @@ export async function sendEmailReply(input: {
       inReplyTo: prepared.in_reply_to,
       references: prepared.reference_ids,
       idempotencyKey: input.requestId,
-    });
-    providerMessageId = result.providerMessageId;
-    rfcMessageId = result.rfcMessageId;
-  } catch (error) {
-    const errorCode = error instanceof ProviderDeliveryError
-      ? error.code
-      : "provider_unavailable";
-
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.email_fail_outbound($1,$2)",
-        [prepared.message_id, errorCode],
-      );
-    }).catch(() => undefined);
-
-    throw new Error("Email delivery failed.");
-  }
-
-  try {
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.email_complete_outbound($1,$2,$3)",
-        [prepared.message_id, providerMessageId, rfcMessageId],
-      );
-    });
-  } catch {
-    // The provider may already have accepted this Email. Keep the ambiguous
-    // "sending" state rather than risking a duplicate customer message.
-    return { messageId: prepared.message_id, status: "sending" as const };
-  }
-
-  return { messageId: prepared.message_id, status: "queued" as const };
+    }),
+    complete: async (result) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.email_complete_outbound($1,$2,$3)",
+          [prepared.message_id, result.providerMessageId, result.rfcMessageId],
+        );
+      });
+    },
+    fail: async (errorCode) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.email_fail_outbound($1,$2)",
+          [prepared.message_id, errorCode],
+        );
+      });
+    },
+    statusFromResult: () => "queued",
+  });
 }

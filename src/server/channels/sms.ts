@@ -2,7 +2,7 @@ import "server-only";
 
 import type { DeliveryStatus } from "@/modules/contact-me/conversations/domain";
 import { withCommunicationCapability } from "./capability";
-import { ProviderDeliveryError } from "./provider";
+import { dispatchPreparedExternalMessage } from "./orchestration";
 import { getSmsCommunicationProvider } from "./registry";
 import { twilioSmsWebhookUrl } from "./twilio-sms";
 
@@ -119,64 +119,38 @@ export async function sendSmsReply(input: {
 }) {
   const prepared = await prepareSmsReply(input);
 
-  if (!prepared.created) {
-    if (["queued", "sent", "delivered"].includes(prepared.delivery_status)) {
-      return { messageId: prepared.message_id, status: prepared.delivery_status };
-    }
-    if (prepared.delivery_status === "failed") {
-      throw new Error("The previous SMS delivery attempt failed.");
-    }
-    // An ambiguous in-flight request is never automatically resent.
-    return { messageId: prepared.message_id, status: prepared.delivery_status };
-  }
-
-  const provider = getSmsCommunicationProvider(prepared.provider);
-
-  let providerMessageId: string;
-  let providerStatus: "sending" | "queued" | "sent" | "delivered" | "failed";
-
-  try {
-    const result = await provider.sendSms({
+  return dispatchPreparedExternalMessage({
+    channel: "sms",
+    prepared,
+    successfulExistingStatuses: ["queued", "sent", "delivered"],
+    failedExistingStatuses: ["failed"],
+    previousFailureMessage: "The previous SMS delivery attempt failed.",
+    deliveryFailureMessage: "SMS delivery failed.",
+    send: () => getSmsCommunicationProvider(prepared.provider).sendSms({
       externalAccountId: prepared.external_account_id,
       externalSenderId: prepared.external_sender_id,
       credentialKey: prepared.credential_key,
       recipient: prepared.recipient,
       body: input.body,
       statusCallbackUrl: twilioSmsWebhookUrl(),
-    });
-    providerMessageId = result.providerMessageId;
-    providerStatus = result.status;
-  } catch (error) {
-    const errorCode = error instanceof ProviderDeliveryError
-      ? error.code
-      : "provider_unavailable";
-
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.sms_fail_outbound($1,$2)",
-        [prepared.message_id, errorCode],
-      );
-    }).catch(() => undefined);
-
-    throw new Error("SMS delivery failed.");
-  }
-
-  try {
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.sms_complete_outbound($1,$2,$3)",
-        [prepared.message_id, providerMessageId, providerStatus],
-      );
-    });
-  } catch {
-    // Provider acceptance may already have occurred; preserve the in-flight
-    // state rather than creating a duplicate customer SMS.
-    return { messageId: prepared.message_id, status: "sending" as const };
-  }
-
-  if (providerStatus === "failed") {
-    throw new Error("SMS delivery was rejected by the provider.");
-  }
-
-  return { messageId: prepared.message_id, status: providerStatus };
+    }),
+    complete: async (result) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.sms_complete_outbound($1,$2,$3)",
+          [prepared.message_id, result.providerMessageId, result.status],
+        );
+      });
+    },
+    fail: async (errorCode) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.sms_fail_outbound($1,$2)",
+          [prepared.message_id, errorCode],
+        );
+      });
+    },
+    statusFromResult: (result) => result.status,
+    providerRejected: (result) => result.status === "failed",
+  });
 }

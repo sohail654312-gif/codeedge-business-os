@@ -35,7 +35,7 @@ async function tenantForVerifiedUser(
 
   const { data: business, error: businessError } = await client
     .from("businesses")
-    .select("id,name,slug,status,timezone,created_at,updated_at")
+    .select("id,name,slug,status,timezone,execution_mode,created_at,updated_at")
     .eq(column, value)
     .eq("status", "active")
     .maybeSingle();

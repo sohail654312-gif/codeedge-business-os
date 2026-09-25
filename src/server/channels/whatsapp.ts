@@ -3,7 +3,7 @@ import "server-only";
 import type { DeliveryStatus } from "@/modules/contact-me/conversations/domain";
 import { withCommunicationCapability } from "./capability";
 import { getTextCommunicationProvider } from "./registry";
-import { ProviderDeliveryError } from "./provider";
+import { dispatchPreparedExternalMessage } from "./orchestration";
 
 type PreparedOutbound = {
   message_id: string;
@@ -89,54 +89,35 @@ export async function sendWhatsAppReply(input: {
 }) {
   const prepared = await prepareWhatsAppReply(input);
 
-  if (!prepared.created) {
-    if (["sent", "delivered", "read"].includes(prepared.delivery_status)) {
-      return { messageId: prepared.message_id, status: prepared.delivery_status };
-    }
-    if (prepared.delivery_status === "failed") {
-      throw new Error("The previous WhatsApp delivery attempt failed.");
-    }
-    return { messageId: prepared.message_id, status: prepared.delivery_status };
-  }
-
-  const provider = getTextCommunicationProvider(prepared.provider);
-  let providerMessageId: string;
-
-  try {
-    const result = await provider.sendText({
+  return dispatchPreparedExternalMessage({
+    channel: "whatsapp",
+    prepared,
+    successfulExistingStatuses: ["sent", "delivered", "read"],
+    failedExistingStatuses: ["failed"],
+    previousFailureMessage: "The previous WhatsApp delivery attempt failed.",
+    deliveryFailureMessage: "WhatsApp delivery failed.",
+    send: () => getTextCommunicationProvider(prepared.provider).sendText({
       externalSenderId: prepared.external_sender_id,
       credentialKey: prepared.credential_key,
       recipient: prepared.recipient,
       body: input.body,
-    });
-    providerMessageId = result.providerMessageId;
-  } catch (error) {
-    const errorCode = error instanceof ProviderDeliveryError
-      ? error.code
-      : "provider_unavailable";
-
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.whatsapp_fail_outbound($1,$2)",
-        [prepared.message_id, errorCode],
-      );
-    }).catch(() => undefined);
-
-    throw new Error("WhatsApp delivery failed.");
-  }
-
-  try {
-    await withCommunicationCapability(async (db) => {
-      await db.query(
-        "select public.whatsapp_complete_outbound($1,$2)",
-        [prepared.message_id, providerMessageId],
-      );
-    });
-  } catch {
-    // The provider may already have accepted the message. Never mark it failed or
-    // automatically resend from this ambiguous state; a webhook can still reconcile it.
-    return { messageId: prepared.message_id, status: "sending" as const };
-  }
-
-  return { messageId: prepared.message_id, status: "sent" as const };
+    }),
+    complete: async (result) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.whatsapp_complete_outbound($1,$2)",
+          [prepared.message_id, result.providerMessageId],
+        );
+      });
+    },
+    fail: async (errorCode) => {
+      await withCommunicationCapability(async (db) => {
+        await db.query(
+          "select public.whatsapp_fail_outbound($1,$2)",
+          [prepared.message_id, errorCode],
+        );
+      });
+    },
+    statusFromResult: () => "sent",
+  });
 }
