@@ -408,7 +408,7 @@ export const demoFinanceEngine: FinanceEngine = {
 
     const paymentMinor = moneyToMinorUnits(input.amount);
     const outstandingMinor = moneyToMinorUnits(invoice.outstanding);
-    if (paymentMinor <= 0n || paymentMinor > outstandingMinor) {
+    if (paymentMinor <= BigInt(0) || paymentMinor > outstandingMinor) {
       throw new Error("finance_payment_amount_invalid");
     }
 
@@ -428,7 +428,7 @@ export const demoFinanceEngine: FinanceEngine = {
       invoice,
       requestId: input.requestId,
       outstanding: minorUnitsToMoney(remaining),
-      status: remaining === 0n ? "paid" : "partially_paid",
+      status: remaining === BigInt(0) ? "paid" : "partially_paid",
     });
 
     const row = (await listDocuments(context.businessId,"payment"))
@@ -507,7 +507,7 @@ export const demoFinanceEngine: FinanceEngine = {
       currency,
       receivables: addMoney(invoices.map((row) => row.outstanding)),
       overdueReceivables: addMoney(invoices
-        .filter((row) => row.due_at && Date.parse(row.due_at) < now && moneyToMinorUnits(row.outstanding) > 0n)
+        .filter((row) => row.due_at && Date.parse(row.due_at) < now && moneyToMinorUnits(row.outstanding) > BigInt(0))
         .map((row) => row.outstanding)),
       payables: addMoney(bills.map((row) => row.outstanding)),
       expenses: addMoney(expenses.map((row) => row.amount)),
@@ -597,7 +597,7 @@ export const demoFinanceEngine: FinanceEngine = {
     const byAccount = new Map<string, { name: string; debit: bigint; credit: bigint; currency: string }>();
     for (const row of ledger) {
       const item = byAccount.get(row.accountCode) ?? {
-        name: row.accountName,debit: 0n,credit: 0n,currency: row.currency,
+        name: row.accountName,debit: BigInt(0),credit: BigInt(0),currency: row.currency,
       };
       item.debit += moneyToMinorUnits(row.debit);
       item.credit += moneyToMinorUnits(row.credit);
@@ -617,9 +617,9 @@ export const demoFinanceEngine: FinanceEngine = {
     const bills = await listDocuments(context.businessId,"bill");
     const expenses = await listDocuments(context.businessId,"expense");
     const currency = sameCurrency([...invoices,...bills,...expenses],context.defaultCurrency);
-    const revenue = invoices.reduce((sum,row) => sum + moneyToMinorUnits(row.amount),0n);
+    const revenue = invoices.reduce((sum,row) => sum + moneyToMinorUnits(row.amount),BigInt(0));
     const costs = [...bills,...expenses]
-      .reduce((sum,row) => sum + moneyToMinorUnits(row.amount),0n);
+      .reduce((sum,row) => sum + moneyToMinorUnits(row.amount),BigInt(0));
     const profit = revenue - costs;
     return {
       asOf: new Date().toISOString(), currency,
@@ -638,10 +638,10 @@ export const demoFinanceEngine: FinanceEngine = {
     const bills = await listDocuments(context.businessId,"bill");
     const expenses = await listDocuments(context.businessId,"expense");
     const currency = sameCurrency([...invoices,...payments,...bills,...expenses],context.defaultCurrency);
-    const cash = payments.reduce((s,r)=>s+moneyToMinorUnits(r.amount),0n)
-      - expenses.reduce((s,r)=>s+moneyToMinorUnits(r.amount),0n);
-    const receivables = invoices.reduce((s,r)=>s+moneyToMinorUnits(r.outstanding),0n);
-    const payables = bills.reduce((s,r)=>s+moneyToMinorUnits(r.outstanding),0n);
+    const cash = payments.reduce((s,r)=>s+moneyToMinorUnits(r.amount),BigInt(0))
+      - expenses.reduce((s,r)=>s+moneyToMinorUnits(r.amount),BigInt(0));
+    const receivables = invoices.reduce((s,r)=>s+moneyToMinorUnits(r.outstanding),BigInt(0));
+    const payables = bills.reduce((s,r)=>s+moneyToMinorUnits(r.outstanding),BigInt(0));
     const equity = cash + receivables - payables;
     return {
       asOf: new Date().toISOString(),currency,
@@ -659,8 +659,8 @@ export const demoFinanceEngine: FinanceEngine = {
     const payments = await listDocuments(context.businessId,"payment");
     const expenses = await listDocuments(context.businessId,"expense");
     const currency = sameCurrency([...payments,...expenses],context.defaultCurrency);
-    const inflow = payments.reduce((s,r)=>s+moneyToMinorUnits(r.amount),0n);
-    const outflow = expenses.reduce((s,r)=>s+moneyToMinorUnits(r.amount),0n);
+    const inflow = payments.reduce((s,r)=>s+moneyToMinorUnits(r.amount),BigInt(0));
+    const outflow = expenses.reduce((s,r)=>s+moneyToMinorUnits(r.amount),BigInt(0));
     return {
       asOf:new Date().toISOString(),currency,
       lines:[
