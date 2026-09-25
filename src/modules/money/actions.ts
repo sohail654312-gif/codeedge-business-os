@@ -206,3 +206,266 @@ export async function seedDemoMoneyJourney(
 
   return { success: "Demo Money journey is ready." };
 }
+
+
+const moneyDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+function moneyActionError(error: unknown) {
+  const code = error instanceof Error ? error.message : "";
+  const messages: Record<string, string> = {
+    finance_context_unavailable: "Configure Codeedge Money before creating finance records.",
+    finance_customer_mapping_required: "The selected CRM customer could not be prepared for Finance.",
+    finance_quote_unavailable: "The selected quote is not available for this customer.",
+    finance_invoice_unavailable: "The selected invoice is unavailable.",
+    finance_supplier_unavailable: "The selected supplier is unavailable.",
+    finance_payment_amount_invalid: "Payment must be greater than zero and no more than the outstanding balance.",
+    finance_capability_unavailable: "This write is not supported by the active Finance Engine.",
+  };
+  return messages[code] ?? "Unable to complete the Money action.";
+}
+
+async function v1MoneyWriteContext() {
+  const { context } = await requireDashboardTenant();
+  const finance = await loadFinanceContext({
+    businessId: context.business.id,
+    userId: context.userId,
+    correlationId: randomUUID(),
+  });
+  if (finance.engine !== "demo_finance") {
+    throw new Error("finance_capability_unavailable");
+  }
+  return { context, finance };
+}
+
+function optionalMoneyDate(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  return moneyDateSchema.parse(text) + "T00:00:00.000Z";
+}
+
+function requiredMoneyDate(value: FormDataEntryValue | null) {
+  return moneyDateSchema.parse(String(value ?? "")) + "T00:00:00.000Z";
+}
+
+function revalidateMoneyWrites() {
+  for (const path of [
+    "/dashboard",
+    "/dashboard/money",
+    "/dashboard/money/sales",
+    "/dashboard/money/purchases",
+    "/dashboard/money/accounting",
+    "/dashboard/money/reports",
+  ]) revalidatePath(path);
+}
+
+export async function createMoneyQuote(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    customerId: z.string().uuid(),
+    amount: z.string().trim().min(1),
+  }).safeParse({
+    customerId: formData.get("customer_id"),
+    amount: formData.get("amount"),
+  });
+  if (!parsed.success) return { error: "Choose a CRM customer and enter a valid amount." };
+
+  try {
+    const { context, finance } = await v1MoneyWriteContext();
+    const correlationId = randomUUID();
+    await ensureFinanceCustomer({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId,
+      crmCustomerId: parsed.data.customerId,
+      requestId: randomUUID(),
+    });
+    await createFinanceQuote({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId,
+      crmCustomerId: parsed.data.customerId,
+      currency: finance.defaultCurrency,
+      amount: parsed.data.amount,
+      validUntil: optionalMoneyDate(formData.get("valid_until")),
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Quote created." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}
+
+export async function createMoneyInvoice(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    customerId: z.string().uuid(),
+    quoteId: z.union([z.string().uuid(), z.literal("")]),
+    amount: z.string().trim().min(1),
+  }).safeParse({
+    customerId: formData.get("customer_id"),
+    quoteId: formData.get("quote_id") ?? "",
+    amount: formData.get("amount"),
+  });
+  if (!parsed.success) return { error: "Choose a CRM customer and enter valid invoice details." };
+
+  try {
+    const { context, finance } = await v1MoneyWriteContext();
+    const correlationId = randomUUID();
+    await ensureFinanceCustomer({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId,
+      crmCustomerId: parsed.data.customerId,
+      requestId: randomUUID(),
+    });
+    await createFinanceInvoice({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId,
+      crmCustomerId: parsed.data.customerId,
+      quoteId: parsed.data.quoteId || null,
+      currency: finance.defaultCurrency,
+      amount: parsed.data.amount,
+      dueAt: optionalMoneyDate(formData.get("due_at")),
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Invoice created." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}
+
+export async function recordMoneyPayment(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    invoiceId: z.string().uuid(),
+    amount: z.string().trim().min(1),
+  }).safeParse({
+    invoiceId: formData.get("invoice_id"),
+    amount: formData.get("amount"),
+  });
+  if (!parsed.success) return { error: "Choose an invoice and enter a valid payment amount." };
+
+  try {
+    const { context, finance } = await v1MoneyWriteContext();
+    await recordFinancePayment({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId: randomUUID(),
+      invoiceId: parsed.data.invoiceId,
+      currency: finance.defaultCurrency,
+      amount: parsed.data.amount,
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Accounting payment recorded." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}
+
+export async function createMoneySupplier(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    name: z.string().trim().min(1).max(200),
+    email: z.string().trim().max(320),
+    phone: z.string().trim().max(80),
+  }).safeParse({
+    name: formData.get("name"),
+    email: formData.get("email") ?? "",
+    phone: formData.get("phone") ?? "",
+  });
+  if (!parsed.success) return { error: "Enter valid supplier details." };
+
+  try {
+    const { context } = await v1MoneyWriteContext();
+    await createFinanceSupplier({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId: randomUUID(),
+      ...parsed.data,
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Supplier created." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}
+
+export async function createMoneyBill(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    supplierId: z.string().uuid(),
+    amount: z.string().trim().min(1),
+  }).safeParse({
+    supplierId: formData.get("supplier_id"),
+    amount: formData.get("amount"),
+  });
+  if (!parsed.success) return { error: "Choose a supplier and enter a valid bill amount." };
+
+  try {
+    const { context, finance } = await v1MoneyWriteContext();
+    await createFinanceBill({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId: randomUUID(),
+      supplierId: parsed.data.supplierId,
+      currency: finance.defaultCurrency,
+      amount: parsed.data.amount,
+      dueAt: optionalMoneyDate(formData.get("due_at")),
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Bill created." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}
+
+export async function createMoneyExpense(
+  _state: MoneyActionState,
+  formData: FormData,
+): Promise<MoneyActionState> {
+  const parsed = z.object({
+    supplierId: z.union([z.string().uuid(), z.literal("")]),
+    category: z.string().trim().min(1).max(120),
+    amount: z.string().trim().min(1),
+  }).safeParse({
+    supplierId: formData.get("supplier_id") ?? "",
+    category: formData.get("category"),
+    amount: formData.get("amount"),
+  });
+  if (!parsed.success) return { error: "Enter valid expense details." };
+
+  try {
+    const { context, finance } = await v1MoneyWriteContext();
+    await createFinanceExpense({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId: randomUUID(),
+      supplierId: parsed.data.supplierId || null,
+      category: parsed.data.category,
+      currency: finance.defaultCurrency,
+      amount: parsed.data.amount,
+      incurredAt: requiredMoneyDate(formData.get("incurred_at")),
+      requestId: randomUUID(),
+    });
+    revalidateMoneyWrites();
+    return { success: "Expense created." };
+  } catch (error) {
+    return { error: moneyActionError(error) };
+  }
+}

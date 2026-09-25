@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveBusinessSettings } from "@/modules/settings/actions";
+import { saveBusinessSettings, saveBusinessTimezone } from "@/modules/settings/actions";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 vi.mock("@/server/auth/session", () => ({
@@ -147,5 +147,33 @@ describe("Business Settings server action", () => {
       lead_notification_email: "",
       notify_new_leads: false,
     });
+  });
+});
+
+
+describe("Business timezone server action", () => {
+  it("updates only the authenticated owner workspace timezone", async () => {
+    const calls = setup("owner", true);
+    const form = new FormData();
+    form.set("timezone", "Asia/Karachi");
+
+    expect(await saveBusinessTimezone({}, form)).toHaveProperty("success");
+
+    const update = calls.find((call) => call.table === "businesses" && call.operation === "update");
+    expect(update?.values).toEqual({ timezone: "Asia/Karachi" });
+    expect(update?.filters).toEqual([["id", own]]);
+  });
+
+  it("rejects staff and invalid timezones safely", async () => {
+    setup("staff", true);
+    const valid = new FormData();
+    valid.set("timezone", "Europe/London");
+    expect(await saveBusinessTimezone({}, valid)).toHaveProperty("error");
+
+    vi.clearAllMocks();
+    const invalid = new FormData();
+    invalid.set("timezone", "Not/A_Real_Zone");
+    expect(await saveBusinessTimezone({}, invalid)).toHaveProperty("error");
+    expect(requireDashboardTenant).not.toHaveBeenCalled();
   });
 });

@@ -6,6 +6,7 @@ import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSetti
 import { WhatsAppSettingsPanel } from "@/components/settings/WhatsAppSettingsPanel";
 import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
 import { SmsSettingsPanel } from "@/components/settings/SmsSettingsPanel";
+import { BusinessTimezonePanel } from "@/components/settings/BusinessTimezonePanel";
 import { getEnvironmentIfConfigured } from "@/server/env";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { resendCredentialConfigured } from "@/server/channels/resend-email";
@@ -161,10 +162,18 @@ export default async function Settings() {
               smsResult.data?.enabled ? "SMS" : null,
             ].filter(Boolean).join(" + ") || "No external messaging channel enabled"}
           </p>
-          <p className="muted">Voice adapter: Reserved for a later phase</p>
-          <Link className="btn" href="/dashboard/settings/erpnext">Open ERPNext setup</Link>
+          <p className="muted">Voice adapter: Codeedge AI Voice + AI Receptionist</p>
+          <div className="row">
+            <Link className="btn" href="/dashboard/settings/erpnext">Open ERPNext setup</Link>
+            <Link className="btn" href="/dashboard/contact-me/voice">Open AI Voice</Link>
+          </div>
         </section>
       </div>
+
+      <BusinessTimezonePanel
+        timezone={context.business.timezone}
+        canEdit={canEdit}
+      />
 
       <BusinessProfilePanel
         key={profileResult.data?.updated_at ?? "new-profile"}
