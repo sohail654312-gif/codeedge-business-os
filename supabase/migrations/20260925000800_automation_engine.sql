@@ -463,7 +463,7 @@ returns table(
 language plpgsql
 security definer
 set search_path=''
-as $
+as $$
 begin
   -- Recover worker crashes. Actions are required to be idempotent/safe so a
   -- recovered run can resume from the beginning without duplicate effects.
@@ -499,7 +499,7 @@ begin
     returning r.id,r.business_id,r.workflow_id,r.event_id,
               r.execution_mode,r.correlation_id;
 end;
-$;
+$$;
 
 create or replace function public.automation_complete_run(
   p_run_id uuid,
@@ -593,7 +593,7 @@ language sql
 stable
 security definer
 set search_path=''
-as $
+as $$
   select
     r.id,
     r.business_id,
@@ -620,7 +620,7 @@ as $
     and w.enabled
     and w.version=r.workflow_version
   limit 1;
-$;
+$$;
 
 create or replace function public.automation_update_lead_status(
   p_run_id uuid,
@@ -630,7 +630,7 @@ create or replace function public.automation_update_lead_status(
 language plpgsql
 security definer
 set search_path=''
-as $
+as $$
 declare
   v_business_id uuid;
   v_event_id uuid;
@@ -658,7 +658,7 @@ begin
 
   return true;
 end;
-$;
+$$;
 
 create or replace function public.automation_flag_conversation(
   p_run_id uuid,
@@ -667,7 +667,7 @@ create or replace function public.automation_flag_conversation(
 language plpgsql
 security definer
 set search_path=''
-as $
+as $$
 declare
   v_business_id uuid;
 begin
@@ -689,7 +689,7 @@ begin
 
   return true;
 end;
-$;
+$$;
 
 revoke all on function public.automation_load_run(uuid)
 from public,anon,authenticated;
