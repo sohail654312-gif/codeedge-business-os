@@ -23,6 +23,10 @@ import {
   buildAIAccountantSystemInstructions,
   type AIAccountantTrustedContext,
 } from "@/server/ai/accountant/context";
+import {
+  aiAccountantProviderTools,
+  executeAIAccountantTool,
+} from "@/server/ai/accountant/tools";
 
 const businessA="20000000-0000-4000-8000-000000000001";
 const businessB="20000000-0000-4000-8000-000000000002";
@@ -286,6 +290,36 @@ describe("Codeedge AI provider/runtime foundation", () => {
       amount:"50.00",
       userId:"10000000-0000-4000-8000-000000000002",
     })).toThrow();
+  });
+
+  it("does not expose trusted tenant or credential fields in model tool schemas", () => {
+    const serialized=JSON.stringify(aiAccountantProviderTools);
+    for (const forbidden of [
+      "businessId","userId","executionMode","credentialKey",
+      "credentialEnvironment","providerSecret","permissionOverride",
+    ]) {
+      expect(serialized).not.toContain(forbidden);
+    }
+  });
+
+  it("fails closed for an unknown model-requested tool before any implementation runs", async () => {
+    await expect(executeAIAccountantTool({
+      businessId:businessA,
+      userId:"10000000-0000-4000-8000-000000000001",
+      businessName:"Business A",
+      timezone:"Europe/London",
+      role:"owner",
+      executionMode:"demo",
+      financeEngine:"demo_finance",
+      financeConnectionId:"71000000-0000-4000-8000-000000000001",
+      defaultCurrency:"GBP",
+      financeCapabilities:["invoices"],
+      correlationId:"80000000-0000-4000-8000-000000000001",
+      sessionId:"81000000-0000-4000-8000-000000000001",
+    },"arbitrary_api_request",{
+      url:"https://evil.example",
+      businessId:businessB,
+    })).rejects.toThrow("ai_tool_not_allowed");
   });
 
   it("keeps stable server instructions above hostile retrieved business text", () => {
