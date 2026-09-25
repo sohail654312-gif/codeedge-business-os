@@ -80,6 +80,7 @@ function parseService(formData: FormData) {
     description: formData.get("description"),
     active: formData.get("active") === "on",
     quote_required: formData.get("quote_required") === "on",
+    duration_minutes: formData.get("duration_minutes"),
     starting_price_gbp: formData.get("starting_price_gbp"),
     display_order: formData.get("display_order"),
   });
@@ -91,6 +92,7 @@ function serviceValues(data: z.infer<typeof serviceSchema>) {
     description: data.description,
     active: data.active,
     quote_required: data.quote_required,
+    duration_minutes: data.duration_minutes,
     starting_price_pence: data.starting_price_gbp,
     display_order: data.display_order,
   };
