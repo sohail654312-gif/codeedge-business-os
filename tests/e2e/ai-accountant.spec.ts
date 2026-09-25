@@ -6,7 +6,8 @@ test("Demo AI Accountant grounds answers and executes an approved invoice exactl
 
   try {
     const pageA=await ownerA.newPage();
-    await pageA.goto("/__e2e/ai-accountant");
+    const firstResponse=await pageA.goto("/e2e-harness/ai-accountant");
+    expect(firstResponse?.status()).toBe(200);
 
     await expect(pageA.getByRole("heading",{ name:"AI Accountant",level:1 })).toBeVisible();
     await expect(pageA.getByTestId("finance-document-count"))
@@ -37,7 +38,8 @@ test("Demo AI Accountant grounds answers and executes an approved invoice exactl
       .toHaveText("Finance documents: 0");
 
     const pageB=await ownerB.newPage();
-    await pageB.goto("/__e2e/ai-accountant");
+    const staleResponse=await pageB.goto("/e2e-harness/ai-accountant");
+    expect(staleResponse?.status()).toBe(200);
     const staleProposal=pageB.locator(".aiProposalCard").filter({ hasText:"Create Invoice" });
     await expect(staleProposal.getByRole("button",{ name:"Approve" })).toBeVisible();
 
