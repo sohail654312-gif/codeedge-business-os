@@ -382,11 +382,11 @@ begin
     raise exception 'Voice unavailable' using errcode = '42501';
   end if;
 
-  select *
+  select b.*
   into business_row
-  from public.businesses
-  where id = p_business_id
-    and status = 'active'
+  from public.businesses b
+  where b.id = p_business_id
+    and b.status = 'active'
   limit 1;
 
   if business_row.execution_mode = 'demo' then
