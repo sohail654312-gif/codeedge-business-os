@@ -32,7 +32,12 @@ export async function openDatabase(): Promise<TestDatabase> {
 
   const directory = new URL("../../supabase/migrations/", import.meta.url);
   for (const file of (await readdir(directory)).filter((name) => name.endsWith(".sql")).sort()) {
-    await db.exec(await readFile(new URL(file, directory), "utf8"));
+    try {
+      await db.exec(await readFile(new URL(file, directory), "utf8"));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Migration ${file} failed: ${message}`, { cause: error });
+    }
   }
 
   await db.exec("BEGIN");
