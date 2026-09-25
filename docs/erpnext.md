@@ -62,3 +62,18 @@ ERPNEXT_API_SECRET=
 The adapter and health/status endpoint are prepared.
 
 A real ERPNext instance and API credentials are still required before this can be called a live integration.
+
+
+## Codeedge Money consolidation
+
+The original ERPNext adapter predates the permanent Finance Engine architecture.
+
+New production finance flows must go through:
+
+```text
+Codeedge Money -> Finance Domain -> Finance Engine Registry -> ERPNext Adapter
+```
+
+The historical adapter exports and smoke tooling remain compatibility surfaces only. They must not become a second customer-facing Finance API.
+
+Tenant-specific production credentials should use opaque Finance connection keys resolved through server-side Finance credential configuration. The original global `ERPNEXT_*` variables remain legacy/dev compatibility configuration and are not the final multi-tenant Money credential model.
