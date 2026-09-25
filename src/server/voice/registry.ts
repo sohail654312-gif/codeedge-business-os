@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createDemoVoiceProvider } from "./demo";
+import { createVapiVoiceProvider } from "./vapi";
 import type {
   VoiceProvider,
   VoiceProviderId,
@@ -9,6 +10,12 @@ import type {
 
 export type VoiceProviderRegistration = VoiceProviderMetadata & {
   implemented: boolean;
+};
+
+export type VoiceProviderConnectionConfig = {
+  credentialKey: string;
+  assistantId: string;
+  phoneNumberId: string;
 };
 
 export const voiceProviderRegistry: Record<
@@ -47,7 +54,7 @@ export const voiceProviderRegistry: Record<
       "custom_tts",
     ],
     externalEffect: true,
-    implemented: false,
+    implemented: true,
   },
 };
 
@@ -60,11 +67,12 @@ export function getVoiceProviderRegistration(
   throw new Error("Unsupported Voice provider.");
 }
 
-export function getVoiceProvider(providerId: string): VoiceProvider {
+export function getVoiceProvider(
+  providerId: string,
+  config?: VoiceProviderConnectionConfig,
+): VoiceProvider {
   if (providerId === "demo_voice") return createDemoVoiceProvider();
+  if (providerId === "vapi" && config) return createVapiVoiceProvider(config);
 
-  // The first real provider stays behind the registry until its server-only
-  // credential/configuration path is installed. Failing closed here prevents
-  // accidental network effects while preserving the provider-neutral contract.
   throw new Error("Voice provider adapter is not configured.");
 }
