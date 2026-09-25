@@ -127,13 +127,14 @@ Initial pages:
 - Accounting
 - Reports
 
-Accounting and report views are read-only. Unsupported engine capabilities render as unavailable.
+Accounting and report views are read-only. Sales and Purchases expose the standard V1 write journey for the built-in Demo Finance Engine: quotes, invoices, accounting payments, suppliers, bills and expenses. All writes still pass through the Finance service and execution-safety layer.
+
+Unsupported engine capabilities render explicitly as unavailable. In particular, the current ERPNext adapter remains read-oriented for quotations/invoices/suppliers and does not pretend to support provider writes that its adapter has not implemented.
 
 ## Deferred
 
 This Finance Core does not implement:
 
-- AI Accountant
 - autonomous journal posting
 - tax filing
 - payroll

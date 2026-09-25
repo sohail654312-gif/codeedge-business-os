@@ -114,4 +114,4 @@ Runs stuck in `running` for more than ten minutes are eligible for recovery. Rec
 
 This phase intentionally starts with a focused trigger/action set. It does not build arbitrary-code workflows, Jarvis, generalized autonomous AI employees, or direct provider integrations.
 
-Scheduling/wait nodes, richer workflow-builder UX, additional Booking actions, notification actions, and future AI Employee orchestration can extend this Codeedge-owned engine later without replacing it.
+The V1 dashboard now exposes workflow creation, trigger selection, one focused optional condition, one registered action, enabled/disabled state, recent run history and Demo dry-run outcomes. Scheduling/wait nodes, richer multi-step editing, additional Booking actions, notification actions, and future AI Employee orchestration can extend this Codeedge-owned engine later without replacing it.

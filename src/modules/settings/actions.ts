@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { settingsSchema } from "./validation";
+import { businessTimezoneSchema, settingsSchema } from "./validation";
 
 export type SettingsState = {
   error?: string;
@@ -60,4 +60,35 @@ export async function saveBusinessSettings(
 
   revalidatePath("/dashboard/settings");
   return { success: "Business Settings saved." };
+}
+
+
+export async function saveBusinessTimezone(
+  _state: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const parsed = businessTimezoneSchema.safeParse(formData.get("timezone"));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the business timezone." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+  const denied = ownerOnly(context.role);
+  if (denied) return denied;
+
+  const result = await client
+    .from("businesses")
+    .update({ timezone: parsed.data })
+    .eq("id", context.business.id)
+    .select("id")
+    .maybeSingle();
+
+  if (result.error || !result.data) {
+    return { error: "Unable to save the business timezone." };
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/bookings");
+  revalidatePath("/dashboard/contact-me/voice");
+  return { success: "Business timezone saved." };
 }

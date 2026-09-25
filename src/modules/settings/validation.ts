@@ -1,3 +1,4 @@
+import { isValidTimeZone } from "@/modules/booking/timezone";
 import { z } from "zod";
 
 const optionalEmail = z.string()
@@ -7,6 +8,12 @@ const optionalEmail = z.string()
     (value) => value === "" || z.string().email().safeParse(value).success,
     "Enter a valid notification email or leave it blank.",
   );
+
+export const businessTimezoneSchema = z.string()
+  .trim()
+  .min(1, "Enter a business timezone.")
+  .max(100)
+  .refine(isValidTimeZone, "Enter a valid IANA timezone such as Europe/London.");
 
 export const settingsSchema = z.object({
   locale: z.string()

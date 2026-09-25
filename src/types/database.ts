@@ -1,6 +1,11 @@
 import type { LeadSource, LeadStatus, QuoteRequestStatus } from "@/modules/buy-from-me/leads/domain";
 import type { ConversationChannel, ConversationStatus, DeliveryStatus, MessageDirection, MessageSenderType } from "@/modules/contact-me/conversations/domain";
 import type { AppointmentSource, AppointmentStatus } from "@/modules/booking/domain";
+import type {
+  AutomationAction,
+  AutomationCondition,
+  AutomationTriggerType,
+} from "@/server/automation/domain";
 
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
@@ -214,6 +219,54 @@ export type Appointment = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type AutomationRunStatus = "pending" | "running" | "succeeded" | "skipped" | "failed";
+export type AutomationActionStatus = "pending" | "succeeded" | "simulated" | "failed";
+
+export type AutomationWorkflow = {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  trigger_type: AutomationTriggerType;
+  conditions: AutomationCondition[];
+  actions: AutomationAction[];
+  version: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AutomationRun = {
+  id: string;
+  business_id: string;
+  workflow_id: string;
+  workflow_version: number;
+  event_id: string;
+  status: AutomationRunStatus;
+  execution_mode: ExecutionMode;
+  correlation_id: string;
+  attempts: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_code: string | null;
+  created_at: string;
+};
+
+export type AutomationActionRun = {
+  id: string;
+  business_id: string;
+  run_id: string;
+  action_index: number;
+  action_type: string;
+  status: AutomationActionStatus;
+  external_effect: boolean;
+  result: Record<string, unknown>;
+  error_code: string | null;
+  created_at: string;
+  completed_at: string | null;
 };
 
 export type Conversation = {
@@ -558,6 +611,35 @@ export type Database = {
       >;
       appointments: Table<
         Appointment,
+        never,
+        never
+      >;
+      automation_workflows: Table<
+        AutomationWorkflow,
+        {
+          business_id: string;
+          name: string;
+          description?: string;
+          enabled?: boolean;
+          trigger_type: AutomationTriggerType;
+          conditions?: AutomationCondition[];
+          actions: AutomationAction[];
+          version?: number;
+          created_by: string;
+          id?: string;
+        },
+        Partial<Pick<
+          AutomationWorkflow,
+          "name" | "description" | "enabled" | "trigger_type" | "conditions" | "actions"
+        >>
+      >;
+      automation_runs: Table<
+        AutomationRun,
+        never,
+        never
+      >;
+      automation_action_runs: Table<
+        AutomationActionRun,
         never,
         never
       >;
