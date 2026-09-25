@@ -6,6 +6,7 @@ import {
 } from "@/modules/contact-me/conversations/actions";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { redirect } from "next/navigation";
+import { sendEmailReply } from "@/server/channels/email";
 import { sendWhatsAppReply } from "@/server/channels/whatsapp";
 
 vi.mock("@/server/auth/session", () => ({
@@ -18,6 +19,10 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/server/channels/whatsapp", () => ({
   sendWhatsAppReply: vi.fn(),
+}));
+
+vi.mock("@/server/channels/email", () => ({
+  sendEmailReply: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -38,7 +43,7 @@ type Recorded = {
   filters: unknown[][];
 };
 
-function setup(channel: "internal" | "whatsapp" = "internal") {
+function setup(channel: "internal" | "whatsapp" | "email" = "internal") {
   const calls: Recorded[] = [];
 
   const from = vi.fn((table: string) => {
@@ -174,6 +179,32 @@ describe("Conversation server actions", () => {
       userId,
       requestId: "80000000-0000-4000-8000-000000000001",
       body: "WhatsApp reply",
+    });
+    expect(calls.some((call) => call.table === "messages" && call.operation === "insert")).toBe(false);
+    expect(redirect).toHaveBeenCalledWith(`/dashboard/contact-me/${conversationId}`);
+  });
+
+  it("routes Email replies through the provider boundary without a local-only insert", async () => {
+    const calls = setup("email");
+    vi.mocked(sendEmailReply).mockResolvedValue({
+      messageId: "90000000-0000-4000-8000-000000000011",
+      status: "queued",
+    });
+
+    const form = new FormData();
+    form.set("conversation_id", conversationId);
+    form.set("message_kind", "reply");
+    form.set("body", "Email reply");
+    form.set("request_id", "80000000-0000-4000-8000-000000000011");
+
+    await addConversationMessage({}, form);
+
+    expect(sendEmailReply).toHaveBeenCalledWith({
+      businessId: own,
+      conversationId,
+      userId,
+      requestId: "80000000-0000-4000-8000-000000000011",
+      body: "Email reply",
     });
     expect(calls.some((call) => call.table === "messages" && call.operation === "insert")).toBe(false);
     expect(redirect).toHaveBeenCalledWith(`/dashboard/contact-me/${conversationId}`);

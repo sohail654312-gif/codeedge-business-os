@@ -163,6 +163,17 @@ export type ChannelConnection = {
   updated_at: string;
 };
 
+export type EmailChannelSettings = {
+  connection_id: string;
+  business_id: string;
+  sender_name: string;
+  sender_email: string;
+  reply_to_email: string;
+  inbound_email: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MessageDelivery = {
   id: string;
   business_id: string;
@@ -175,6 +186,23 @@ export type MessageDelivery = {
   error_code: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type EmailMessageMetadata = {
+  message_id: string;
+  business_id: string;
+  conversation_id: string;
+  connection_id: string;
+  provider: string;
+  provider_message_id: string | null;
+  rfc_message_id: string | null;
+  in_reply_to: string | null;
+  reference_ids: string[];
+  from_address: string;
+  to_address: string;
+  reply_to_address: string;
+  subject: string;
+  created_at: string;
 };
 
 export type Message = {
@@ -450,6 +478,26 @@ export type Database = {
           | "credential_key"
           | "enabled"
         >>
+      >;
+      email_channel_settings: Table<
+        EmailChannelSettings,
+        {
+          connection_id: string;
+          business_id: string;
+          sender_name?: string;
+          sender_email: string;
+          reply_to_email?: string;
+          inbound_email: string;
+        },
+        Partial<Pick<
+          EmailChannelSettings,
+          "sender_name" | "sender_email" | "reply_to_email" | "inbound_email"
+        >>
+      >;
+      email_message_metadata: Table<
+        EmailMessageMetadata,
+        never,
+        never
       >;
       message_deliveries: Table<
         MessageDelivery,

@@ -71,7 +71,9 @@ export default async function ConversationDetailPage({
                   ? "Live Website Chat"
                   : conversation.channel === "whatsapp"
                     ? "Live WhatsApp"
-                    : "Local storage only"}
+                    : conversation.channel === "email"
+                      ? "Live Email"
+                      : "Local storage only"}
               </dd>
             </div>
           </dl>

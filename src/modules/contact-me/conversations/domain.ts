@@ -54,8 +54,10 @@ export type MessageDirection = (typeof messageDirections)[number];
 
 export const deliveryStatuses = [
   "sending",
+  "queued",
   "sent",
   "delivered",
+  "bounced",
   "read",
   "failed",
 ] as const;
@@ -64,8 +66,10 @@ export type DeliveryStatus = (typeof deliveryStatuses)[number];
 
 export const deliveryStatusLabels: Record<DeliveryStatus, string> = {
   sending: "Sending",
+  queued: "Queued",
   sent: "Sent",
   delivered: "Delivered",
+  bounced: "Bounced",
   read: "Read",
   failed: "Failed",
 };

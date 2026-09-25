@@ -23,7 +23,7 @@ export function ConversationComposer({
       <div className="field">
         <label htmlFor="message_kind">Message type</label>
         <select id="message_kind" name="message_kind" defaultValue="reply">
-          <option value="reply">Local reply</option>
+          <option value="reply">{channel === "internal" ? "Local reply" : "Reply"}</option>
           <option value="internal">Internal note</option>
         </select>
       </div>
@@ -45,19 +45,23 @@ export function ConversationComposer({
           ? "Website Chat delivery is live: the visitor receives public outbound replies through the secure widget. Internal notes remain private."
           : channel === "whatsapp"
             ? "WhatsApp delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
-            : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
+            : channel === "email"
+              ? "Email delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
+              : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
       </p>
 
       {state.error ? <div className="formError" role="alert">{state.error}</div> : null}
 
       <button className="btn primary" type="submit" disabled={pending}>
         {pending
-          ? (channel === "whatsapp" ? "Sending..." : "Saving...")
+          ? (channel === "whatsapp" || channel === "email" ? "Sending..." : "Saving...")
           : channel === "website_chat"
             ? "Reply to visitor"
             : channel === "whatsapp"
               ? "Reply on WhatsApp"
-              : "Store message"}
+              : channel === "email"
+                ? "Reply by Email"
+                : "Store message"}
       </button>
     </form>
   );
