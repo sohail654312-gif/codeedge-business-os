@@ -255,9 +255,24 @@ describe("Booking tenant security and appointment integration", () => {
       start: "2030-01-07T15:00:00Z",
       name: "Demo Appointment",
     });
-    expect(created.rows[0]?.id).toBeTruthy();
+    const appointmentId = created.rows[0]!.id;
+    expect(appointmentId).toBeTruthy();
+
+    await db.query(
+      "select public.reschedule_appointment($1,$2,$3)",
+      [appointmentId, "2030-01-07T15:30:00Z", "2030-01-07T16:00:00Z"],
+    );
+    await db.query(
+      "select public.set_appointment_status($1,'cancelled')",
+      [appointmentId],
+    );
 
     await db.exec("RESET ROLE");
+    expect((await db.query<{ starts_at: string; status: string }>(
+      "select starts_at::text as starts_at,status::text as status from public.appointments where id=$1",
+      [appointmentId],
+    )).rows[0]?.status).toBe("cancelled");
+
     expect((await db.query<{ count: number }>(
       "select count(*)::int as count from public.message_deliveries where business_id=$1",
       [f.businessA],
