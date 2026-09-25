@@ -36,7 +36,9 @@ create table public.appointments (
   timezone text not null check (char_length(btrim(timezone)) between 1 and 100),
   status public.appointment_status not null default 'pending',
   source text not null default 'staff'
-    check (source ~ '^[a-z][a-z0-9_]{0,39}$'),
+    check (source in (
+      'staff','website','whatsapp','email','sms','voice','automation','ai'
+    )),
   notes text not null default '' check (char_length(notes) <= 3000),
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -253,7 +255,9 @@ begin
      )
      or char_length(coalesce(p_notes, '')) > 3000
      or p_source is null
-     or p_source !~ '^[a-z][a-z0-9_]{0,39}$' then
+     or p_source not in (
+       'staff','website','whatsapp','email','sms','voice','automation','ai'
+     ) then
     raise exception 'Invalid appointment details' using errcode = '22023';
   end if;
 
