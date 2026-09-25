@@ -14,6 +14,7 @@ import {
   seedDatabase,
   type TestDatabase,
 } from "../helpers/database";
+import { parseVapiServerMessage } from "@/server/voice/vapi";
 
 const conversationA = "66000000-0000-4000-8000-000000000001";
 const conversationB = "66000000-0000-4000-8000-000000000002";
@@ -150,8 +151,30 @@ describe("Voice tenant isolation and execution safety", () => {
     )).rejects.toThrow(/permission denied/);
   });
 
-  it("deduplicates provider events and canonical transcript Messages", async () => {
+  it("deduplicates webhook retries and canonical transcript Messages", async () => {
     await asVoiceApi(db);
+
+    const payload = {
+      message: {
+        type: "end-of-call-report",
+        call: {
+          id: "provider-call-a",
+          type: "inboundPhoneCall",
+          phoneNumberId: "phone-number-a",
+          customer: { number: "+447700900123" },
+          phoneNumber: { number: "+441234567890" },
+        },
+        artifact: {
+          messages: [
+            { role: "user", message: "I need an appointment" },
+          ],
+        },
+      },
+    };
+
+    const original = parseVapiServerMessage(payload);
+    const retry = parseVapiServerMessage(payload);
+    expect(retry.providerEventId).toBe(original.providerEventId);
 
     const first = (await db.query<{ inserted: boolean }>(
       `select inserted from public.voice_receive_event(
@@ -159,11 +182,11 @@ describe("Voice tenant isolation and execution safety", () => {
       )`,
       [
         connectionA,
-        "event-a",
-        "provider-call-a",
-        "+447700900123",
-        "+441234567890",
-        "2026-09-25T10:00:00Z",
+        original.providerEventId,
+        original.providerCallId,
+        original.fromNumber,
+        original.toNumber,
+        original.occurredAt,
       ],
     )).rows[0];
 
@@ -173,11 +196,11 @@ describe("Voice tenant isolation and execution safety", () => {
       )`,
       [
         connectionA,
-        "event-a",
-        "provider-call-a",
-        "+447700900123",
-        "+441234567890",
-        "2026-09-25T10:00:00Z",
+        retry.providerEventId,
+        retry.providerCallId,
+        retry.fromNumber,
+        retry.toNumber,
+        retry.occurredAt,
       ],
     )).rows[0];
 
@@ -186,12 +209,12 @@ describe("Voice tenant isolation and execution safety", () => {
 
     const messageId = (await db.query<{ voice_append_transcript: string }>(
       "select public.voice_append_transcript($1,$2,'caller',$3)",
-      [voiceCallA, "event-a:0", "I need an appointment"],
+      [voiceCallA, `${original.providerEventId}:0`, "I need an appointment"],
     )).rows[0]?.voice_append_transcript;
 
     const duplicateId = (await db.query<{ voice_append_transcript: string }>(
       "select public.voice_append_transcript($1,$2,'caller',$3)",
-      [voiceCallA, "event-a:0", "I need an appointment"],
+      [voiceCallA, `${retry.providerEventId}:0`, "I need an appointment"],
     )).rows[0]?.voice_append_transcript;
 
     expect(duplicateId).toBe(messageId);

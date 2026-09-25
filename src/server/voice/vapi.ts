@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   type NormalizedVoiceWebhookEvent,
@@ -17,9 +18,11 @@ const callResponseSchema = z.object({
 
 const serverMessageSchema = z.object({
   message: z.object({
+    id: z.string().min(1).max(255).optional(),
+    eventId: z.string().min(1).max(255).optional(),
     type: z.string().min(1).max(100),
     status: z.string().optional(),
-    timestamp: z.string().optional(),
+    timestamp: z.union([z.string(), z.number()]).optional(),
     call: z.object({
       id: z.string().min(1).max(255),
       type: z.string().optional(),
@@ -116,6 +119,46 @@ function callDirection(value: string | undefined) {
   return null;
 }
 
+function normalizedProviderTimestamp(value: string | number | undefined) {
+  if (value === undefined) return null;
+  const parsed = typeof value === "number"
+    ? new Date(value)
+    : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+function deterministicVapiEventId(input: {
+  stableProviderEventId?: string;
+  messageType: string;
+  providerCallId: string;
+  providerStatus: VoiceCallStatus;
+  callDirection: "inbound" | "outbound" | null;
+  providerConnectionRef: string | null;
+  providerTimestamp: string | null;
+  fromNumber: string | null;
+  toNumber: string | null;
+  transcript: Array<{ speaker: "caller" | "assistant"; text: string }>;
+}) {
+  if (input.stableProviderEventId) {
+    return `vapi:event:${input.stableProviderEventId}`;
+  }
+
+  const fingerprint = JSON.stringify({
+    provider: "vapi",
+    messageType: input.messageType,
+    providerCallId: input.providerCallId,
+    providerStatus: input.providerStatus,
+    callDirection: input.callDirection,
+    providerConnectionRef: input.providerConnectionRef,
+    providerTimestamp: input.providerTimestamp,
+    fromNumber: input.fromNumber,
+    toNumber: input.toNumber,
+    transcript: input.transcript,
+  });
+
+  return `vapi:sha256:${createHash("sha256").update(fingerprint).digest("hex")}`;
+}
+
 function transcriptFromArtifact(
   artifact: z.infer<typeof serverMessageSchema>["message"]["artifact"],
 ): Array<{ speaker: "caller" | "assistant"; text: string }> {
@@ -150,20 +193,34 @@ export function parseVapiServerMessage(
     ? "completed"
     : normalizeVapiStatus(message.status ?? message.type);
 
-  const timestamp = message.timestamp && !Number.isNaN(Date.parse(message.timestamp))
-    ? new Date(message.timestamp).toISOString()
-    : new Date().toISOString();
+  const providerTimestamp = normalizedProviderTimestamp(message.timestamp);
+  const direction = callDirection(message.call.type);
+  const providerConnectionRef = message.call.phoneNumberId ?? null;
+  const fromNumber = message.call.customer?.number ?? null;
+  const toNumber = message.call.phoneNumber?.number ?? null;
+  const transcript = transcriptFromArtifact(message.artifact);
 
   return {
-    providerEventId: `${message.type}:${message.call.id}:${timestamp}`,
+    providerEventId: deterministicVapiEventId({
+      stableProviderEventId: message.eventId ?? message.id,
+      messageType: message.type,
+      providerCallId: message.call.id,
+      providerStatus: status,
+      callDirection: direction,
+      providerConnectionRef,
+      providerTimestamp,
+      fromNumber,
+      toNumber,
+      transcript,
+    }),
     providerCallId: message.call.id,
-    providerConnectionRef: message.call.phoneNumberId ?? null,
+    providerConnectionRef,
     status,
-    direction: callDirection(message.call.type),
-    fromNumber: message.call.customer?.number ?? null,
-    toNumber: message.call.phoneNumber?.number ?? null,
-    occurredAt: timestamp,
-    transcript: transcriptFromArtifact(message.artifact),
+    direction,
+    fromNumber,
+    toNumber,
+    occurredAt: providerTimestamp ?? new Date().toISOString(),
+    transcript,
   };
 }
 
