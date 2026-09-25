@@ -122,6 +122,34 @@ export async function appendAIMessage(input: {
   });
 }
 
+export async function recordAIModelRun(input: {
+  businessId: string;
+  userId: string;
+  sessionId: string;
+  provider: string;
+  model: string;
+  status: "succeeded" | "failed";
+  providerRequestId?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  latencyMs: number;
+  errorCode?: string | null;
+}) {
+  return withAICapability(async (db) => {
+    const result = await db.query<{ ai_record_model_run:string }>(
+      "select public.ai_record_model_run($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+      [
+        input.businessId,input.userId,input.sessionId,input.provider,input.model,
+        input.status,input.providerRequestId ?? "",input.inputTokens ?? null,
+        input.outputTokens ?? null,input.totalTokens ?? null,input.latencyMs,
+        input.errorCode ?? null,
+      ],
+    );
+    return result.rows[0]?.ai_record_model_run ?? null;
+  });
+}
+
 export async function recordAIToolRun(input: {
   businessId: string;
   userId: string;
