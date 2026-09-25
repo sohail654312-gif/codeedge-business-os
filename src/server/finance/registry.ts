@@ -39,6 +39,7 @@ export function getFinanceEngineRegistration(id: string) {
 }
 
 export function getFinanceEngine(input: {
+  businessId: string;
   engine: string;
   credentialKey: string;
 }): FinanceEngine {
@@ -48,6 +49,9 @@ export function getFinanceEngine(input: {
     return demoFinanceEngine;
   }
 
-  const credential = resolveERPNextFinanceCredential(input.credentialKey);
+  const credential = resolveERPNextFinanceCredential(
+    input.credentialKey,
+    input.businessId,
+  );
   return createERPNextFinanceEngine(credential);
 }
