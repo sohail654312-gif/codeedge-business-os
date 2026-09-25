@@ -7,7 +7,9 @@ import { sendWhatsAppReply } from "@/server/channels/whatsapp";
 const state = vi.hoisted(() => ({
   channel: "whatsapp" as "whatsapp" | "email" | "sms",
   executionMode: "production" as "demo" | "sandbox" | "production",
+  preparedExecutionMode: "production" as "demo" | "sandbox" | "production",
   providerEnvironment: "production" as "sandbox" | "production",
+  preparedProviderEnvironment: "production" as "sandbox" | "production",
   created: true,
   deliveryStatus: "sending",
   throwOnComplete: false,
@@ -34,11 +36,11 @@ vi.mock("@/server/channels/capability", () => ({
           rows: [{
             business_id: "20000000-0000-4000-8000-000000000001",
             execution_mode: state.executionMode,
-            prepared_execution_mode: state.executionMode,
+            prepared_execution_mode: state.preparedExecutionMode,
             channel: state.channel,
             provider,
             provider_environment: state.providerEnvironment,
-            prepared_provider_environment: state.providerEnvironment,
+            prepared_provider_environment: state.preparedProviderEnvironment,
             correlation_id: "80000000-0000-4000-8000-000000000001",
             simulated: false,
           }],
@@ -133,7 +135,9 @@ const common = {
 beforeEach(() => {
   state.channel = "whatsapp";
   state.executionMode = "production";
+  state.preparedExecutionMode = "production";
   state.providerEnvironment = "production";
+  state.preparedProviderEnvironment = "production";
   state.created = true;
   state.deliveryStatus = "sending";
   state.throwOnComplete = false;
@@ -192,6 +196,19 @@ describe("consolidated communication dispatch", () => {
     expect(providerSend).not.toHaveBeenCalled();
     const failure = state.queries.find(({ sql }) => sql.includes(failureRpc));
     expect(failure?.args?.[1]).toBe("external_effect_demo_live_blocked");
+  });
+
+  it("blocks dispatch when workspace mode changed after delivery preparation", async () => {
+    state.channel = "email";
+    state.executionMode = "demo";
+    state.preparedExecutionMode = "production";
+
+    await expect(sendEmailReply({ ...common, body: "Context changed" }))
+      .rejects.toThrow(/delivery failed/i);
+    expect(state.emailSend).not.toHaveBeenCalled();
+
+    const failure = state.queries.find(({ sql }) => sql.includes("email_fail_outbound"));
+    expect(failure?.args?.[1]).toBe("external_effect_context_changed");
   });
 
   it("keeps an existing ambiguous request duplicate-safe without another provider call", async () => {
