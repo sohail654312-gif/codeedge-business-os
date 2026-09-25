@@ -1,6 +1,20 @@
 -- Codeedge Money finance connection, audit and permanent Demo Finance Engine store.
 -- Production accounting execution remains owned by the selected Finance Engine.
 
+alter table public.automation_workflows
+  drop constraint if exists automation_workflows_trigger_type_check;
+
+alter table public.automation_workflows
+  add constraint automation_workflows_trigger_type_check check (trigger_type in (
+    'lead.created','lead.status_changed',
+    'conversation.created','message.received',
+    'appointment.created','appointment.confirmed',
+    'appointment.rescheduled','appointment.cancelled',
+    'voice.call.completed','voice.call.failed','voice.handoff.requested',
+    'finance.quote.created','finance.invoice.created',
+    'finance.payment.recorded','finance.bill.created','finance.expense.created'
+  ));
+
 create table public.finance_connections (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete cascade,
@@ -472,6 +486,9 @@ language plpgsql
 security definer
 set search_path=''
 as $$
+declare
+  v_row public.finance_execution_records%rowtype;
+  v_event_type text;
 begin
   if p_status not in ('succeeded','failed','ambiguous','simulated') then
     raise exception 'Invalid Finance execution status';
@@ -482,10 +499,48 @@ begin
       external_reference=left(coalesce(p_external_reference,''),255),
       error_code=p_error_code,
       completed_at=now()
-  where id=p_execution_id and status='prepared';
+  where id=p_execution_id and status='prepared'
+  returning * into v_row;
 
   if not found then
     raise exception 'Finance execution unavailable';
+  end if;
+
+  if p_status in ('succeeded','simulated') then
+    v_event_type := case v_row.operation
+      when 'finance.quote.create' then 'finance.quote.created'
+      when 'finance.invoice.create' then 'finance.invoice.created'
+      when 'finance.payment.record' then 'finance.payment.recorded'
+      when 'finance.bill.create' then 'finance.bill.created'
+      when 'finance.expense.create' then 'finance.expense.created'
+      else null
+    end;
+
+    if v_event_type is not null then
+      perform set_config(
+        'codeedge.automation_correlation_id',
+        v_row.correlation_id::text,
+        true
+      );
+      perform private.automation_enqueue(
+        v_row.business_id,
+        v_event_type,
+        'finance_execution',
+        v_row.id,
+        jsonb_build_object(
+          'finance',jsonb_build_object(
+            'execution_id',v_row.id,
+            'operation',v_row.operation,
+            'document_type',v_row.document_type,
+            'codeedge_reference',v_row.codeedge_reference,
+            'external_reference',left(coalesce(p_external_reference,''),255),
+            'engine',v_row.engine,
+            'execution_mode',v_row.execution_mode,
+            'status',p_status
+          )
+        )
+      );
+    end if;
   end if;
 end;
 $$;
