@@ -211,9 +211,16 @@ begin
   end if;
 
   insert into public.automation_domain_events(
-    business_id,event_type,subject_type,subject_id,payload
+    business_id,event_type,subject_type,subject_id,
+    correlation_id,causation_id,payload
   ) values (
-    p_business_id,p_event_type,p_subject_type,p_subject_id,coalesce(p_payload,'{}'::jsonb)
+    p_business_id,p_event_type,p_subject_type,p_subject_id,
+    coalesce(
+      nullif(current_setting('codeedge.automation_correlation_id',true),'')::uuid,
+      gen_random_uuid()
+    ),
+    nullif(current_setting('codeedge.automation_causation_id',true),'')::uuid,
+    coalesce(p_payload,'{}'::jsonb)
   ) returning id into v_event_id;
 
   return v_event_id;
@@ -593,14 +600,20 @@ set search_path=''
 as $
 declare
   v_business_id uuid;
+  v_event_id uuid;
+  v_correlation_id uuid;
 begin
-  select business_id into v_business_id
+  select business_id,event_id,correlation_id
+  into v_business_id,v_event_id,v_correlation_id
   from public.automation_runs
   where id=p_run_id and status='running';
 
   if v_business_id is null then
     raise exception 'Automation run unavailable.';
   end if;
+
+  perform set_config('codeedge.automation_causation_id',v_event_id::text,true);
+  perform set_config('codeedge.automation_correlation_id',v_correlation_id::text,true);
 
   update public.leads
   set status=p_status
