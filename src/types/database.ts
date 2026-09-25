@@ -4,6 +4,8 @@ import type { ConversationChannel, ConversationStatus, DeliveryStatus, MessageDi
 export type BusinessRole = "owner" | "staff";
 export type BusinessStatus = "active" | "suspended";
 export type MembershipStatus = "active" | "revoked";
+export type ExecutionMode = "demo" | "sandbox" | "production";
+export type CredentialEnvironment = "sandbox" | "production";
 
 export type Business = {
   id: string;
@@ -11,6 +13,7 @@ export type Business = {
   slug: string;
   status: BusinessStatus;
   timezone: string;
+  execution_mode: ExecutionMode;
   created_at: string;
   updated_at: string;
 };
@@ -158,6 +161,7 @@ export type ChannelConnection = {
   external_sender_id: string;
   display_address: string;
   credential_key: string;
+  credential_environment: CredentialEnvironment;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -184,6 +188,10 @@ export type MessageDelivery = {
   status: DeliveryStatus;
   provider_message_id: string | null;
   error_code: string | null;
+  execution_mode: ExecutionMode;
+  provider_environment: CredentialEnvironment;
+  correlation_id: string | null;
+  simulated: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -644,6 +652,8 @@ export type Database = {
       business_role: BusinessRole;
       business_status: BusinessStatus;
       membership_status: MembershipStatus;
+      execution_mode: ExecutionMode;
+      credential_environment: CredentialEnvironment;
       customer_backoffice_status: CustomerBackofficeStatus;
       crm_activity_type: CrmActivityType;
       lead_status: LeadStatus;
