@@ -44,7 +44,7 @@ A connection stores:
 
 Raw ERPNext API credentials are never stored in browser-readable tables.
 
-ERPNext connection keys resolve through server-only `FINANCE_ERPNEXT_CREDENTIALS_JSON`. Provider URLs come from that trusted server configuration; the browser cannot submit an arbitrary authenticated fetch URL.
+ERPNext connection keys resolve through server-only `FINANCE_ERPNEXT_CREDENTIALS_JSON`. Every credential entry is explicitly bound to one Codeedge `businessId`; resolving a key for another tenant fails closed. Provider URLs come from that trusted server configuration, so the browser cannot submit an arbitrary authenticated fetch URL or select another tenant's ERPNext instance.
 
 ## Execution safety and audit
 
