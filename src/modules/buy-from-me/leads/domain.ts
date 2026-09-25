@@ -8,6 +8,7 @@ export const leadSources = [
   "phone",
   "voice_ai",
   "email",
+  "sms",
   "referral",
   "other",
 ] as const;
@@ -72,6 +73,7 @@ export const leadSourceLabels: Record<LeadSource, string> = {
   phone: "Phone",
   voice_ai: "AI Voice",
   email: "Email",
+  sms: "SMS",
   referral: "Referral",
   other: "Other",
 };
