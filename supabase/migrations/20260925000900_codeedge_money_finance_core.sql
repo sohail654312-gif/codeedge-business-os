@@ -255,6 +255,8 @@ returns table(
   engine text,
   execution_mode public.execution_mode,
   credential_environment public.credential_environment,
+  status public.finance_execution_status,
+  external_reference text,
   created boolean
 )
 language plpgsql
@@ -284,6 +286,8 @@ begin
       v_existing.execution_mode,
       (select credential_environment from public.finance_connections
        where business_id=p_business_id and id=v_existing.finance_connection_id),
+      v_existing.status,
+      v_existing.external_reference,
       false;
     return;
   end if;
@@ -303,9 +307,77 @@ begin
 
   return query select
     v_id,v_context.connection_id,v_context.engine,v_context.execution_mode,
-    v_context.credential_environment,true;
+    v_context.credential_environment,'prepared'::public.finance_execution_status,'',true;
 end;
 $$;
+
+create or replace function public.finance_customer_for_business(
+  p_business_id uuid,
+  p_customer_id uuid
+)
+returns table(
+  customer_id uuid,
+  contact_name text,
+  email text,
+  phone text
+)
+language sql
+stable
+security definer
+set search_path=''
+as $
+  select c.id,c.contact_name,c.email,c.phone
+  from public.customers c
+  where c.business_id=p_business_id and c.id=p_customer_id
+  limit 1;
+$;
+
+create or replace function public.finance_upsert_customer_mapping(
+  p_business_id uuid,
+  p_connection_id uuid,
+  p_customer_id uuid,
+  p_engine text,
+  p_engine_customer_ref text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $
+declare
+  v_id uuid;
+begin
+  if not exists(
+    select 1 from public.finance_connections fc
+    where fc.business_id=p_business_id
+      and fc.id=p_connection_id
+      and fc.engine=p_engine
+      and fc.enabled
+  ) then
+    raise exception 'Finance connection unavailable' using errcode='42501';
+  end if;
+
+  if not exists(
+    select 1 from public.customers c
+    where c.business_id=p_business_id and c.id=p_customer_id
+  ) then
+    raise exception 'CRM Customer unavailable' using errcode='42501';
+  end if;
+
+  insert into public.finance_customer_mappings(
+    business_id,finance_connection_id,crm_customer_id,engine,engine_customer_ref
+  ) values (
+    p_business_id,p_connection_id,p_customer_id,p_engine,
+    left(btrim(p_engine_customer_ref),255)
+  )
+  on conflict (business_id,crm_customer_id,engine) do update
+  set finance_connection_id=excluded.finance_connection_id,
+      engine_customer_ref=excluded.engine_customer_ref
+  returning id into v_id;
+
+  return v_id;
+end;
+$;
 
 create or replace function public.finance_external_effect_context(
   p_execution_id uuid
@@ -514,6 +586,10 @@ revoke all on function public.finance_active_context(uuid,uuid)
 from public,anon,authenticated;
 revoke all on function public.finance_prepare_execution(uuid,uuid,text,text,text,uuid,uuid)
 from public,anon,authenticated;
+revoke all on function public.finance_customer_for_business(uuid,uuid)
+from public,anon,authenticated;
+revoke all on function public.finance_upsert_customer_mapping(uuid,uuid,uuid,text,text)
+from public,anon,authenticated;
 revoke all on function public.finance_external_effect_context(uuid)
 from public,anon,authenticated;
 revoke all on function public.finance_demo_update_invoice(uuid,uuid,uuid,numeric,text)
@@ -531,6 +607,10 @@ from public,anon,authenticated;
 grant execute on function public.finance_active_context(uuid,uuid)
 to codeedge_finance_api;
 grant execute on function public.finance_prepare_execution(uuid,uuid,text,text,text,uuid,uuid)
+to codeedge_finance_api;
+grant execute on function public.finance_customer_for_business(uuid,uuid)
+to codeedge_finance_api;
+grant execute on function public.finance_upsert_customer_mapping(uuid,uuid,uuid,text,text)
 to codeedge_finance_api;
 grant execute on function public.finance_external_effect_context(uuid)
 to codeedge_finance_api;
