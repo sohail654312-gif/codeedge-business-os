@@ -236,6 +236,20 @@ export async function completeAIActionProposal(input: {
   });
 }
 
+export async function getAIActionProposal(input: {
+  businessId: string;
+  userId: string;
+  proposalId: string;
+}) {
+  return withAICapability(async (db) => {
+    const result = await db.query<AIActionProposalRecord>(
+      "select * from public.ai_get_action_proposal($1,$2,$3)",
+      [input.businessId,input.userId,input.proposalId],
+    );
+    return result.rows[0] ?? null;
+  });
+}
+
 export async function getRecentAISessions(input: {
   businessId: string;
   userId: string;
