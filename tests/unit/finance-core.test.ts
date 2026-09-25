@@ -19,6 +19,35 @@ import {
   createERPNextClient,
   ERPNextRequestError,
 } from "@/integrations/erpnext/client";
+import {
+  assertFinanceExternalEffectAllowed,
+  type FinanceExternalEffectContext,
+} from "@/server/finance/execution";
+import { ExternalEffectBlockedError } from "@/server/execution/external-effects";
+
+function financePolicyCode(
+  overrides: Partial<FinanceExternalEffectContext> = {},
+) {
+  const context: FinanceExternalEffectContext = {
+    businessId:"20000000-0000-4000-8000-000000000001",
+    executionMode:"production",
+    action:"finance.write",
+    provider:"erpnext",
+    providerEnvironment:"production",
+    correlationId:"80000000-0000-4000-8000-000000000001",
+    simulated:false,
+    engine:"erpnext",
+    ...overrides,
+  };
+
+  try {
+    assertFinanceExternalEffectAllowed(context);
+  } catch (error) {
+    expect(error).toBeInstanceOf(ExternalEffectBlockedError);
+    return (error as ExternalEffectBlockedError).code;
+  }
+  throw new Error("Expected Finance external-effect policy to block.");
+}
 
 describe("Codeedge Money finance contracts", () => {
   afterEach(() => {
@@ -83,6 +112,25 @@ describe("Codeedge Money finance contracts", () => {
       "tenant_b",
       "20000000-0000-4000-8000-000000000001",
     )).toThrow("finance_credential_unavailable");
+  });
+
+  it("blocks Demo workspace from a live ERPNext Finance write", () => {
+    expect(financePolicyCode({ executionMode:"demo" }))
+      .toBe("external_effect_demo_live_blocked");
+  });
+
+  it("blocks Sandbox Finance from Production ERPNext credentials", () => {
+    expect(financePolicyCode({
+      executionMode:"sandbox",
+      providerEnvironment:"production",
+    })).toBe("external_effect_sandbox_production_blocked");
+  });
+
+  it("blocks Production Finance from Sandbox ERPNext credentials", () => {
+    expect(financePolicyCode({
+      executionMode:"production",
+      providerEnvironment:"sandbox",
+    })).toBe("external_effect_production_environment_blocked");
   });
 
   it("normalizes ERPNext HTTP failures without exposing provider response bodies", async () => {
