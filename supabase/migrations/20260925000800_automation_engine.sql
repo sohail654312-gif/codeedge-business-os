@@ -460,28 +460,46 @@ returns table(
   run_id uuid,business_id uuid,workflow_id uuid,event_id uuid,
   execution_mode public.execution_mode,correlation_id uuid
 )
-language sql
+language plpgsql
 security definer
 set search_path=''
-as $$
-  with claimed as (
-    select r.id
-    from public.automation_runs r
-    where r.status='pending'
-    order by r.created_at
-    for update skip locked
-    limit greatest(1,least(coalesce(p_limit,10),50))
-  )
-  update public.automation_runs r
-  set status='running',
-      attempts=r.attempts+1,
-      started_at=coalesce(r.started_at,now()),
-      error_code=null
-  from claimed c
-  where r.id=c.id
-  returning r.id,r.business_id,r.workflow_id,r.event_id,
-            r.execution_mode,r.correlation_id;
-$$;
+as $
+begin
+  -- Recover worker crashes. Actions are required to be idempotent/safe so a
+  -- recovered run can resume from the beginning without duplicate effects.
+  update public.automation_runs
+  set status='pending',started_at=null,error_code='automation_retry_recovered'
+  where status='running'
+    and started_at < now() - interval '10 minutes'
+    and attempts < 3;
+
+  update public.automation_runs
+  set status='failed',completed_at=now(),error_code='automation_retry_exhausted'
+  where status='running'
+    and started_at < now() - interval '10 minutes'
+    and attempts >= 3;
+
+  return query
+    with claimed as (
+      select r.id
+      from public.automation_runs r
+      where r.status='pending'
+      order by r.created_at
+      for update skip locked
+      limit greatest(1,least(coalesce(p_limit,10),50))
+    )
+    update public.automation_runs r
+    set status='running',
+        attempts=r.attempts+1,
+        started_at=now(),
+        completed_at=null,
+        error_code=null
+    from claimed c
+    where r.id=c.id
+    returning r.id,r.business_id,r.workflow_id,r.event_id,
+              r.execution_mode,r.correlation_id;
+end;
+$;
 
 create or replace function public.automation_complete_run(
   p_run_id uuid,
