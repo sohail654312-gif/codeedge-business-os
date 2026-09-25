@@ -68,7 +68,27 @@ const registrations = {
       lead_id: uuid.nullable(),
     }).passthrough(),
   }).passthrough(),
+  "finance.quote.created": financePayload("quote"),
+  "finance.invoice.created": financePayload("invoice"),
+  "finance.payment.recorded": financePayload("payment"),
+  "finance.bill.created": financePayload("bill"),
+  "finance.expense.created": financePayload("expense"),
 } satisfies Record<AutomationTriggerType, z.ZodType<AutomationEventPayload>>;
+
+function financePayload(documentType: "quote" | "invoice" | "payment" | "bill" | "expense") {
+  return z.object({
+    finance: z.object({
+      execution_id: uuid,
+      operation: z.string().min(1).max(120),
+      document_type: z.literal(documentType),
+      codeedge_reference: z.string().max(255),
+      external_reference: z.string().max(255),
+      engine: z.enum(["demo_finance", "erpnext"]),
+      execution_mode: z.enum(["demo", "sandbox", "production"]),
+      status: z.enum(["succeeded", "simulated"]),
+    }).passthrough(),
+  }).passthrough();
+}
 
 function appointmentPayload() {
   return z.object({
