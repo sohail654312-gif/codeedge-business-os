@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { sendEmailReply } from "@/server/channels/email";
+import { sendSmsReply } from "@/server/channels/sms";
 import { sendWhatsAppReply } from "@/server/channels/whatsapp";
 import {
   conversationStatusFormSchema,
@@ -138,6 +139,23 @@ export async function addConversationMessage(
       });
     } catch {
       return { error: "Unable to send the Email reply. Check the channel connection and try again." };
+    }
+
+    revalidateConversationPaths(conversation.id, conversation.lead_id ?? undefined);
+    return redirect(`/dashboard/contact-me/${conversation.id}`);
+  }
+
+  if (parsed.data.message_kind === "reply" && conversation.channel === "sms") {
+    try {
+      await sendSmsReply({
+        businessId: context.business.id,
+        conversationId: conversation.id,
+        userId: context.userId,
+        requestId: parsed.data.request_id ?? randomUUID(),
+        body: parsed.data.body,
+      });
+    } catch {
+      return { error: "Unable to send the SMS reply. Check the channel connection and try again." };
     }
 
     revalidateConversationPaths(conversation.id, conversation.lead_id ?? undefined);

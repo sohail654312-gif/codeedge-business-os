@@ -5,9 +5,11 @@ import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettin
 import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSettingsPanel";
 import { WhatsAppSettingsPanel } from "@/components/settings/WhatsAppSettingsPanel";
 import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
+import { SmsSettingsPanel } from "@/components/settings/SmsSettingsPanel";
 import { getEnvironmentIfConfigured } from "@/server/env";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { resendCredentialConfigured } from "@/server/channels/resend-email";
+import { twilioCredentialConfigured } from "@/server/channels/twilio-sms";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
@@ -23,6 +25,7 @@ export default async function Settings() {
     whatsappResult,
     emailResult,
     emailSettingsResult,
+    smsResult,
   ] = await Promise.all([
     client
       .from("business_profiles")
@@ -81,6 +84,13 @@ export default async function Settings() {
       .select("*")
       .eq("business_id", context.business.id)
       .maybeSingle(),
+    client
+      .from("channel_connections")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .eq("channel", "sms")
+      .eq("provider", "twilio_sms")
+      .maybeSingle(),
   ]);
 
   if (
@@ -93,7 +103,8 @@ export default async function Settings() {
     websiteChatResult.error ||
     whatsappResult.error ||
     emailResult.error ||
-    emailSettingsResult.error
+    emailSettingsResult.error ||
+    smsResult.error
   ) {
     throw new Error("Unable to load Business Information.");
   }
@@ -107,6 +118,15 @@ export default async function Settings() {
     ? {
         ...emailResult.data,
         credential_key: canEdit ? emailResult.data.credential_key : "",
+      }
+    : null;
+  const smsCredentialConfigured = twilioCredentialConfigured(
+    smsResult.data?.credential_key,
+  );
+  const safeSmsConnection = smsResult.data
+    ? {
+        ...smsResult.data,
+        credential_key: canEdit ? smsResult.data.credential_key : "",
       }
     : null;
 
@@ -138,6 +158,7 @@ export default async function Settings() {
             Messaging adapters: {[
               whatsappResult.data?.enabled ? "WhatsApp" : null,
               emailResult.data?.enabled ? "Email" : null,
+              smsResult.data?.enabled ? "SMS" : null,
             ].filter(Boolean).join(" + ") || "No external messaging channel enabled"}
           </p>
           <p className="muted">Voice adapter: Reserved for a later phase</p>
@@ -199,6 +220,14 @@ export default async function Settings() {
         canEdit={canEdit}
         appUrl={appUrl}
         credentialConfigured={emailCredentialConfigured}
+      />
+
+      <SmsSettingsPanel
+        key={smsResult.data?.updated_at ?? "new-sms"}
+        connection={safeSmsConnection}
+        canEdit={canEdit}
+        appUrl={appUrl}
+        credentialConfigured={smsCredentialConfigured}
       />
     </>
   );

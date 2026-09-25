@@ -34,7 +34,7 @@ export function ConversationComposer({
           id="conversation_body"
           name="body"
           rows={5}
-          maxLength={4000}
+          maxLength={channel === "sms" ? 1600 : 4000}
           required
           placeholder="Write a plain-text message..."
         />
@@ -47,21 +47,25 @@ export function ConversationComposer({
             ? "WhatsApp delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
             : channel === "email"
               ? "Email delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
-              : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
+              : channel === "sms"
+                ? "SMS delivery is live through the configured provider adapter. Internal notes remain private in Codeedge."
+                : "Local-only: this stores the message in Codeedge. No external delivery adapter is connected for this channel yet."}
       </p>
 
       {state.error ? <div className="formError" role="alert">{state.error}</div> : null}
 
       <button className="btn primary" type="submit" disabled={pending}>
         {pending
-          ? (channel === "whatsapp" || channel === "email" ? "Sending..." : "Saving...")
+          ? (channel === "whatsapp" || channel === "email" || channel === "sms" ? "Sending..." : "Saving...")
           : channel === "website_chat"
             ? "Reply to visitor"
             : channel === "whatsapp"
               ? "Reply on WhatsApp"
               : channel === "email"
                 ? "Reply by Email"
-                : "Store message"}
+                : channel === "sms"
+                  ? "Reply by SMS"
+                  : "Store message"}
       </button>
     </form>
   );
