@@ -6,9 +6,11 @@ import {
   credentialEnvironments,
   executionModes,
   ExternalEffectBlockedError,
+  type ExternalEffectContext,
 } from "@/server/execution/external-effects";
-import { financeEngineIds } from "./domain";
+import { financeEngineIds, type FinanceEngineId } from "./domain";
 import { withFinanceCapability } from "./capability";
+import { getFinanceEngineRegistration } from "./registry";
 
 const preparedSchema = z.object({
   execution_id: z.string().uuid(),
@@ -62,6 +64,35 @@ export async function prepareFinanceExecution(input: {
   return parsed.data;
 }
 
+export type FinanceExternalEffectContext = ExternalEffectContext & {
+  engine: FinanceEngineId;
+};
+
+export function assertFinanceExternalEffectAllowed(
+  context: FinanceExternalEffectContext,
+) {
+  assertExternalEffectAllowed(context);
+
+  let registration;
+  try {
+    registration = getFinanceEngineRegistration(context.engine);
+  } catch {
+    throw new ExternalEffectBlockedError("external_effect_unknown_provider");
+  }
+
+  if (!registration.externalEffect || context.engine === "demo_finance") {
+    throw new ExternalEffectBlockedError("external_effect_invalid_context");
+  }
+
+  if (!registration.environments.includes(context.providerEnvironment)) {
+    throw new ExternalEffectBlockedError(
+      "external_effect_provider_environment_unsupported",
+    );
+  }
+
+  return context;
+}
+
 export async function requireFinanceExternalEffectAllowed(
   executionId: string,
   expectedEngine: string,
@@ -92,7 +123,7 @@ export async function requireFinanceExternalEffectAllowed(
     throw new ExternalEffectBlockedError("external_effect_invalid_context");
   }
 
-  return assertExternalEffectAllowed({
+  return assertFinanceExternalEffectAllowed({
     businessId: parsed.data.business_id,
     executionMode: parsed.data.execution_mode,
     action: "finance.write",
@@ -100,6 +131,7 @@ export async function requireFinanceExternalEffectAllowed(
     providerEnvironment: parsed.data.credential_environment,
     correlationId: parsed.data.correlation_id,
     simulated: parsed.data.simulated,
+    engine: parsed.data.engine,
   });
 }
 
