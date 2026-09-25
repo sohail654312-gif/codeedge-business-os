@@ -4,13 +4,26 @@ import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/Serv
 import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettingsPanels";
 import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSettingsPanel";
 import { WhatsAppSettingsPanel } from "@/components/settings/WhatsAppSettingsPanel";
+import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
 import { getEnvironmentIfConfigured } from "@/server/env";
 import { requireDashboardTenant } from "@/server/auth/session";
+import { resendCredentialConfigured } from "@/server/channels/resend-email";
 
 export default async function Settings() {
   const { client, context } = await requireDashboardTenant();
 
-  const [profileResult, serviceResult, areaResult, hoursResult, faqResult, settingsResult, websiteChatResult, whatsappResult] = await Promise.all([
+  const [
+    profileResult,
+    serviceResult,
+    areaResult,
+    hoursResult,
+    faqResult,
+    settingsResult,
+    websiteChatResult,
+    whatsappResult,
+    emailResult,
+    emailSettingsResult,
+  ] = await Promise.all([
     client
       .from("business_profiles")
       .select("*")
@@ -56,6 +69,18 @@ export default async function Settings() {
       .eq("channel", "whatsapp")
       .eq("provider", "meta_whatsapp_cloud")
       .maybeSingle(),
+    client
+      .from("channel_connections")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .eq("channel", "email")
+      .eq("provider", "resend_email")
+      .maybeSingle(),
+    client
+      .from("email_channel_settings")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .maybeSingle(),
   ]);
 
   if (
@@ -66,13 +91,24 @@ export default async function Settings() {
     faqResult.error ||
     settingsResult.error ||
     websiteChatResult.error ||
-    whatsappResult.error
+    whatsappResult.error ||
+    emailResult.error ||
+    emailSettingsResult.error
   ) {
     throw new Error("Unable to load Business Information.");
   }
 
   const canEdit = context.role === "owner";
   const appUrl = getEnvironmentIfConfigured()?.NEXT_PUBLIC_APP_URL ?? null;
+  const emailCredentialConfigured = resendCredentialConfigured(
+    emailResult.data?.credential_key,
+  );
+  const safeEmailConnection = emailResult.data
+    ? {
+        ...emailResult.data,
+        credential_key: canEdit ? emailResult.data.credential_key : "",
+      }
+    : null;
 
   return (
     <>
@@ -99,7 +135,10 @@ export default async function Settings() {
           <h2>Integration status</h2>
           <p><b>ERPNext</b> — replaceable back-office adapter</p>
           <p className="muted">
-            Messaging adapter: {whatsappResult.data?.enabled ? "WhatsApp connected" : "WhatsApp not enabled"}
+            Messaging adapters: {[
+              whatsappResult.data?.enabled ? "WhatsApp" : null,
+              emailResult.data?.enabled ? "Email" : null,
+            ].filter(Boolean).join(" + ") || "No external messaging channel enabled"}
           </p>
           <p className="muted">Voice adapter: Reserved for a later phase</p>
           <Link className="btn" href="/dashboard/settings/erpnext">Open ERPNext setup</Link>
@@ -151,6 +190,15 @@ export default async function Settings() {
         connection={whatsappResult.data}
         canEdit={canEdit}
         appUrl={appUrl}
+      />
+
+      <EmailSettingsPanel
+        key={emailResult.data?.updated_at ?? "new-email"}
+        connection={safeEmailConnection}
+        settings={emailSettingsResult.data}
+        canEdit={canEdit}
+        appUrl={appUrl}
+        credentialConfigured={emailCredentialConfigured}
       />
     </>
   );
