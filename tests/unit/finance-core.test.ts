@@ -92,7 +92,6 @@ describe("Codeedge Money finance contracts", () => {
     ));
 
     const client = createERPNextClient({
-      businessId:"20000000-0000-4000-8000-000000000001",
       baseUrl:"https://erp.example.test",
       apiKey:"test_api_key",
       apiSecret:"test_api_secret",
