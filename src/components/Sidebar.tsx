@@ -7,6 +7,7 @@ const items = [
   ["⌂", "Command Centre", "/dashboard"],
   ["◎", "Find Me", "/dashboard/find-me"],
   ["☎", "Contact Me", "/dashboard/contact-me"],
+  ["•", "AI Voice", "/dashboard/contact-me/voice"],
   ["↗", "Buy From Me", "/dashboard/buy-from-me"],
   ["•", "Customers", "/dashboard/buy-from-me/customers"],
   ["•", "Leads", "/dashboard/buy-from-me/leads"],
