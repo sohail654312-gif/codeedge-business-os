@@ -29,6 +29,7 @@ const serverMessageSchema = z.object({
       phoneNumber: z.object({
         number: z.string().optional(),
       }).optional(),
+      phoneNumberId: z.string().optional(),
     }).passthrough(),
     artifact: z.object({
       messages: z.array(z.object({
@@ -151,6 +152,7 @@ export function parseVapiServerMessage(
   return {
     providerEventId: `${message.type}:${message.call.id}:${timestamp}`,
     providerCallId: message.call.id,
+    providerConnectionRef: message.call.phoneNumberId ?? null,
     status,
     direction: callDirection(message.call.type),
     fromNumber: message.call.customer?.number ?? null,
