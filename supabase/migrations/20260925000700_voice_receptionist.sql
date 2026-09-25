@@ -998,6 +998,7 @@ end;
 $$;
 
 create function public.voice_complete_call(
+  p_business_id uuid,
   p_voice_call_id uuid,
   p_summary text,
   p_disposition text,
@@ -1014,7 +1015,8 @@ begin
   select *
   into call_row
   from public.voice_calls
-  where id = p_voice_call_id
+  where business_id = p_business_id
+    and id = p_voice_call_id
   limit 1
   for update;
 
@@ -1259,7 +1261,7 @@ revoke all on function public.voice_receive_event(
 ) from public, anon, authenticated;
 revoke all on function public.voice_append_transcript(uuid,text,text,text)
   from public, anon, authenticated;
-revoke all on function public.voice_complete_call(uuid,text,text,boolean)
+revoke all on function public.voice_complete_call(uuid,uuid,text,text,boolean)
   from public, anon, authenticated;
 revoke all on function public.voice_start_demo_call(uuid,uuid,uuid,text,text)
   from public, anon;
@@ -1279,7 +1281,7 @@ grant execute on function public.voice_receive_event(
 ) to codeedge_voice_api;
 grant execute on function public.voice_append_transcript(uuid,text,text,text)
   to codeedge_voice_api;
-grant execute on function public.voice_complete_call(uuid,text,text,boolean)
+grant execute on function public.voice_complete_call(uuid,uuid,text,text,boolean)
   to codeedge_voice_api;
 grant execute on function public.voice_start_demo_call(uuid,uuid,uuid,text,text)
   to authenticated;
