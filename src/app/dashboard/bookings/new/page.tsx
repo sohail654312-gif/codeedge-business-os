@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppointmentCreateForm } from "@/components/booking/AppointmentCreateForm";
 import {
   getBookingAvailability,
@@ -49,7 +50,7 @@ export default async function NewAppointmentPage({
 
   return (
     <>
-      <a className="backLink" href="/dashboard/bookings">← Back to appointments</a>
+      <Link className="backLink" href="/dashboard/bookings">← Back to appointments</Link>
       <div className="pageHead">
         <div>
           <div className="eyebrow">Booking</div>
