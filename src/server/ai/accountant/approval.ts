@@ -152,8 +152,9 @@ export async function approveAIAccountantProposal(input: {
   }
 
   const actionType=financeActionType(stored.action_type);
-  const validated=financeProposalSchemas[actionType].parse(stored.payload)
-    as Record<string,unknown>;
+  const validated=financeProposalSchemas[actionType].parse(
+    stored.payload,
+  ) as Record<string,unknown>;
   const currentHash=sha256Json(validated);
   if (currentHash !== stored.payload_hash) {
     throw new Error("ai_action_payload_tampered");
