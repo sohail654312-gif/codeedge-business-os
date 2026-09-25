@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { TenantContext } from "@/server/authorization/tenant";
-import type { AppointmentStatus } from "./domain";
+import type { AppointmentSource, AppointmentStatus } from "./domain";
 import { getAppointment, getBookingAvailability } from "./data";
 import { localDateFromInstant } from "./timezone";
 
@@ -34,7 +34,7 @@ export async function createAppointmentAtSlot(input: {
   contactEmail: string;
   contactPhone: string;
   startsAt: string;
-  source: string;
+  source: AppointmentSource;
   notes: string;
 }) {
   const start = new Date(input.startsAt);
