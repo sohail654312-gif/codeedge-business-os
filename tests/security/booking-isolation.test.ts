@@ -182,6 +182,30 @@ describe("Booking tenant security and appointment integration", () => {
     )).rows).toEqual([{ contact_name: "Tenant A" }]);
   });
 
+  it("does not book an inactive Service", async () => {
+    await db.exec("RESET ROLE");
+    await db.query(
+      "update public.services set active=false where id=$1",
+      [f.serviceA],
+    );
+
+    await expect(createAppointment(db, f.staffA, {
+      start: "2030-01-07T10:30:00Z",
+    })).rejects.toThrow(/Service unavailable/);
+  });
+
+  it("enforces lifecycle transitions in the database RPC", async () => {
+    const created = await createAppointment(db, f.staffA, {
+      start: "2030-01-07T10:30:00Z",
+      name: "Lifecycle",
+    });
+
+    await expect(db.query(
+      "select public.set_appointment_status($1,'completed')",
+      [created.rows[0]!.id],
+    )).rejects.toThrow(/Invalid appointment status transition/);
+  });
+
   it("prevents conflicting appointments and allows a cancelled slot to be reused", async () => {
     const first = await createAppointment(db, f.staffA, {
       start: "2030-01-07T11:00:00Z",
