@@ -6,9 +6,17 @@ import {
 import { formatAppointmentDateTime } from "@/modules/booking/timezone";
 import { requireDashboardTenant } from "@/server/auth/session";
 
-export default async function BookingPage() {
+export default async function BookingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customer?: string; lead?: string }>;
+}) {
+  const query = await searchParams;
   const { client, context } = await requireDashboardTenant();
-  const appointments = await listAppointments(client, context.business.id);
+  const appointments = await listAppointments(client, context.business.id, {
+    customerId: query.customer ?? null,
+    leadId: query.lead ?? null,
+  });
   const upcoming = appointments.filter(
     (appointment) =>
       new Date(appointment.ends_at) >= new Date()
@@ -28,6 +36,7 @@ export default async function BookingPage() {
           <h1>Booking / Appointments</h1>
           <p className="muted">
             Codeedge-native scheduling in {context.business.timezone}. External calendars are optional future rails.
+            {query.customer || query.lead ? " Showing linked appointment history." : ""}
           </p>
         </div>
         <Link className="btn primary" href="/dashboard/bookings/new">New appointment</Link>
