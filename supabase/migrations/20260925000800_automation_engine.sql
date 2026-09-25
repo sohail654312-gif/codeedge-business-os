@@ -173,16 +173,24 @@ for select to authenticated using (
   )
 );
 
-create role codeedge_automation_api nologin noinherit nobypassrls;
-grant usage on schema public to codeedge_automation_api;
-grant select,insert,update on public.automation_domain_events to codeedge_automation_api;
-grant select on public.automation_workflows to codeedge_automation_api;
-grant select,insert,update on public.automation_runs to codeedge_automation_api;
-grant select,insert,update on public.automation_action_runs to codeedge_automation_api;
-grant select on public.businesses to codeedge_automation_api;
-grant select,insert on public.crm_activities to codeedge_automation_api;
-grant select,update on public.leads to codeedge_automation_api;
-grant select,update on public.conversations to codeedge_automation_api;
+do $ begin
+  if not exists(select 1 from pg_roles where rolname='codeedge_automation_api') then
+    create role codeedge_automation_api nologin noinherit nobypassrls;
+  elsif exists(
+    select 1
+    from pg_roles
+    where rolname='codeedge_automation_api'
+      and (
+        rolsuper or rolbypassrls or rolcanlogin or rolinherit or
+        rolcreaterole or rolcreatedb or rolreplication
+      )
+  ) then
+    raise exception 'Unsafe pre-existing automation role';
+  end if;
+end $;
+
+grant codeedge_automation_api to postgres;
+grant usage on schema public, private to codeedge_automation_api;
 
 create or replace function private.automation_enqueue(
   p_business_id uuid,
@@ -521,6 +529,135 @@ begin
   return v_id;
 end;
 $$;
+
+
+create or replace function public.automation_load_run(p_run_id uuid)
+returns table(
+  run_id uuid,
+  business_id uuid,
+  workflow_id uuid,
+  workflow_version integer,
+  trigger_type text,
+  conditions jsonb,
+  actions jsonb,
+  actor_user_id uuid,
+  event_id uuid,
+  event_type text,
+  subject_type text,
+  subject_id uuid,
+  payload jsonb,
+  execution_mode public.execution_mode,
+  correlation_id uuid
+)
+language sql
+stable
+security definer
+set search_path=''
+as $
+  select
+    r.id,
+    r.business_id,
+    r.workflow_id,
+    r.workflow_version,
+    w.trigger_type,
+    w.conditions,
+    w.actions,
+    w.created_by,
+    e.id,
+    e.event_type,
+    e.subject_type,
+    e.subject_id,
+    e.payload,
+    r.execution_mode,
+    r.correlation_id
+  from public.automation_runs r
+  join public.automation_workflows w
+    on w.business_id=r.business_id and w.id=r.workflow_id
+  join public.automation_domain_events e
+    on e.business_id=r.business_id and e.id=r.event_id
+  where r.id=p_run_id
+    and r.status='running'
+    and w.enabled
+    and w.version=r.workflow_version
+  limit 1;
+$;
+
+create or replace function public.automation_update_lead_status(
+  p_run_id uuid,
+  p_lead_id uuid,
+  p_status public.lead_status
+) returns boolean
+language plpgsql
+security definer
+set search_path=''
+as $
+declare
+  v_business_id uuid;
+begin
+  select business_id into v_business_id
+  from public.automation_runs
+  where id=p_run_id and status='running';
+
+  if v_business_id is null then
+    raise exception 'Automation run unavailable.';
+  end if;
+
+  update public.leads
+  set status=p_status
+  where business_id=v_business_id and id=p_lead_id;
+
+  if not found then
+    raise exception 'Lead unavailable.';
+  end if;
+
+  return true;
+end;
+$;
+
+create or replace function public.automation_flag_conversation(
+  p_run_id uuid,
+  p_conversation_id uuid
+) returns boolean
+language plpgsql
+security definer
+set search_path=''
+as $
+declare
+  v_business_id uuid;
+begin
+  select business_id into v_business_id
+  from public.automation_runs
+  where id=p_run_id and status='running';
+
+  if v_business_id is null then
+    raise exception 'Automation run unavailable.';
+  end if;
+
+  update public.conversations
+  set status='pending'
+  where business_id=v_business_id and id=p_conversation_id;
+
+  if not found then
+    raise exception 'Conversation unavailable.';
+  end if;
+
+  return true;
+end;
+$;
+
+revoke all on function public.automation_load_run(uuid)
+from public,anon,authenticated;
+revoke all on function public.automation_update_lead_status(uuid,uuid,public.lead_status)
+from public,anon,authenticated;
+revoke all on function public.automation_flag_conversation(uuid,uuid)
+from public,anon,authenticated;
+
+grant execute on function public.automation_load_run(uuid)
+to codeedge_automation_api;
+grant execute on function public.automation_update_lead_status(uuid,uuid,public.lead_status)
+to codeedge_automation_api;
+grant execute on function public.automation_flag_conversation(uuid,uuid)
+to codeedge_automation_api;
 
 grant execute on function public.automation_claim_runs(integer)
 to codeedge_automation_api;
