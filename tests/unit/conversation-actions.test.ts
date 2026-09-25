@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { sendEmailReply } from "@/server/channels/email";
 import { sendSmsReply } from "@/server/channels/sms";
 import { sendWhatsAppReply } from "@/server/channels/whatsapp";
+import { ExternalEffectBlockedError } from "@/server/execution/external-effects";
 
 vi.mock("@/server/auth/session", () => ({
   requireDashboardTenant: vi.fn(),
@@ -242,6 +243,23 @@ describe("Conversation server actions", () => {
     });
     expect(calls.some((call) => call.table === "messages" && call.operation === "insert")).toBe(false);
     expect(redirect).toHaveBeenCalledWith(`/dashboard/contact-me/${conversationId}`);
+  });
+
+  it("returns a safe execution-policy message when an external reply is blocked", async () => {
+    setup("sms");
+    vi.mocked(sendSmsReply).mockRejectedValue(
+      new ExternalEffectBlockedError("external_effect_demo_live_blocked"),
+    );
+
+    const form = new FormData();
+    form.set("conversation_id", conversationId);
+    form.set("message_kind", "reply");
+    form.set("body", "Blocked SMS");
+    form.set("request_id", "80000000-0000-4000-8000-000000000022");
+
+    await expect(addConversationMessage({}, form)).resolves.toEqual({
+      error: "External delivery is blocked by this workspace's execution safety policy.",
+    });
   });
 
   it("stores internal-note intent as an internal direction", async () => {
