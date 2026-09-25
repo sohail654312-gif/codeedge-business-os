@@ -16,6 +16,8 @@ const preparedSchema = z.object({
   engine: z.enum(financeEngineIds),
   execution_mode: z.enum(executionModes),
   credential_environment: z.enum(credentialEnvironments).nullable(),
+  status: z.enum(["prepared","succeeded","failed","ambiguous","simulated"]),
+  external_reference: z.string(),
   created: z.boolean(),
 });
 
