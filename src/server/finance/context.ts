@@ -12,11 +12,13 @@ const contextSchema = z.object({
   external_account_id: z.string(),
   credential_key: z.string(),
   credential_environment: z.enum(["sandbox","production"]).nullable(),
+  default_currency: z.string().regex(/^[A-Z]{3}$/),
 });
 
 export type LoadedFinanceContext = FinanceExecutionContext & {
   externalAccountId: string;
   credentialKey: string;
+  defaultCurrency: string;
 };
 
 export async function loadFinanceContext(input: {
@@ -45,5 +47,6 @@ export async function loadFinanceContext(input: {
     correlationId: input.correlationId,
     externalAccountId: parsed.data.external_account_id,
     credentialKey: parsed.data.credential_key,
+    defaultCurrency: parsed.data.default_currency,
   };
 }
