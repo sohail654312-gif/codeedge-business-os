@@ -66,6 +66,7 @@ export type StartOutboundVoiceCallResult = {
 export type NormalizedVoiceWebhookEvent = {
   providerEventId: string;
   providerCallId: string;
+  providerConnectionRef: string | null;
   status: VoiceCallStatus;
   direction: VoiceCallDirection | null;
   fromNumber: string | null;
