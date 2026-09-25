@@ -80,7 +80,7 @@ begin
   new.execution_mode := mode;
   new.provider_environment := environment;
   new.correlation_id := request_id;
-  new.simulated := false;
+  new.simulated := coalesce(new.simulated, false);
   return new;
 end;
 $$;
