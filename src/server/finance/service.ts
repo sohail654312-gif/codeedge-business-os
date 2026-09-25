@@ -120,6 +120,14 @@ async function executeWrite<T>(input: {
   });
 
   if (!prepared.created) {
+    if (
+      input.context.engine === "demo_finance"
+      && prepared.status === "simulated"
+    ) {
+      // Demo engine writes are internal and keyed by request ID, so rerunning
+      // the same completed Demo action is safe and returns the existing record.
+      return input.perform();
+    }
     if (prepared.status === "failed") {
       throw new Error("finance_previous_attempt_failed");
     }
