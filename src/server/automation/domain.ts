@@ -13,6 +13,11 @@ export const automationTriggerTypes = [
   "voice.call.completed",
   "voice.call.failed",
   "voice.handoff.requested",
+  "finance.quote.created",
+  "finance.invoice.created",
+  "finance.payment.recorded",
+  "finance.bill.created",
+  "finance.expense.created",
 ] as const;
 
 export type AutomationTriggerType = (typeof automationTriggerTypes)[number];

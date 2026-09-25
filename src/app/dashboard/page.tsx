@@ -6,7 +6,7 @@ const modules = [
   ["Find Me", "Website, SEO and reviews", "/dashboard/find-me"],
   ["Contact Me", "Calls, WhatsApp and AI Voice", "/dashboard/contact-me"],
   ["Buy From Me", "Leads, CRM and quotes", "/dashboard/buy-from-me"],
-  ["Pay Me", "Invoices, payments and finance", "/dashboard/pay-me"],
+  ["Money", "Sales, purchases, accounting and reports", "/dashboard/money"],
   ["Manage Me", "Team, tasks and operations", "/dashboard/manage-me"],
   ["Help Me Grow", "Insights, marketing and AI", "/dashboard/help-me-grow"]
 ];

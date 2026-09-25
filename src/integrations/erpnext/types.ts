@@ -56,3 +56,11 @@ export type ERPNextCustomerCreateInput = {
   customer_group: string;
   territory: string;
 };
+
+export type ERPNextSupplier = {
+  name: string;
+  supplier_name?: string;
+  supplier_group?: string;
+  supplier_type?: string;
+  country?: string;
+};

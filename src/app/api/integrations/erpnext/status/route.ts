@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
-import { getERPNextAuthenticatedUser, getERPNextPublicStatus } from "@/integrations/erpnext";
+import { requireFinanceApiTenant } from "@/server/finance/api";
+import { getFinanceStatus } from "@/server/finance/service";
 
 export async function GET() {
-  const status = getERPNextPublicStatus();
-
-  if (!status.configured) {
-    return NextResponse.json({
-      ...status,
-      connected: false,
-      message: "ERPNext credentials are not configured yet.",
-    });
+  const auth = await requireFinanceApiTenant();
+  if ("errorStatus" in auth) {
+    return NextResponse.json({ error:"Unauthorized." },{ status:auth.errorStatus });
   }
 
   try {
-    const authenticatedUser = await getERPNextAuthenticatedUser();
-    return NextResponse.json({ ...status, connected: true, authenticatedUser });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ...status,
-        connected: false,
-        error: error instanceof Error ? error.message : "Unknown ERPNext connection error",
-      },
-      { status: 502 }
-    );
+    const status = await getFinanceStatus({
+      businessId:auth.context.business.id,
+      userId:auth.context.userId,
+      correlationId:auth.correlationId,
+    });
+    return NextResponse.json({
+      connected:status.ok,
+      message:status.message,
+      compatibility:"Codeedge Finance Engine",
+    });
+  } catch {
+    return NextResponse.json({
+      connected:false,
+      error:"Finance engine unavailable.",
+    },{ status:502 });
   }
 }

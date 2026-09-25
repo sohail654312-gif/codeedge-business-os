@@ -1,11 +1,11 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireDashboardTenant } from "@/server/auth/session";
-import { erpnextCustomerAdapter } from "@/integrations/customers";
-import { getERPNextConfig } from "@/integrations/erpnext";
-import { syncCustomerBackOffice } from "@/modules/buy-from-me/customers/sync";
+import { loadFinanceContext } from "@/server/finance/context";
+import { ensureFinanceCustomer } from "@/server/finance/service";
 import { leadConversionSchema, leadCreateFormSchema, leadEditFormSchema, leadNoteDeleteSchema, leadNoteFormSchema, leadStatusFormSchema, quoteRequestCreateFormSchema, quoteRequestStatusFormSchema } from "./validation";
 import { buildLeadInsert, buildLeadUpdate } from "./persistence";
 
@@ -390,34 +390,39 @@ export async function convertLeadToCustomer(
   }
 
   let syncMessage = "";
-  if (!customer.erpnext_customer_id && getERPNextConfig()) {
-    const sync = await syncCustomerBackOffice(erpnextCustomerAdapter, {
+  try {
+    const correlationId = randomUUID();
+    const financeContext = await loadFinanceContext({
       businessId: context.business.id,
-      customerId: customer.id,
-      name: customer.contact_name,
-      phone: customer.phone,
-      email: customer.email,
+      userId: context.userId,
+      correlationId,
+    });
+    const financeCustomer = await ensureFinanceCustomer({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId,
+      crmCustomerId: customer.id,
+      requestId: randomUUID(),
     });
 
-    const nextStatus = sync.status === "synced" ? "synced" : "failed";
-    const { error: syncUpdateError } = await client
-      .from("customers")
-      .update({
-        erpnext_customer_id: sync.externalId,
-        erpnext_sync_status: nextStatus,
-      })
-      .eq("business_id", context.business.id)
-      .eq("id", customer.id);
+    if (financeContext.engine === "erpnext" && financeCustomer.externalRef) {
+      const { error: syncUpdateError } = await client
+        .from("customers")
+        .update({
+          erpnext_customer_id: financeCustomer.externalRef,
+          erpnext_sync_status: "synced",
+        })
+        .eq("business_id", context.business.id)
+        .eq("id", customer.id);
 
-    if (syncUpdateError) {
-      syncMessage = " Back-office sync status could not be saved.";
+      syncMessage = syncUpdateError
+        ? " Finance sync completed, but legacy ERPNext compatibility status could not be saved."
+        : " Finance customer mapping completed.";
     } else {
-      syncMessage = sync.status === "synced"
-        ? " ERPNext sync completed."
-        : " ERPNext is currently unavailable; the CodeEdge Customer is safe and can be synced later.";
+      syncMessage = " Finance customer mapping completed.";
     }
-  } else if (!customer.erpnext_customer_id) {
-    syncMessage = " ERPNext is not configured; the Customer is safely stored in CodeEdge CRM.";
+  } catch {
+    syncMessage = " No active Finance connection is available yet; the Codeedge CRM Customer is safe.";
   }
 
   revalidatePath("/dashboard");
