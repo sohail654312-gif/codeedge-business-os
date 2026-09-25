@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 const erpnextCredentialSchema = z.object({
+  businessId: z.string().uuid(),
   baseUrl: z.string().url(),
   apiKey: z.string().min(8).max(300),
   apiSecret: z.string().min(8).max(300),
@@ -31,6 +32,7 @@ function safeTrustedBaseUrl(raw: string) {
 
 export function resolveERPNextFinanceCredential(
   credentialKey: string,
+  businessId: string,
 ): ERPNextFinanceCredential {
   if (!/^[A-Za-z0-9_.-]{1,120}$/.test(credentialKey)) {
     throw new Error("finance_credential_unavailable");
@@ -49,7 +51,7 @@ export function resolveERPNextFinanceCredential(
   }
 
   const credential = map.data[credentialKey];
-  if (!credential) {
+  if (!credential || credential.businessId !== businessId) {
     throw new Error("finance_credential_unavailable");
   }
 
