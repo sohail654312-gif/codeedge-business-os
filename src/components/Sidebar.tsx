@@ -12,7 +12,7 @@ const items = [
   ["•", "Customers", "/dashboard/buy-from-me/customers"],
   ["•", "Leads", "/dashboard/buy-from-me/leads"],
   ["◷", "Bookings", "/dashboard/bookings"],
-  ["£", "Pay Me", "/dashboard/pay-me"],
+  ["£", "Money", "/dashboard/money"],
   ["✓", "Manage Me", "/dashboard/manage-me"],
   ["✦", "Help Me Grow", "/dashboard/help-me-grow"],
 ];
