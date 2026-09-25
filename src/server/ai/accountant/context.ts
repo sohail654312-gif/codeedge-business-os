@@ -29,6 +29,9 @@ export async function loadAIAccountantTrustedContext(input: {
     correlationId:input.correlationId,
   });
   const registration = getFinanceEngineRegistration(finance.engine);
+  if (!finance.connectionId) {
+    throw new Error("finance_connection_unavailable");
+  }
 
   return {
     businessId:input.tenant.business.id,
