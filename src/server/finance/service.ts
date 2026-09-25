@@ -196,6 +196,16 @@ export async function getFinanceStatus(input: {
   return engine.getStatus(context);
 }
 
+export async function getFinanceCrmCustomer(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+  crmCustomerId: string;
+}) {
+  const { context } = await financeSession(input);
+  return trustedCustomer(context,input.crmCustomerId);
+}
+
 export async function listFinanceCustomers(input: {
   businessId: string;
   userId: string;
@@ -205,6 +215,138 @@ export async function listFinanceCustomers(input: {
   requireFinanceCapability(engine,"customers");
   if (!engine.listCustomers) throw new Error("finance_capability_unavailable");
   return engine.listCustomers(context);
+}
+
+export async function listFinanceSuppliers(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"suppliers");
+  if (!engine.listSuppliers) throw new Error("finance_capability_unavailable");
+  return engine.listSuppliers(context);
+}
+
+export async function listFinanceQuotes(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"quotations");
+  if (!engine.listQuotes) throw new Error("finance_capability_unavailable");
+  return engine.listQuotes(context);
+}
+
+export async function listFinanceInvoices(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"invoices");
+  if (!engine.listInvoices) throw new Error("finance_capability_unavailable");
+  return engine.listInvoices(context);
+}
+
+export async function listFinancePayments(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"payments");
+  if (!engine.listPayments) throw new Error("finance_capability_unavailable");
+  return engine.listPayments(context);
+}
+
+export async function listFinanceBills(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"bills");
+  if (!engine.listBills) throw new Error("finance_capability_unavailable");
+  return engine.listBills(context);
+}
+
+export async function listFinanceExpenses(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"expenses");
+  if (!engine.listExpenses) throw new Error("finance_capability_unavailable");
+  return engine.listExpenses(context);
+}
+
+export async function getFinanceChartOfAccounts(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"chart_of_accounts");
+  if (!engine.getChartOfAccounts) throw new Error("finance_capability_unavailable");
+  return engine.getChartOfAccounts(context);
+}
+
+export async function getFinanceGeneralLedger(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"ledger");
+  if (!engine.getGeneralLedger) throw new Error("finance_capability_unavailable");
+  return engine.getGeneralLedger(context);
+}
+
+export async function getFinanceTrialBalance(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"trial_balance");
+  if (!engine.getTrialBalance) throw new Error("finance_capability_unavailable");
+  return engine.getTrialBalance(context);
+}
+
+export async function getFinanceProfitAndLoss(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"profit_and_loss");
+  if (!engine.getProfitAndLoss) throw new Error("finance_capability_unavailable");
+  return engine.getProfitAndLoss(context);
+}
+
+export async function getFinanceBalanceSheet(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"balance_sheet");
+  if (!engine.getBalanceSheet) throw new Error("finance_capability_unavailable");
+  return engine.getBalanceSheet(context);
+}
+
+export async function getFinanceCashFlow(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  requireFinanceCapability(engine,"cash_flow");
+  if (!engine.getCashFlow) throw new Error("finance_capability_unavailable");
+  return engine.getCashFlow(context);
 }
 
 export async function ensureFinanceCustomer(input: {

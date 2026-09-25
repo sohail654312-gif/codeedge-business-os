@@ -26,6 +26,7 @@ export default defineConfig({
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000",
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_local_browser_placeholder_only",
+      CODEEDGE_E2E_HARNESS: "1",
     },
   },
 });
