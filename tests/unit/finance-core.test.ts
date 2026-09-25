@@ -56,14 +56,33 @@ describe("Codeedge Money finance contracts", () => {
   it("rejects an untrusted non-HTTPS ERPNext provider endpoint", () => {
     process.env.FINANCE_ERPNEXT_CREDENTIALS_JSON = JSON.stringify({
       finance_primary: {
+        businessId:"20000000-0000-4000-8000-000000000001",
         baseUrl:"http://erp.example.test",
         apiKey:"abcdefgh",
         apiSecret:"abcdefgh",
       },
     });
 
-    expect(() => resolveERPNextFinanceCredential("finance_primary"))
-      .toThrow("finance_provider_config_invalid");
+    expect(() => resolveERPNextFinanceCredential(
+      "finance_primary",
+      "20000000-0000-4000-8000-000000000001",
+    )).toThrow("finance_provider_config_invalid");
+  });
+
+  it("rejects an ERPNext credential alias owned by another tenant", () => {
+    process.env.FINANCE_ERPNEXT_CREDENTIALS_JSON = JSON.stringify({
+      tenant_b: {
+        businessId:"20000000-0000-4000-8000-000000000002",
+        baseUrl:"https://tenant-b-erp.example.test",
+        apiKey:"abcdefgh",
+        apiSecret:"abcdefgh",
+      },
+    });
+
+    expect(() => resolveERPNextFinanceCredential(
+      "tenant_b",
+      "20000000-0000-4000-8000-000000000001",
+    )).toThrow("finance_credential_unavailable");
   });
 
   it("normalizes ERPNext HTTP failures without exposing provider response bodies", async () => {
@@ -73,6 +92,7 @@ describe("Codeedge Money finance contracts", () => {
     ));
 
     const client = createERPNextClient({
+      businessId:"20000000-0000-4000-8000-000000000001",
       baseUrl:"https://erp.example.test",
       apiKey:"test_api_key",
       apiSecret:"test_api_secret",
@@ -116,6 +136,7 @@ describe("Codeedge Money finance contracts", () => {
     });
 
     const engine = createERPNextFinanceEngine({
+      businessId:"20000000-0000-4000-8000-000000000001",
       baseUrl:"https://erp.example.test",
       apiKey:"test_api_key",
       apiSecret:"test_api_secret",
