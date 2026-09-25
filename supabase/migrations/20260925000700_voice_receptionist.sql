@@ -32,11 +32,9 @@ create table public.voice_receptionist_settings (
     preferred_language ~ '^[A-Za-z]{2,8}([_-][A-Za-z0-9]{2,8})?$'
   ),
   allowed_tools text[] not null default array[
-    'business_information',
-    'services',
-    'opening_hours',
-    'faqs',
+    'business_knowledge',
     'appointment_availability',
+    'get_appointment',
     'create_appointment',
     'reschedule_appointment',
     'cancel_appointment',
