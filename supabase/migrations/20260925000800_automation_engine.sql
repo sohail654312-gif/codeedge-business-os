@@ -188,7 +188,7 @@ for select to authenticated using (
   )
 );
 
-do $ begin
+do $$ begin
   if not exists(select 1 from pg_roles where rolname='codeedge_automation_api') then
     create role codeedge_automation_api nologin noinherit nobypassrls;
   elsif exists(
@@ -202,7 +202,7 @@ do $ begin
   ) then
     raise exception 'Unsafe pre-existing automation role';
   end if;
-end $;
+end $$;
 
 grant codeedge_automation_api to postgres;
 grant usage on schema public, private to codeedge_automation_api;
