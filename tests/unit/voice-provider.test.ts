@@ -101,6 +101,98 @@ describe("Voice provider boundary", () => {
     ]);
   });
 
+  it("keeps the same Vapi event identity for retries with a provider timestamp", () => {
+    const payload = {
+      message: {
+        type: "status-update",
+        status: "ringing",
+        timestamp: "2026-09-25T10:00:00Z",
+        call: {
+          id: "call-stable-timestamp",
+          type: "inboundPhoneCall",
+          phoneNumberId: "phone-a",
+          customer: { number: "+447700900123" },
+          phoneNumber: { number: "+441234567890" },
+        },
+      },
+    };
+
+    const first = parseVapiServerMessage(payload);
+    const retry = parseVapiServerMessage(payload);
+
+    expect(retry.providerEventId).toBe(first.providerEventId);
+  });
+
+  it("keeps the same Vapi event identity for retries without a provider timestamp", () => {
+    const payload = {
+      message: {
+        type: "end-of-call-report",
+        call: {
+          id: "call-no-timestamp",
+          type: "inboundPhoneCall",
+          phoneNumberId: "phone-a",
+          customer: { number: "+447700900123" },
+          phoneNumber: { number: "+441234567890" },
+        },
+        artifact: {
+          messages: [
+            { role: "assistant", message: "How can I help?" },
+            { role: "user", message: "Please book me in." },
+          ],
+        },
+      },
+    };
+
+    const first = parseVapiServerMessage(payload);
+    const retry = parseVapiServerMessage(payload);
+
+    expect(retry.providerEventId).toBe(first.providerEventId);
+    expect(first.providerEventId).toMatch(/^vapi:sha256:[a-f0-9]{64}$/);
+  });
+
+  it("changes deterministic event identity when material provider payload changes", () => {
+    const base = {
+      message: {
+        type: "status-update",
+        status: "ringing",
+        call: {
+          id: "call-material-change",
+          type: "inboundPhoneCall",
+          phoneNumberId: "phone-a",
+          customer: { number: "+447700900123" },
+          phoneNumber: { number: "+441234567890" },
+        },
+      },
+    };
+
+    const changed = {
+      message: {
+        ...base.message,
+        status: "in-progress",
+      },
+    };
+
+    expect(parseVapiServerMessage(changed).providerEventId)
+      .not.toBe(parseVapiServerMessage(base).providerEventId);
+  });
+
+  it("prefers a stable Vapi provider event identifier when one is present", () => {
+    const event = parseVapiServerMessage({
+      message: {
+        id: "provider-event-123",
+        type: "status-update",
+        status: "ringing",
+        call: {
+          id: "call-provider-id",
+          type: "inboundPhoneCall",
+          phoneNumberId: "phone-a",
+        },
+      },
+    });
+
+    expect(event.providerEventId).toBe("vapi:event:provider-event-123");
+  });
+
   it("uses a server-only Vapi credential and never performs a real network call in tests", async () => {
     process.env.VOICE_VAPI_CREDENTIALS_JSON = JSON.stringify({
       voice_primary: "test_private_key_12345678901234567890",
