@@ -192,7 +192,7 @@ describe("consolidated communication dispatch", () => {
     state.channel = channel;
     state.executionMode = "demo";
 
-    await expect(send()).rejects.toThrow(/delivery failed/i);
+    await expect(send()).rejects.toThrow(/blocked by workspace safety policy/i);
     expect(providerSend).not.toHaveBeenCalled();
     const failure = state.queries.find(({ sql }) => sql.includes(failureRpc));
     expect(failure?.args?.[1]).toBe("external_effect_demo_live_blocked");
@@ -204,7 +204,7 @@ describe("consolidated communication dispatch", () => {
     state.preparedExecutionMode = "production";
 
     await expect(sendEmailReply({ ...common, body: "Context changed" }))
-      .rejects.toThrow(/delivery failed/i);
+      .rejects.toThrow(/blocked by workspace safety policy/i);
     expect(state.emailSend).not.toHaveBeenCalled();
 
     const failure = state.queries.find(({ sql }) => sql.includes("email_fail_outbound"));
