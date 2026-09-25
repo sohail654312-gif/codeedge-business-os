@@ -52,12 +52,12 @@ export default async function Dashboard() {
     ["New leads", newLeads],
     ["Upcoming bookings", upcomingBookings],
     ["Inbox open/pending", inboxAttention],
-    ["Automation attention", automationAttention],
+    ["Automation queued/failed", automationAttention],
   ] as const;
 
   const attention = [
     automationAttention && automationAttention > 0
-      ? { icon: "⚡", title: automationAttention + " Automation run" + (automationAttention === 1 ? "" : "s") + " need attention.", detail: "Pending or failed runs are visible in Automations." }
+      ? { icon: "⚡", title: automationAttention + " Automation run" + (automationAttention === 1 ? "" : "s") + " are queued or failed.", detail: "Inspect current run status in Automations." }
       : null,
     inboxAttention && inboxAttention > 0
       ? { icon: "☎", title: inboxAttention + " conversation" + (inboxAttention === 1 ? "" : "s") + " are open or pending.", detail: "Review the Shared Inbox for follow-up." }

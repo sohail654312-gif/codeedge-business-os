@@ -1,5 +1,6 @@
 import { AutomationWorkspace } from "@/components/automation/AutomationWorkspace";
 import { requireDashboardTenant } from "@/server/auth/session";
+import type { AutomationActionRun } from "@/types/database";
 
 export default async function AutomationsPage() {
   const { client, context } = await requireDashboardTenant();
@@ -23,7 +24,7 @@ export default async function AutomationsPage() {
   }
 
   const runs = runsResult.data ?? [];
-  let actionRuns = [];
+  let actionRuns: AutomationActionRun[] = [];
   if (runs.length > 0) {
     const result = await client
       .from("automation_action_runs")
