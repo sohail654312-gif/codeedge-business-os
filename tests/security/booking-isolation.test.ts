@@ -240,6 +240,31 @@ describe("Booking tenant security and appointment integration", () => {
     expect(first.rows[0]?.id).toBeTruthy();
   });
 
+  it("refreshes the captured business timezone when rescheduling", async () => {
+    const created = await createAppointment(db, f.staffA, {
+      start: "2030-01-07T09:00:00Z",
+      name: "Timezone Change",
+    });
+    const appointmentId = created.rows[0]!.id;
+
+    await db.exec("RESET ROLE");
+    await db.query(
+      "update public.businesses set timezone='Europe/Paris' where id=$1",
+      [f.businessA],
+    );
+
+    await asUser(db, f.staffA);
+    await db.query(
+      "select public.reschedule_appointment($1,$2,$3)",
+      [appointmentId, "2030-01-07T10:00:00Z", "2030-01-07T10:30:00Z"],
+    );
+
+    expect((await db.query<{ timezone: string }>(
+      "select timezone from public.appointments where id=$1",
+      [appointmentId],
+    )).rows).toEqual([{ timezone: "Europe/Paris" }]);
+  });
+
   it("records appointment lifecycle in the existing CRM activity timeline", async () => {
     const created = await createAppointment(db, f.staffA, {
       start: "2030-01-07T13:00:00Z",
