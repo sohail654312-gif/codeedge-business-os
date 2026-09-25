@@ -12,17 +12,13 @@ import {
   type ReceptionistToolContext,
 } from "./receptionist-tools";
 
-export const receptionistToolNames = [
-  "business_knowledge",
-  "appointment_availability",
-  "get_appointment",
-  "create_appointment",
-  "reschedule_appointment",
-  "cancel_appointment",
-  "human_handoff",
-] as const;
+import {
+  receptionistToolNames,
+  type ReceptionistToolName,
+} from "@/modules/voice/domain";
 
-export type ReceptionistToolName = (typeof receptionistToolNames)[number];
+export { receptionistToolNames };
+export type { ReceptionistToolName };
 
 const requestSchema = z.discriminatedUnion("tool", [
   z.object({
