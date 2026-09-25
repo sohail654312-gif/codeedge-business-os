@@ -203,8 +203,10 @@ describe("Automation tenant isolation and event safety", () => {
     }>(
       `select correlation_id,causation_id
        from public.automation_domain_events
-       where business_id=$1 and event_type='lead.status_changed'
-       order by created_at desc limit 1`,
+       where business_id=$1
+         and event_type='lead.status_changed'
+         and payload #>> '{lead,status}' = 'qualified'
+       limit 1`,
       [f.businessA],
     )).rows[0];
 
