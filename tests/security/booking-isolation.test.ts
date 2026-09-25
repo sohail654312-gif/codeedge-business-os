@@ -320,6 +320,25 @@ describe("Booking tenant security and appointment integration", () => {
     )).rejects.toThrow(/Appointment unavailable/);
   });
 
+  it("keeps the transaction serialization lock ahead of conflict revalidation", async () => {
+    const definitions = await db.query<{ name: string; definition: string }>(
+      `select p.proname as name, pg_get_functiondef(p.oid) as definition
+       from pg_proc p
+       join pg_namespace n on n.oid=p.pronamespace
+       where n.nspname='public'
+         and p.proname in ('create_appointment','reschedule_appointment')
+       order by p.proname`,
+    );
+
+    expect(definitions.rows).toHaveLength(2);
+    for (const row of definitions.rows) {
+      const lockAt = row.definition.indexOf("pg_advisory_xact_lock");
+      const validateAt = row.definition.indexOf("booking_assert_slot");
+      expect(lockAt).toBeGreaterThan(-1);
+      expect(validateAt).toBeGreaterThan(lockAt);
+    }
+  });
+
   it("forces RLS on appointments", async () => {
     expect((await db.query<{
       relrowsecurity: boolean;
