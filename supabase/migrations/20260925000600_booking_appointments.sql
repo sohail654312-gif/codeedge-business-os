@@ -363,6 +363,7 @@ set search_path = ''
 as $$
 declare
   appointment_row public.appointments%rowtype;
+  business_timezone text;
 begin
   select a.*
   into appointment_row
@@ -378,6 +379,17 @@ begin
     raise exception 'Appointment cannot be rescheduled' using errcode = '22023';
   end if;
 
+  select b.timezone
+  into business_timezone
+  from public.businesses b
+  where b.id = appointment_row.business_id
+    and b.status = 'active'
+  limit 1;
+
+  if not found then
+    raise exception 'Booking unavailable' using errcode = '42501';
+  end if;
+
   perform pg_advisory_xact_lock(hashtextextended(appointment_row.business_id::text, 0));
 
   perform private.booking_assert_slot(
@@ -390,7 +402,8 @@ begin
 
   update public.appointments
   set starts_at = p_starts_at,
-      ends_at = p_ends_at
+      ends_at = p_ends_at,
+      timezone = business_timezone
   where business_id = appointment_row.business_id
     and id = appointment_row.id;
 
