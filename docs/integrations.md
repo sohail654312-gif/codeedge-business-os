@@ -9,7 +9,7 @@ Planned adapter categories:
   - Website Chat: live
   - WhatsApp: Meta Cloud API adapter through the generic channel/delivery layer
   - Email: Resend adapter through the same generic channel/delivery layer
-  - SMS: reserved
+  - SMS: Twilio adapter through the same generic channel/delivery layer
 - Automation: workflow engine
 - Voice: real-time AI voice provider
 - AI: LLM / business intelligence provider
@@ -23,3 +23,5 @@ AI Voice remains a later provider. It should plug into the same canonical Conver
 
 
 Email remains a provider-replaceable channel. Its Resend adapter feeds the same canonical Conversation + Message core, Shared Inbox and CRM used by Website Chat and WhatsApp. See `docs/email.md`.
+
+SMS remains provider-replaceable. Twilio is the first production adapter; inbound/outbound SMS and delivery callbacks feed the same Conversation + Message core, Shared Inbox and CRM. See `docs/sms.md`.
