@@ -195,6 +195,21 @@ describe("execution mode and external-effect database safety", () => {
     }]);
   });
 
+  it("fails closed if the channel is disabled after delivery preparation", async () => {
+    const { messageId } = await createDelivery(db);
+
+    await db.query(
+      "update public.channel_connections set enabled=false where id=$1",
+      [connectionA],
+    );
+
+    await asCommunicationApi(db);
+    await expect(db.query(
+      "select * from public.communication_execution_context($1)",
+      [messageId],
+    )).rejects.toThrow(/Execution context unavailable/);
+  });
+
   it("denies browser execution-context RPC access", async () => {
     const { messageId } = await createDelivery(db);
     await db.exec("RESET ROLE");
