@@ -95,7 +95,18 @@ describe("Booking availability", () => {
       now: new Date("2026-03-20T00:00:00Z"),
     });
 
-    expect(slots).not.toContain("2026-03-29T01:00:00.000Z");
+    const localTimes = slots.map((slot) =>
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/London",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(slot)),
+    );
+
+    expect(localTimes).not.toContain("01:00");
+    expect(localTimes).not.toContain("01:30");
+    expect(localTimes).toContain("02:00");
     expect(slots.length).toBeGreaterThan(0);
   });
 
