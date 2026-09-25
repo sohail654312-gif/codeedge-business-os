@@ -57,6 +57,7 @@ create table public.finance_execution_records (
   codeedge_reference text not null default '' check (char_length(codeedge_reference) <= 255),
   external_reference text not null default '' check (char_length(external_reference) <= 255),
   execution_mode public.execution_mode not null,
+  credential_environment public.credential_environment,
   correlation_id uuid not null,
   request_id uuid not null,
   status public.finance_execution_status not null,
@@ -289,13 +290,14 @@ begin
 
   insert into public.finance_execution_records(
     business_id,finance_connection_id,actor_user_id,engine,operation,
-    document_type,codeedge_reference,execution_mode,correlation_id,
-    request_id,status
+    document_type,codeedge_reference,execution_mode,credential_environment,
+    correlation_id,request_id,status
   ) values (
     p_business_id,v_context.connection_id,p_user_id,v_context.engine,p_operation,
     left(coalesce(p_document_type,''),80),
     left(coalesce(p_codeedge_reference,''),255),
-    v_context.execution_mode,p_correlation_id,p_request_id,'prepared'
+    v_context.execution_mode,v_context.credential_environment,
+    p_correlation_id,p_request_id,'prepared'
   )
   returning id into v_id;
 
@@ -304,6 +306,88 @@ begin
     v_context.credential_environment,true;
 end;
 $$;
+
+create or replace function public.finance_external_effect_context(
+  p_execution_id uuid
+)
+returns table(
+  business_id uuid,
+  execution_mode public.execution_mode,
+  prepared_execution_mode public.execution_mode,
+  engine text,
+  credential_environment public.credential_environment,
+  prepared_credential_environment public.credential_environment,
+  correlation_id uuid,
+  simulated boolean
+)
+language plpgsql
+stable
+security definer
+set search_path=''
+as $
+begin
+  return query
+    select r.business_id,
+      b.execution_mode,
+      r.execution_mode,
+      r.engine,
+      fc.credential_environment,
+      r.credential_environment,
+      r.correlation_id,
+      false
+    from public.finance_execution_records r
+    join public.businesses b on b.id=r.business_id
+    join public.finance_connections fc
+      on fc.business_id=r.business_id
+      and fc.id=r.finance_connection_id
+      and fc.engine=r.engine
+      and fc.enabled
+    where r.id=p_execution_id
+      and r.status='prepared'
+      and r.engine<>'demo_finance'
+      and b.status='active'
+      and fc.credential_environment is not null
+      and r.credential_environment is not null
+    limit 1;
+
+  if not found then
+    raise exception 'Finance execution context unavailable' using errcode='42501';
+  end if;
+end;
+$;
+
+create or replace function public.finance_demo_update_invoice(
+  p_business_id uuid,
+  p_invoice_id uuid,
+  p_payment_request_id uuid,
+  p_outstanding numeric,
+  p_status text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $
+begin
+  perform public.finance_demo_assert_business(p_business_id);
+
+  if p_status not in ('issued','partially_paid','paid') or p_outstanding < 0 then
+    raise exception 'Invalid Demo Finance invoice update' using errcode='22023';
+  end if;
+
+  update public.demo_finance_documents
+  set outstanding=p_outstanding,status=p_status
+  where business_id=p_business_id
+    and id=p_invoice_id
+    and document_type='invoice';
+
+  if not found then
+    raise exception 'Demo Finance invoice unavailable' using errcode='42501';
+  end if;
+
+  return p_invoice_id;
+end;
+$;
 
 create or replace function public.finance_complete_execution(
   p_execution_id uuid,
@@ -430,6 +514,10 @@ revoke all on function public.finance_active_context(uuid,uuid)
 from public,anon,authenticated;
 revoke all on function public.finance_prepare_execution(uuid,uuid,text,text,text,uuid,uuid)
 from public,anon,authenticated;
+revoke all on function public.finance_external_effect_context(uuid)
+from public,anon,authenticated;
+revoke all on function public.finance_demo_update_invoice(uuid,uuid,uuid,numeric,text)
+from public,anon,authenticated;
 revoke all on function public.finance_complete_execution(uuid,public.finance_execution_status,text,text)
 from public,anon,authenticated;
 revoke all on function public.finance_demo_assert_business(uuid)
@@ -443,6 +531,10 @@ from public,anon,authenticated;
 grant execute on function public.finance_active_context(uuid,uuid)
 to codeedge_finance_api;
 grant execute on function public.finance_prepare_execution(uuid,uuid,text,text,text,uuid,uuid)
+to codeedge_finance_api;
+grant execute on function public.finance_external_effect_context(uuid)
+to codeedge_finance_api;
+grant execute on function public.finance_demo_update_invoice(uuid,uuid,uuid,numeric,text)
 to codeedge_finance_api;
 grant execute on function public.finance_complete_execution(uuid,public.finance_execution_status,text,text)
 to codeedge_finance_api;
