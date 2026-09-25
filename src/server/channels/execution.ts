@@ -1,6 +1,13 @@
 import "server-only";
 
 import { z } from "zod";
+import {
+  assertExternalEffectAllowed,
+  credentialEnvironments,
+  executionModes,
+  ExternalEffectBlockedError,
+  type ExternalEffectContext,
+} from "@/server/execution/external-effects";
 import { withCommunicationCapability } from "./capability";
 import {
   getCommunicationProviderRegistration,
@@ -8,39 +15,23 @@ import {
   type ProviderEnvironment,
 } from "./registry";
 
-export const executionModes = ["demo", "sandbox", "production"] as const;
-export type ExecutionMode = (typeof executionModes)[number];
-
 const executionContextRowSchema = z.object({
   business_id: z.string().uuid(),
   execution_mode: z.enum(executionModes),
   channel: z.enum(["whatsapp", "email", "sms"]),
   provider: z.string().regex(/^[a-z][a-z0-9_]{1,79}$/),
-  provider_environment: z.enum(["sandbox", "production"]),
+  provider_environment: z.enum(credentialEnvironments),
   correlation_id: z.string().uuid().nullable(),
   simulated: z.boolean(),
 });
 
-export type CommunicationExecutionContext = {
-  businessId: string;
-  executionMode: ExecutionMode;
+export type CommunicationExecutionContext = ExternalEffectContext & {
   action: "communication.send";
   channel: ExternalCommunicationChannel;
-  provider: string;
   providerEnvironment: ProviderEnvironment;
-  correlationId: string | null;
-  simulated: boolean;
 };
 
-export class ExternalEffectBlockedError extends Error {
-  readonly code: string;
-
-  constructor(code: string) {
-    super("External effect blocked by workspace safety policy.");
-    this.name = "ExternalEffectBlockedError";
-    this.code = code;
-  }
-}
+export { ExternalEffectBlockedError };
 
 export async function loadCommunicationExecutionContext(
   messageId: string,
@@ -73,12 +64,9 @@ export async function loadCommunicationExecutionContext(
 export function assertCommunicationExternalEffectAllowed(
   context: CommunicationExecutionContext,
 ) {
-  if (
-    !executionModes.includes(context.executionMode)
-    || !["sandbox", "production"].includes(context.providerEnvironment)
-    || !["whatsapp", "email", "sms"].includes(context.channel)
-    || !context.provider
-  ) {
+  assertExternalEffectAllowed(context);
+
+  if (!["whatsapp", "email", "sms"].includes(context.channel)) {
     throw new ExternalEffectBlockedError("external_effect_invalid_context");
   }
 
@@ -90,29 +78,6 @@ export function assertCommunicationExternalEffectAllowed(
     );
   } catch {
     throw new ExternalEffectBlockedError("external_effect_unknown_provider");
-  }
-
-  if (context.simulated) {
-    // Simulated effects never need permission to reach a real adapter.
-    throw new ExternalEffectBlockedError("external_effect_simulated_live_blocked");
-  }
-
-  if (context.executionMode === "demo") {
-    throw new ExternalEffectBlockedError("external_effect_demo_live_blocked");
-  }
-
-  if (
-    context.executionMode === "sandbox"
-    && context.providerEnvironment !== "sandbox"
-  ) {
-    throw new ExternalEffectBlockedError("external_effect_sandbox_production_blocked");
-  }
-
-  if (
-    context.executionMode === "production"
-    && context.providerEnvironment !== "production"
-  ) {
-    throw new ExternalEffectBlockedError("external_effect_production_environment_blocked");
   }
 
   if (!registration.environments.includes(context.providerEnvironment)) {
