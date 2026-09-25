@@ -138,6 +138,9 @@ test("embedded Website Chat persists a secure visitor session and receives staff
     await pageB.goto(`/chat/${widgetId}`);
     await pageB.getByRole("button", { name: "Chat with us" }).click();
 
+    // Session startup is asynchronous. Wait for server-provided widget config,
+    // which is applied only after the start response has stored sessionToken.
+    await expect(pageB.getByText("Welcome to Northfield Support.")).toBeVisible();
     await expect(pageB.getByText("My boiler is not working.")).toHaveCount(0);
     expect(await pageB.evaluate((key) => localStorage.getItem(key), `codeedge_chat_${widgetId}`)).toBe("b".repeat(64));
   } finally {
