@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   currencyCodeSchema,
   decimalMoneySchema,
-  type FinanceExecutionContext,
 } from "./domain";
 import {
   type CreateFinanceBillInput,
