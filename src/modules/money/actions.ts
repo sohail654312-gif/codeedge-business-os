@@ -66,8 +66,9 @@ export async function configureDemoMoney(
 }
 
 export async function seedDemoMoneyJourney(
-  _state: MoneyActionState,
+  state: MoneyActionState,
 ): Promise<MoneyActionState> {
+  void state;
   const { client,context } = await requireDashboardTenant();
   if (context.role !== "owner") {
     return { error: "Only the business owner can seed Demo Money." };
