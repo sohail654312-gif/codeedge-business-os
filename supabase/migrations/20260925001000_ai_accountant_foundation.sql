@@ -665,6 +665,40 @@ begin
 end;
 $$;
 
+create or replace function public.ai_get_action_proposal(
+  p_business_id uuid,
+  p_user_id uuid,
+  p_proposal_id uuid
+)
+returns setof public.ai_action_proposals
+language plpgsql
+stable
+security definer
+set search_path=''
+as $$
+begin
+  if not exists(
+    select 1
+    from public.business_memberships m
+    join public.businesses b on b.id=m.business_id
+    where m.business_id=p_business_id
+      and m.user_id=p_user_id
+      and m.status='active'
+      and m.role in ('owner','staff')
+      and b.status='active'
+  ) then
+    raise exception 'AI proposal unavailable' using errcode='42501';
+  end if;
+
+  return query
+    select p.*
+    from public.ai_action_proposals p
+    where p.business_id=p_business_id
+      and p.id=p_proposal_id
+    limit 1;
+end;
+$$;
+
 create or replace function public.ai_recent_sessions(
   p_business_id uuid,
   p_user_id uuid,
@@ -794,6 +828,8 @@ revoke all on function public.ai_reject_action_proposal(uuid,uuid,uuid)
 from public,anon,authenticated;
 revoke all on function public.ai_complete_action_proposal(uuid,uuid,text,text,text)
 from public,anon,authenticated;
+revoke all on function public.ai_get_action_proposal(uuid,uuid,uuid)
+from public,anon,authenticated;
 revoke all on function public.ai_recent_sessions(uuid,uuid,integer)
 from public,anon,authenticated;
 revoke all on function public.ai_session_messages(uuid,uuid,uuid,integer)
@@ -818,6 +854,8 @@ to codeedge_ai_api;
 grant execute on function public.ai_reject_action_proposal(uuid,uuid,uuid)
 to codeedge_ai_api;
 grant execute on function public.ai_complete_action_proposal(uuid,uuid,text,text,text)
+to codeedge_ai_api;
+grant execute on function public.ai_get_action_proposal(uuid,uuid,uuid)
 to codeedge_ai_api;
 grant execute on function public.ai_recent_sessions(uuid,uuid,integer)
 to codeedge_ai_api;
