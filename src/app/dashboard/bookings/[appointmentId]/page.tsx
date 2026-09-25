@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   AppointmentRescheduleForm,
@@ -57,7 +58,7 @@ export default async function AppointmentDetailPage({
 
   return (
     <>
-      <a className="backLink" href="/dashboard/bookings">← Back to appointments</a>
+      <Link className="backLink" href="/dashboard/bookings">← Back to appointments</Link>
       <div className="pageHead">
         <div>
           <div className="eyebrow">Appointment</div>
@@ -92,9 +93,9 @@ export default async function AppointmentDetailPage({
             currentStatus={appointment.status}
           />
           {appointment.lead_id ? (
-            <a className="btn topGap" href={`/dashboard/buy-from-me/leads/${appointment.lead_id}`}>
+            <Link className="btn topGap" href={`/dashboard/buy-from-me/leads/${appointment.lead_id}`}>
               View linked Lead
-            </a>
+            </Link>
           ) : null}
         </section>
       </div>
