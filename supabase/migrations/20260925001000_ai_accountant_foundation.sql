@@ -29,6 +29,29 @@ create table public.ai_messages (
     references public.ai_sessions(business_id,id) on delete cascade
 );
 
+create table public.ai_model_runs (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  session_id uuid not null,
+  provider text not null check (char_length(provider) between 1 and 80),
+  model text not null check (char_length(model) between 1 and 160),
+  status text not null check (status in ('succeeded','failed')),
+  provider_request_id text not null default '' check (
+    char_length(provider_request_id) <= 255
+  ),
+  input_tokens integer check (input_tokens is null or input_tokens >= 0),
+  output_tokens integer check (output_tokens is null or output_tokens >= 0),
+  total_tokens integer check (total_tokens is null or total_tokens >= 0),
+  latency_ms integer not null check (latency_ms between 0 and 600000),
+  error_code text check (
+    error_code is null or char_length(error_code) <= 120
+  ),
+  created_at timestamptz not null default now(),
+  constraint ai_model_runs_session_same_tenant
+    foreign key (business_id,session_id)
+    references public.ai_sessions(business_id,id) on delete cascade
+);
+
 create table public.ai_tool_runs (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete cascade,
@@ -107,6 +130,8 @@ create index ai_sessions_business_created
   on public.ai_sessions(business_id,created_at desc,id desc);
 create index ai_messages_session_created
   on public.ai_messages(business_id,session_id,created_at,id);
+create index ai_model_runs_session_created
+  on public.ai_model_runs(business_id,session_id,created_at desc,id desc);
 create index ai_tool_runs_session_created
   on public.ai_tool_runs(business_id,session_id,created_at desc,id desc);
 create index ai_proposals_session_created
@@ -122,6 +147,8 @@ alter table public.ai_sessions enable row level security;
 alter table public.ai_sessions force row level security;
 alter table public.ai_messages enable row level security;
 alter table public.ai_messages force row level security;
+alter table public.ai_model_runs enable row level security;
+alter table public.ai_model_runs force row level security;
 alter table public.ai_tool_runs enable row level security;
 alter table public.ai_tool_runs force row level security;
 alter table public.ai_action_proposals enable row level security;
@@ -131,6 +158,7 @@ alter table public.ai_request_windows force row level security;
 
 revoke all on public.ai_sessions,
   public.ai_messages,
+  public.ai_model_runs,
   public.ai_tool_runs,
   public.ai_action_proposals,
   public.ai_request_windows
@@ -138,6 +166,7 @@ from public,anon,authenticated;
 
 grant select on public.ai_sessions,
   public.ai_messages,
+  public.ai_model_runs,
   public.ai_tool_runs,
   public.ai_action_proposals
 to authenticated;
@@ -150,6 +179,13 @@ for select to authenticated using (
 );
 
 create policy ai_messages_read on public.ai_messages
+for select to authenticated using (
+  private.has_business_role(
+    business_id,array['owner','staff']::public.business_role[]
+  )
+);
+
+create policy ai_model_runs_read on public.ai_model_runs
 for select to authenticated using (
   private.has_business_role(
     business_id,array['owner','staff']::public.business_role[]
@@ -190,6 +226,7 @@ grant codeedge_ai_api to postgres;
 grant usage on schema public,private to codeedge_ai_api;
 grant select on public.ai_sessions,
   public.ai_messages,
+  public.ai_model_runs,
   public.ai_tool_runs,
   public.ai_action_proposals
 to codeedge_ai_api;
@@ -333,6 +370,62 @@ begin
   ) values (
     p_business_id,p_session_id,p_role,p_content,
     left(coalesce(p_provider,''),80),left(coalesce(p_model,''),160)
+  )
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+create or replace function public.ai_record_model_run(
+  p_business_id uuid,
+  p_user_id uuid,
+  p_session_id uuid,
+  p_provider text,
+  p_model text,
+  p_status text,
+  p_provider_request_id text,
+  p_input_tokens integer,
+  p_output_tokens integer,
+  p_total_tokens integer,
+  p_latency_ms integer,
+  p_error_code text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_id uuid;
+begin
+  if p_status not in ('succeeded','failed')
+     or p_latency_ms < 0
+     or p_latency_ms > 600000 then
+    raise exception 'Invalid AI model audit record' using errcode='22023';
+  end if;
+
+  if not exists(
+    select 1
+    from public.ai_sessions s
+    join public.business_memberships m
+      on m.business_id=s.business_id and m.user_id=p_user_id
+    where s.business_id=p_business_id
+      and s.id=p_session_id
+      and m.status='active'
+      and m.role in ('owner','staff')
+  ) then
+    raise exception 'AI session unavailable' using errcode='42501';
+  end if;
+
+  insert into public.ai_model_runs(
+    business_id,session_id,provider,model,status,provider_request_id,
+    input_tokens,output_tokens,total_tokens,latency_ms,error_code
+  ) values (
+    p_business_id,p_session_id,left(p_provider,80),left(p_model,160),p_status,
+    left(coalesce(p_provider_request_id,''),255),
+    p_input_tokens,p_output_tokens,p_total_tokens,p_latency_ms,
+    left(p_error_code,120)
   )
   returning id into v_id;
 
@@ -816,6 +909,9 @@ revoke all on function public.ai_start_session(uuid,uuid,uuid,text,text,text)
 from public,anon,authenticated;
 revoke all on function public.ai_append_message(uuid,uuid,uuid,text,text,text,text)
 from public,anon,authenticated;
+revoke all on function public.ai_record_model_run(
+  uuid,uuid,uuid,text,text,text,text,integer,integer,integer,integer,text
+) from public,anon,authenticated;
 revoke all on function public.ai_record_tool_run(
   uuid,uuid,uuid,text,text,uuid,text,jsonb,text,text,text,integer
 ) from public,anon,authenticated;
@@ -843,6 +939,9 @@ grant execute on function public.ai_start_session(uuid,uuid,uuid,text,text,text)
 to codeedge_ai_api;
 grant execute on function public.ai_append_message(uuid,uuid,uuid,text,text,text,text)
 to codeedge_ai_api;
+grant execute on function public.ai_record_model_run(
+  uuid,uuid,uuid,text,text,text,text,integer,integer,integer,integer,text
+) to codeedge_ai_api;
 grant execute on function public.ai_record_tool_run(
   uuid,uuid,uuid,text,text,uuid,text,jsonb,text,text,text,integer
 ) to codeedge_ai_api;
