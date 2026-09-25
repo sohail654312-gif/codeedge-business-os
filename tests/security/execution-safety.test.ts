@@ -144,9 +144,11 @@ describe("execution mode and external-effect database safety", () => {
     expect((await db.query<{
       business_id: string;
       execution_mode: string;
+      prepared_execution_mode: string;
       channel: string;
       provider: string;
       provider_environment: string;
+      prepared_provider_environment: string;
       correlation_id: string;
       simulated: boolean;
     }>(
@@ -155,9 +157,11 @@ describe("execution mode and external-effect database safety", () => {
     )).rows).toEqual([{
       business_id: f.businessA,
       execution_mode: "production",
+      prepared_execution_mode: "production",
       channel: "sms",
       provider: "twilio_sms",
       provider_environment: "production",
+      prepared_provider_environment: "production",
       correlation_id: requestA,
       simulated: false,
     }]);
@@ -168,6 +172,27 @@ describe("execution mode and external-effect database safety", () => {
       [messageId],
     )).rejects.toThrow(/permission denied/);
     await db.exec("ROLLBACK TO SAVEPOINT execution_direct_read; RELEASE SAVEPOINT execution_direct_read");
+  });
+
+  it("exposes a current-vs-prepared mismatch so dispatch can fail closed", async () => {
+    const { messageId } = await createDelivery(db);
+
+    await db.query(
+      "update public.businesses set execution_mode='demo' where id=$1",
+      [f.businessA],
+    );
+
+    await asCommunicationApi(db);
+    expect((await db.query<{
+      execution_mode: string;
+      prepared_execution_mode: string;
+    }>(
+      "select execution_mode,prepared_execution_mode from public.communication_execution_context($1)",
+      [messageId],
+    )).rows).toEqual([{
+      execution_mode: "demo",
+      prepared_execution_mode: "production",
+    }]);
   });
 
   it("denies browser execution-context RPC access", async () => {
