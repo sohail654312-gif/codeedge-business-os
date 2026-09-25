@@ -6,6 +6,7 @@ import type {
   AIProviderMessage,
   AIToolCall,
 } from "./provider";
+import { sha256Json } from "./integrity";
 
 function latestUser(messages: AIProviderMessage[]) {
   return [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
@@ -27,7 +28,7 @@ function parseToolContent(message: AIProviderMessage | undefined) {
 
 function toolCall(name: string, args: unknown): AIToolCall {
   return {
-    id:"demo-"+name+"-"+Math.random().toString(36).slice(2,10),
+    id:"demo-"+name+"-"+sha256Json(args).slice(0,12),
     name,
     arguments:args,
   };
@@ -39,7 +40,8 @@ function extractAmount(text: string) {
 }
 
 function extractDate(text: string) {
-  return text.match(/\b\d{4}-\d{2}-\d{2}\b/)?.[0] ?? null;
+  const date=text.match(/\b\d{4}-\d{2}-\d{2}\b/)?.[0];
+  return date ? date+"T23:59:59Z" : null;
 }
 
 function compactJson(value: unknown) {
