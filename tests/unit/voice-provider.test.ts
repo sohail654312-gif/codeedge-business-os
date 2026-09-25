@@ -106,10 +106,17 @@ describe("Voice provider boundary", () => {
       voice_primary: "test_private_key_12345678901234567890",
     });
 
-    const fetcher = vi.fn(async () => new Response(
-      JSON.stringify({ id: "call-test", status: "queued" }),
-      { status: 201, headers: { "Content-Type": "application/json" } },
-    ));
+    let capturedInit: RequestInit | undefined;
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      capturedInit = init;
+      return new Response(
+        JSON.stringify({ id: "call-test", status: "queued" }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    });
     const provider = createVapiVoiceProvider({
       credentialKey: "voice_primary",
       assistantId: "assistant-test",
@@ -127,9 +134,10 @@ describe("Voice provider boundary", () => {
     });
 
     expect(fetcher).toHaveBeenCalledTimes(1);
-    const init = fetcher.mock.calls[0]?.[1] as RequestInit;
-    expect(String((init.headers as Record<string, string>).Authorization))
-      .toMatch(/^Bearer /);
+    expect(capturedInit).toBeDefined();
+    expect(String(
+      (capturedInit?.headers as Record<string, string>).Authorization,
+    )).toMatch(/^Bearer /);
   });
 
   it("rejects an unknown provider", () => {
