@@ -99,6 +99,21 @@ alter table public.automation_runs force row level security;
 alter table public.automation_action_runs enable row level security;
 alter table public.automation_action_runs force row level security;
 
+revoke all on public.automation_workflows,
+  public.automation_domain_events,
+  public.automation_runs,
+  public.automation_action_runs
+from public,anon,authenticated;
+
+grant select on public.automation_workflows,
+  public.automation_domain_events,
+  public.automation_runs,
+  public.automation_action_runs
+to authenticated;
+
+grant insert,update,delete on public.automation_workflows
+to authenticated;
+
 create policy automation_workflows_read on public.automation_workflows
 for select to authenticated using (
   exists (
