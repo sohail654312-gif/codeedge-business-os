@@ -495,3 +495,29 @@ export async function getFinanceReports(input: {
       ? await engine.getCashFlow(context) : null,
   };
 }
+
+export async function getMoneySales(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  return {
+    quotes: engine.listQuotes ? await engine.listQuotes(context) : null,
+    invoices: engine.listInvoices ? await engine.listInvoices(context) : null,
+    payments: engine.listPayments ? await engine.listPayments(context) : null,
+  };
+}
+
+export async function getMoneyPurchases(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+}) {
+  const { context,engine } = await financeSession(input);
+  return {
+    suppliers: engine.listSuppliers ? await engine.listSuppliers(context) : null,
+    bills: engine.listBills ? await engine.listBills(context) : null,
+    expenses: engine.listExpenses ? await engine.listExpenses(context) : null,
+  };
+}
