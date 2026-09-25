@@ -138,7 +138,7 @@ export async function createReceptionistAppointment(
     contactEmail: input.contactEmail,
     contactPhone: input.contactPhone,
     startsAt: input.startsAt,
-    source: "voice_ai",
+    source: "voice",
     notes: input.notes,
   });
 }
