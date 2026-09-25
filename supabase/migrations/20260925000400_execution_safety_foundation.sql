@@ -137,6 +137,8 @@ begin
    and cc.provider = d.provider
    and cc.channel = c.channel
   where d.message_id = p_message_id
+    and b.status = 'active'
+    and cc.enabled
     and c.channel in ('whatsapp','email','sms')
   limit 1;
 
