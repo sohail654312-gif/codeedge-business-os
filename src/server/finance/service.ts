@@ -196,6 +196,16 @@ export async function getFinanceStatus(input: {
   return engine.getStatus(context);
 }
 
+export async function getFinanceCrmCustomer(input: {
+  businessId: string;
+  userId: string;
+  correlationId: string;
+  crmCustomerId: string;
+}) {
+  const { context } = await financeSession(input);
+  return trustedCustomer(context,input.crmCustomerId);
+}
+
 export async function listFinanceCustomers(input: {
   businessId: string;
   userId: string;
