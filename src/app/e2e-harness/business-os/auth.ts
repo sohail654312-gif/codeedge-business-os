@@ -40,7 +40,7 @@ export async function currentBusinessOsE2EUser() {
 }
 
 export async function requireBusinessOsE2ETenant(
-  businessId = businessOsE2EFixtures.businessA,
+  businessId: string = businessOsE2EFixtures.businessA,
 ): Promise<BusinessOsE2ETenant> {
   requireBusinessOsE2EHarness();
   const userId = await currentBusinessOsE2EUser();

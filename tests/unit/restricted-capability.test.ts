@@ -1,3 +1,4 @@
+import type { PoolClient, PoolConfig } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import {
   createRestrictedCapability,
@@ -17,16 +18,16 @@ function harness(options: {
 } = {}) {
   const queries: string[] = [];
   const release = vi.fn();
-  const createPool = vi.fn((config: unknown) => ({
+  const createPool = vi.fn((config: PoolConfig) => ({
     config,
     connect: async () => ({
-      query: async (sql: string) => {
+      query: (async (sql: string) => {
         queries.push(sql);
         if (sql === "ROLLBACK" && options.rollbackFails) {
           throw new Error("rollback_failed");
         }
         return { rows: [] };
-      },
+      }) as PoolClient["query"],
       release,
     }),
   }));
