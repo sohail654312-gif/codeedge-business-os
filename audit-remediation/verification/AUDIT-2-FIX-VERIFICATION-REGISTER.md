@@ -2,39 +2,34 @@
 
 Historical baseline: `0a7c3e446a097bcf6cbbc0f2571a9cfce6fa5d3a`  
 Starting protected main: `05cf307b40516a2b3253202776ff56eff0662474`  
-Existing branch: `remediation/audit-2-security-tenant-isolation`  
-Existing branch starting head: `33720d4ad3f28779d01340aedbaffda08dda56f0`  
-Synchronized head: `f05f8b4640fb3fced930efdf47c27ef6c224438a`  
-Verified code head before evidence-only update: `3305889d3b1a854fca5970d877f2b982af5f722f`  
-PR: #50 — OPEN / NOT MERGED
+Final remediation PR: #50  
+Final PR head: `91a9c72293f5cc4f4d6482473e854d6693107e8a`  
+Merge commit / Audit 2 closure main: `abaafe3bebb23b8c5dc2896aeac556971ffa0f72`
 
-| Finding | Verification target | Evidence | Status |
+| Finding | Verification target | Final evidence | Status |
 |---|---|---|---|
-| SEC-001 | Patched Next/RSC dependency baseline | Next + lockfile 15.5.26; reviewed GHSA patched ranges; CI #749 | **VERIFIED** |
-| SEC-002 | Provider credentials tenant-bound and fail closed | tenant-bound resolver + provider/Finance adapters + negative tests + Automation service path | **VERIFIED** |
-| SEC-003 | Least-privilege DB LOGIN before restricted role | principal attestation + domain roles + TLS/pool/timeouts + negative tests | **VERIFIED** |
-| SEC-004 | Protected main with required CI | live active `Protect main` ruleset 24045183, no bypass | **VERIFIED** |
-| SEC-005 | Deterministic dependency graph | package-lock + npm ci in CI/ERPNext + CI #749 | **VERIFIED** |
-| SEC-006 | Immutable external CI references | SHA-pinned checkout/setup-node/Frappe Docker | **VERIFIED** |
-| SEC-007 | Explicit browser security policy | middleware/header module + representative authenticated/public route tests | **VERIFIED** |
-| SEC-008 | Actor-attributed immutable security audit | additive migration + tenant/immutability/actor tests | **VERIFIED** |
-| SEC-009 | Retention/deletion policy represented safely | `docs/data-retention-security.md`; no Production purge enabled | **VERIFIED** |
+| SEC-001 | Patched Next/RSC dependency baseline | Next + lockfile 15.5.26; current reviewed 15.5 security fix ranges are below 15.5.26; final PR CI #752 | **VERIFIED** |
+| SEC-002 | Provider credentials tenant-bound and fail closed | tenant-bound resolver + WhatsApp/Email/SMS/Voice adapters + business-bound Finance resolver + cross-tenant/negative tests | **VERIFIED** |
+| SEC-003 | Least-privilege DB LOGIN before restricted role | principal attestation before role switch + domain roles + verified TLS/pool/timeouts + negative tests | **VERIFIED** |
+| SEC-004 | Protected main with required CI | live active `Protect main` ruleset 24045183; PR + strict GitHub Actions `build`; deletion/non-fast-forward blocked; no bypass | **VERIFIED** |
+| SEC-005 | Deterministic dependency graph | authoritative package-lock + `npm ci` in CI/ERPNext; final PR CI #752 | **VERIFIED** |
+| SEC-006 | Immutable external CI references | SHA-pinned checkout/setup-node; Frappe Docker pinned to reviewed commit | **VERIFIED** |
+| SEC-007 | Explicit browser security policy | CSP/frame policy + Referrer-Policy + nosniff + Permissions-Policy + HTTPS-only HSTS + route tests | **VERIFIED** |
+| SEC-008 | Actor-attributed immutable security audit | tenant-isolated append-only security audit events + actor/tenant/immutability tests | **VERIFIED** |
+| SEC-009 | Retention/deletion policy represented safely | `docs/data-retention-security.md`; tenant-safe lifecycle policy; no destructive Production purge enabled | **VERIFIED** |
 
-## Branch validation
+## Final validation evidence
 
-CI #749: **GREEN**.
+- PR #50 final head: `91a9c72293f5cc4f4d6482473e854d6693107e8a`.
+- PR #50 final CI #752: **GREEN / SUCCESS**.
+- ERPNext disposable Finance Engine smoke #26: **GREEN / SUCCESS**.
+- PR #50: **MERGED**.
+- Merge commit / resulting main: `abaafe3bebb23b8c5dc2896aeac556971ffa0f72`.
+- Post-merge main CI #753: **GREEN / SUCCESS**.
+- SEC-001 through SEC-009: **9/9 VERIFIED**.
+- Audit 2 remediation: **CLOSED**.
 
-- deterministic install: GREEN
-- schema check: GREEN
-- deliberate schema drift proof: GREEN
-- lint: GREEN
-- typecheck: GREEN
-- unit suite: GREEN
-- security suite: GREEN
-- build: GREEN
-- E2E: GREEN
-
-PR #50 validation and current ERPNext disposable smoke must be checked live before the PR is considered ready for final merge review.
+CI #753 passed deterministic install, schema check, deliberate drift proof, lint, typecheck, full unit tests, the dedicated security suite, production build and Playwright E2E.
 
 ## Safety assertions
 
@@ -42,8 +37,10 @@ PR #50 validation and current ERPNext disposable smoke must be checked live befo
 - Production Supabase modified: **NO**
 - Production deployment: **NO**
 - Live provider traffic: **NO**
+- Production secrets added: **NO**
 - Branch protection bypassed: **NO**
 - PR #46 modified/merged/closed: **NO**
 - Audit 3 started: **NO**
 - Audit 4 started: **NO**
-- Audit 2 merged: **NO**
+
+Audit 2 closure: **9/9 VERIFIED — CLOSED**.
