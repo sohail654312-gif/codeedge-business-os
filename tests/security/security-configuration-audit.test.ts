@@ -15,8 +15,6 @@ import {
   type TestDatabase,
 } from "../helpers/database";
 
-const connectionId = "79000000-0000-4000-8000-000000000001";
-
 describe("security configuration audit events", () => {
   let db: TestDatabase;
 
@@ -44,17 +42,23 @@ describe("security configuration audit events", () => {
 
     await db.query(
       `insert into public.channel_connections(
-        id,business_id,channel,provider,external_account_id,external_sender_id,
-        display_address,credential_key,credential_environment,enabled
-      ) values ($1,$2,'sms','twilio_sms',$3,$4,'Audit SMS',$5,'production',true)`,
+        business_id,channel,provider,external_account_id,external_sender_id,
+        display_address,credential_key,enabled
+      ) values ($1,'sms','twilio_sms',$2,$3,'Audit SMS',$4,true)`,
       [
-        connectionId,
         f.businessA,
         "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "+441234567890",
         "tenant_a_sms",
       ],
     );
+
+    const connectionId = (await db.query<{ id: string }>(
+      `select id from public.channel_connections
+       where business_id=$1 and channel='sms' and provider='twilio_sms'`,
+      [f.businessA],
+    )).rows[0]?.id;
+    expect(connectionId).toBeTruthy();
 
     await db.query(
       "update public.channel_connections set enabled=false where id=$1 and business_id=$2",
