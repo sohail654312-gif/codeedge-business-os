@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
+import { customerFilterSchema } from "@/modules/buy-from-me/customers/validation";
 import { requireDashboardTenant } from "@/server/auth/session";
 
-export default async function CustomersPage() {
+type CustomerSearchParams = Record<string, string | string[] | undefined>;
+
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<CustomerSearchParams>;
+}) {
   const { client, context } = await requireDashboardTenant();
-  const directory = await getCustomerDirectoryData(client, context.business.id);
-  const activeCount = directory.rows.filter((customer) => customer.status === "Active").length;
+  const filters = customerFilterSchema.parse(await searchParams);
+  const directory = await getCustomerDirectoryData(client, context.business.id, filters);
+  const hasFilters = Boolean(filters.q || filters.source);
 
   return (
     <>
@@ -16,74 +24,69 @@ export default async function CustomersPage() {
           <p className="muted">{directory.note}</p>
         </div>
         <div className="row">
-          <span className="pill">
-            {directory.mode === "hybrid" ? "CodeEdge + ERPNext" : directory.mode === "erpnext" ? "ERPNext live" : "CodeEdge CRM"}
-          </span>
-          <button className="btn primary" type="button" disabled title="Direct customer creation is not enabled yet">
+          <span className="pill">Codeedge CRM</span>
+          <Link className="btn primary" href="/dashboard/buy-from-me/customers/new">
             + Add customer
-          </button>
+          </Link>
         </div>
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">{directory.rows.length}</div></div>
-        <div className="stat"><div className="statLabel">Active</div><div className="statValue">{activeCount}</div></div>
-        <div className="stat"><div className="statLabel">CRM source</div><div className="statValue">{directory.mode === "erpnext" ? "ERPNext" : "CodeEdge"}</div></div>
-        <div className="stat"><div className="statLabel">Back-office</div><div className="statValue">{directory.mode === "crm" ? "Optional" : "Connected"}</div></div>
+        <div className="stat"><div className="statLabel">{hasFilters ? "Matching customers" : "Customers"}</div><div className="statValue">{directory.rows.length}</div></div>
+        <div className="stat"><div className="statLabel">Active</div><div className="statValue">{directory.rows.length}</div></div>
+        <div className="stat"><div className="statLabel">CRM source</div><div className="statValue">Codeedge</div></div>
+        <div className="stat"><div className="statLabel">Back-office</div><div className="statValue">Optional</div></div>
       </div>
 
       <section className="panel topGap">
-        <div className="customerToolbar">
+        <h2>Customer directory</h2>
+        <p className="muted customerSubtext">
+          Direct Customers and converted Leads share one tenant-scoped CRM directory.
+        </p>
+
+        <form className="leadFilterForm" method="get">
+          <div className="leadFilterSearch">
+            <label htmlFor="customer_q">Search</label>
+            <input id="customer_q" className="customerSearch" name="q" type="search"
+              maxLength={120} defaultValue={filters.q ?? ""}
+              placeholder="Name, phone or email..." />
+          </div>
           <div>
-            <h2>Customer directory</h2>
-            <p className="muted customerSubtext">
-              Converted Leads remain visible in CodeEdge even when the back-office adapter is unavailable.
-            </p>
+            <label htmlFor="customer_source">Origin</label>
+            <select id="customer_source" name="source" defaultValue={filters.source ?? ""}>
+              <option value="">All origins</option>
+              <option value="lead">Converted Leads</option>
+              <option value="direct">Direct CRM</option>
+            </select>
           </div>
-          <div className="customerFilters">
-            <input className="customerSearch" placeholder="Search customers..." disabled />
-            <button className="btn" type="button" disabled>Filter</button>
+          <div className="leadFilterActions">
+            <button className="btn primary" type="submit">Apply</button>
+            {hasFilters ? <Link className="btn" href="/dashboard/buy-from-me/customers">Reset</Link> : null}
           </div>
-        </div>
+        </form>
 
         <div className="customerTableWrap">
           <table className="customerTable">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Company / Group</th>
-                <th>Contact / Territory</th>
-                <th>Status</th>
-                <th>Source</th>
-                <th>Value</th>
-                <th>Last activity</th>
-                <th>Appointments</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              <th>Customer</th><th>Company / Group</th><th>Contact</th><th>Status</th>
+              <th>Source</th><th>Value</th><th>Last activity</th><th>Appointments</th>
+            </tr></thead>
             <tbody>
               {directory.rows.length ? directory.rows.map((customer) => (
                 <tr key={customer.id}>
-                  <td><b>{customer.name}</b></td>
+                  <td><Link className="leadNameLink" href={`/dashboard/buy-from-me/customers/${customer.id}`}><b>{customer.name}</b></Link></td>
                   <td>{customer.company}</td>
                   <td className="muted">{customer.contact}</td>
-                  <td>
-                    <span className={`customerStatus customerStatus${customer.status.replace(/\s+/g, "")}`}>
-                      {customer.status}
-                    </span>
-                  </td>
-                  <td>{customer.source}</td>
-                  <td><b>{customer.value}</b></td>
+                  <td><span className="customerStatus customerStatusActive">{customer.status}</span></td>
+                  <td>{customer.source}</td><td><b>{customer.value}</b></td>
                   <td className="muted">{customer.lastActivity}</td>
-                  <td>
-                    {customer.id.startsWith("erpnext:") ? (
-                      <span className="muted">—</span>
-                    ) : (
-                      <Link className="backLink" href={`/dashboard/bookings?customer=${customer.id}`}>View</Link>
-                    )}
-                  </td>
+                  <td><Link className="backLink" href={`/dashboard/bookings?customer=${customer.id}`}>View</Link></td>
                 </tr>
               )) : (
-                <tr><td colSpan={8}><div className="emptyState"><h3>No Customers yet</h3><p>Convert a Lead to create a Customer.</p></div></td></tr>
+                <tr><td colSpan={8}><div className="emptyState">
+                  <h3>{hasFilters ? "No matching Customers" : "No Customers yet"}</h3>
+                  <p>{hasFilters ? "Try a different search or reset the filters." : "Create a Customer directly or convert a Lead."}</p>
+                </div></td></tr>
               )}
             </tbody>
           </table>
