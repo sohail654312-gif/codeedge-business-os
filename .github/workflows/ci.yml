@@ -6,15 +6,24 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+      - run: npm ci
+      - name: Verify migration-to-TypeScript schema contract
+        run: npm run schema:check
+      - name: Prove schema drift gate rejects a mismatch
+        run: npm run schema:prove-drift
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

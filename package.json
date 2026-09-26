@@ -13,7 +13,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:security": "vitest run tests/security",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "schema:generate": "node scripts/generate-schema-contract.mjs --write",
+    "schema:check": "node scripts/generate-schema-contract.mjs --check",
+    "schema:prove-drift": "node scripts/generate-schema-contract.mjs --prove-drift"
   },
   "dependencies": {
     "next": "15.5.26",
