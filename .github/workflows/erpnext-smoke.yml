@@ -70,24 +70,50 @@ jobs:
           done
           exit 1
 
-      - name: Generate disposable ERPNext credential and fixture
+      - name: Generate committed disposable ERPNext API credential
+        working-directory: /tmp/frappe_docker
         shell: bash
         run: |
           set -euo pipefail
 
-          curl --fail-with-body -sS             -c /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/login             --data-urlencode 'usr=Administrator'             --data-urlencode 'pwd=admin'             >/tmp/login.json
-          jq -e '.message == "Logged In"' /tmp/login.json >/dev/null
+          KEYS_JSON="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.set_user('Administrator') or frappe.get_attr('frappe.core.doctype.user.user.generate_keys')('Administrator')")"
 
-          curl --fail-with-body -sS             -b /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys             --data-urlencode 'user=Administrator'             >/tmp/keys.json
+          API_KEY="$(printf '%s' "$KEYS_JSON" | jq -er '.api_key')"
+          API_SECRET="$(printf '%s' "$KEYS_JSON" | jq -er '.api_secret')"
 
-          API_KEY="$(jq -er '.message.api_key' /tmp/keys.json)"
-          API_SECRET="$(jq -er '.message.api_secret' /tmp/keys.json)"
           echo "::add-mask::$API_KEY"
           echo "::add-mask::$API_SECRET"
 
-          AUTH_HEADER="Authorization: token $API_KEY:$API_SECRET"
+          {
+            echo "ERP_SMOKE_API_KEY=$API_KEY"
+            echo "ERP_SMOKE_API_SECRET=$API_SECRET"
+          } >> "$GITHUB_ENV"
 
-          curl --fail-with-body -sS             -H "$AUTH_HEADER"             http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user             | jq -e '.message == "Administrator"' >/dev/null
+      - name: Verify disposable ERPNext token authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH_HEADER="Authorization: token $ERP_SMOKE_API_KEY:$ERP_SMOKE_API_SECRET"
+
+          for i in $(seq 1 20); do
+            http_code="$(curl -sS               -o /tmp/erpnext-auth.json               -w '%{http_code}'               -H "$AUTH_HEADER"               http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user || true)"
+
+            if [ "$http_code" = "200" ] && jq -e '.message == "Administrator"' /tmp/erpnext-auth.json >/dev/null; then
+              exit 0
+            fi
+
+            sleep 1
+          done
+
+          echo "ERPNext token authentication did not become usable." >&2
+          jq -c '{message,exc_type,exception}' /tmp/erpnext-auth.json 2>/dev/null || true
+          exit 1
+
+      - name: Create deterministic disposable ERPNext fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH_HEADER="Authorization: token $ERP_SMOKE_API_KEY:$ERP_SMOKE_API_SECRET"
 
           CUSTOMER_GROUP="Codeedge Finance Smoke Customers"
           CUSTOMER_GROUP_COUNT="$(curl --fail-with-body -sS             -H "$AUTH_HEADER"             --get http://127.0.0.1:8080/api/resource/Customer%20Group             --data-urlencode 'fields=["name"]'             --data-urlencode 'filters=[["name","=","Codeedge Finance Smoke Customers"],["is_group","=",0]]'             --data-urlencode 'limit_page_length=1'             | jq -er '.data | length')"
@@ -111,7 +137,8 @@ jobs:
           jq -e '.data.customer_name == "Codeedge Finance Smoke Customer"' /tmp/customer-created.json >/dev/null
 
           BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
-          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$API_KEY"             --arg apiSecret "$API_SECRET"             --arg customerGroup "$CUSTOMER_GROUP"             --arg territory "$TERRITORY"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret,customerGroup:$customerGroup,territory:$territory}}')"
+          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$ERP_SMOKE_API_KEY"             --arg apiSecret "$ERP_SMOKE_API_SECRET"             --arg customerGroup "$CUSTOMER_GROUP"             --arg territory "$TERRITORY"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret,customerGroup:$customerGroup,territory:$territory}}')"
+
           {
             echo "CODEEDGE_ERPNEXT_SMOKE=1"
             echo "CODEEDGE_SMOKE_BUSINESS_ID=$BUSINESS_ID"
