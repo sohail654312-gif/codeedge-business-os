@@ -78,7 +78,13 @@ describe("Resend Email adapter", () => {
 
   it("sends a threaded plain-text Email with provider idempotency and captures Message-ID", async () => {
     process.env.EMAIL_RESEND_CREDENTIALS_JSON = JSON.stringify({
-      client_primary: "re_test_server_only_key",
+      client_primary: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "resend_email",
+        environment: "production",
+        externalSenderId: "support@example.com",
+        secret: "re_test_server_only_key",
+      },
     });
 
     const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
@@ -101,6 +107,8 @@ describe("Resend Email adapter", () => {
 
     const provider = createResendEmailProvider(fetcher);
     await expect(provider.sendEmail({
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       credentialKey: "client_primary",
       senderName: "Codeedge Support",
       senderEmail: "support@example.com",
@@ -139,7 +147,13 @@ describe("Resend Email adapter", () => {
 
   it("retrieves inbound Email, parses RFC threading headers, and never returns raw HTML", async () => {
     process.env.EMAIL_RESEND_CREDENTIALS_JSON = JSON.stringify({
-      client_primary: "re_test_server_only_key",
+      client_primary: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "resend_email",
+        environment: "production",
+        externalSenderId: "support@example.com",
+        secret: "re_test_server_only_key",
+      },
     });
 
     const fetcher = (async () => new Response(JSON.stringify({
@@ -163,7 +177,10 @@ describe("Resend Email adapter", () => {
 
     const provider = createResendEmailProvider(fetcher);
     const email = await provider.getReceivedEmail({
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       credentialKey: "client_primary",
+      externalSenderId: "support@example.com",
       providerMessageId: "received-1",
     });
 
@@ -182,5 +199,28 @@ describe("Resend Email adapter", () => {
     });
     expect(email.body).not.toContain("<script");
     expect(email.body).not.toContain("alert(1)");
+  });
+
+  it("denies a known Resend alias for the wrong tenant", async () => {
+    process.env.EMAIL_RESEND_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "resend_email",
+        environment: "production",
+        externalSenderId: "support@example.com",
+        secret: "re_test_server_only_key",
+      },
+    });
+    const fetcher = vi.fn();
+    const provider = createResendEmailProvider(fetcher as typeof fetch);
+
+    await expect(provider.getReceivedEmail({
+      businessId: "20000000-0000-4000-8000-000000000002",
+      providerEnvironment: "production",
+      credentialKey: "tenant_a",
+      externalSenderId: "support@example.com",
+      providerMessageId: "received-1",
+    })).rejects.toThrow(/credential/i);
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });
