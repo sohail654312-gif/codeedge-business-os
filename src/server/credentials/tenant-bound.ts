@@ -9,6 +9,8 @@ export type TenantBoundCredentialExpectation = {
   expectedMetadata?: Record<string, string>;
 };
 
+const businessIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type CredentialEntry = {
   businessId: string;
   provider: string;
@@ -49,6 +51,7 @@ function credentialEntry(
   const entry = value as Record<string, unknown>;
   if (
     typeof entry.businessId !== "string"
+    || !businessIdPattern.test(entry.businessId)
     || typeof entry.provider !== "string"
     || (entry.environment !== "sandbox" && entry.environment !== "production")
     || typeof entry.secret !== "string"
@@ -66,6 +69,10 @@ export function resolveTenantBoundSecret(input: {
   minimumSecretLength: number;
   expected: TenantBoundCredentialExpectation;
 }) {
+  if (!businessIdPattern.test(input.expected.businessId)) {
+    throw new Error(`${input.label} credential is unavailable.`);
+  }
+
   const entry = credentialEntry(input.raw, input.credentialKey, input.label);
 
   if (
@@ -105,6 +112,7 @@ export function tenantBoundCredentialConfigured(input: {
       && typeof value === "object"
       && !Array.isArray(value)
       && typeof (value as Record<string, unknown>).businessId === "string"
+      && businessIdPattern.test(String((value as Record<string, unknown>).businessId))
       && typeof (value as Record<string, unknown>).provider === "string"
       && ["sandbox", "production"].includes(
         String((value as Record<string, unknown>).environment),
