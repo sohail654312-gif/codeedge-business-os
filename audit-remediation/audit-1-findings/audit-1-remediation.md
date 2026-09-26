@@ -14,21 +14,19 @@ The original Audit 1 baseline was older than the remediation baseline, so every 
 
 **Status before remediation:** OPEN.
 
-**Current evidence:** GitHub reported `main` as unprotected and the repository ruleset collection was empty. The connected GitHub integration can inspect repository and workflow state but does not expose GitHub Administration permission required to create branch protection/rulesets.
+**Current evidence:** GitHub now reports `main` as protected by active repository ruleset `Protect main` (ruleset 24045183).
 
 **Root cause:** repository governance was not configured to make CI a merge prerequisite.
 
 **Files/services affected:** GitHub repository governance only; no application source change can substitute for this control.
 
-**Fix implemented:** none in source code. CI remains a named `CI` workflow with a `build` job suitable for required-status enforcement.
+**Fix implemented:** repository ruleset `Protect main` was created and activated for the default branch. It requires pull requests, requires the GitHub Actions `build` status check, requires the branch to be up to date, blocks deletion and non-fast-forward/force pushes, has no bypass actors, and reports the current user as unable to bypass.
 
-**Security/tenant implications:** no tenant/RLS behavior changed. The unresolved risk is governance: a privileged actor can still bypass CI by pushing or merging directly to main.
+**Security/tenant implications:** no tenant/RLS behavior changed. The repository governance path now makes the protected PR + required CI path authoritative for `main`.
 
-**Verification evidence:** ruleset/protection reads performed against current main before remediation. A real enforcement test cannot be completed until GitHub admin configuration is applied.
+**Verification evidence:** live ruleset read confirms enforcement `active`, required `build` from GitHub Actions, strict required-status policy, pull-request requirement, deletion/non-fast-forward blocking, empty bypass list, and `current_user_can_bypass: never`. GitHub branch state reports `main` as protected. A destructive force-push/direct-push test was intentionally not performed.
 
-**Final status:** BLOCKED - MANUAL GITHUB ADMIN ACTION REQUIRED.
-
-Required GitHub admin action is documented in the verification register.
+**Final status:** VERIFIED.
 
 ## A1-02 - MODERATE - dependency installation is not reproducible
 
@@ -46,7 +44,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** the lockfile was generated successfully in GitHub Actions using Node 22. Full deterministic install, lint, typecheck, test, build and E2E verification is required from the remediation PR CI.
 
-**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #738 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-03 - MODERATE - central architecture documentation is stale
 
@@ -64,7 +62,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** documentation was cross-checked against current V1 feature-completeness and current source boundaries. Final PR review/CI remains required.
 
-**Final status:** VERIFIED — central architecture documentation was cross-checked against current V1/source boundaries and CI #733 is GREEN.
+**Final status:** VERIFIED — central architecture documentation was cross-checked against current V1/source boundaries and CI #738 is GREEN.
 
 ## A1-04 - MODERATE - restricted DB capability infrastructure duplicated/cross-coupled
 
@@ -82,7 +80,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** `tests/unit/restricted-capability.test.ts` proves verified TLS fail-closed behavior, exact domain role separation, bounded pools, COMMIT path, ROLLBACK on failure and broken-client discard after rollback failure.
 
-**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #738 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-05 - MODERATE - ERPNext smoke workflow is stale
 
@@ -100,7 +98,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Verification evidence:** smoke runs #17-#19 exposed a disposable Frappe credential/proxy propagation race rather than a Codeedge Finance boundary defect. The workflow was stabilized by ordering fixture creation before credential generation and coordinating cache activation with backend+frontend restart. ERPNext disposable Finance Engine smoke #20 then completed GREEN twice on the same remediation head, including deterministic install, disposable ERPNext startup, fixture creation, committed API credential generation, credential activation, token authentication, current Finance Engine boundary execution and cleanup.
 
-**Final status:** VERIFIED — ERPNext disposable Finance Engine smoke #20 passed twice consecutively on remediation head `2954056a4a8ca4159dc12e8967e586a6b8c4801d`.
+**Final status:** VERIFIED — ERPNext disposable Finance Engine smoke #23 passed on synchronized remediation head `65ff2e5613e7008ad0f6f9fa50567c06231feaf9`, including disposable startup, fixture/credential creation, token authentication, current Finance boundary execution and cleanup.
 
 ## A1-06 - MODERATE - system-level E2E coverage is too thin
 
@@ -114,7 +112,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Security/tenant implications:** the suite explicitly verifies cross-workspace denial and zero external-provider effects. Existing PGlite security tests continue to exercise migrations/RLS; the browser harness validates browser -> server action -> auth/tenant -> service/domain -> test persistence wiring without live provider traffic.
 
-**Final status:** VERIFIED — CI #733 Playwright E2E is GREEN, including the consolidated Business OS critical-path suite.
+**Final status:** VERIFIED — CI #738 Playwright E2E is GREEN, including the consolidated Business OS critical-path suite.
 
 ## A1-07 - MODERATE - no database schema <-> TypeScript contract drift gate
 
@@ -128,9 +126,9 @@ Required GitHub admin action is documented in the verification register.
 
 **Fix implemented:** ordered repository migrations remain authoritative. A deterministic generator hashes and extracts migration tables/functions/enums, extracts the application Database type surface, rejects TypeScript references to nonexistent migration objects, and emits a checked-in TypeScript contract snapshot. CI fails when that snapshot is stale. The generator also has a deliberate mismatch proof command.
 
-**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. CI #733 passed both `schema:check` and `schema:prove-drift`, including the deliberate mismatch proof.
+**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. CI #738 passed both `schema:check` and `schema:prove-drift`, including the deliberate mismatch proof.
 
-**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #738 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-08 - LOW - provider capability metadata duplicated
 
@@ -148,4 +146,4 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** provider metadata consistency tests prove runtime adapters match the authoritative declarations and unknown registrations fail closed.
 
-**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #738 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
