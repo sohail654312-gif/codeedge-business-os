@@ -37,6 +37,8 @@ describe("provider capability metadata", () => {
   it("derives Voice adapter metadata from one authoritative source", () => {
     const demo = createDemoVoiceProvider();
     const vapi = createVapiVoiceProvider({
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       credentialKey: "unused_in_metadata_test",
       assistantId: "assistant-test",
       phoneNumberId: "phone-test",
