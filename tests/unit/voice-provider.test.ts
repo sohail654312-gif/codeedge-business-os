@@ -195,7 +195,14 @@ describe("Voice provider boundary", () => {
 
   it("uses a server-only Vapi credential and never performs a real network call in tests", async () => {
     process.env.VOICE_VAPI_CREDENTIALS_JSON = JSON.stringify({
-      voice_primary: "test_private_key_12345678901234567890",
+      voice_primary: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "vapi",
+        environment: "production",
+        assistantId: "assistant-test",
+        phoneNumberId: "phone-test",
+        secret: "test_private_key_12345678901234567890",
+      },
     });
 
     let capturedInit: RequestInit | undefined;
@@ -210,6 +217,8 @@ describe("Voice provider boundary", () => {
       );
     });
     const provider = createVapiVoiceProvider({
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       credentialKey: "voice_primary",
       assistantId: "assistant-test",
       phoneNumberId: "phone-test",
@@ -230,6 +239,35 @@ describe("Voice provider boundary", () => {
     expect(String(
       (capturedInit?.headers as Record<string, string>).Authorization,
     )).toMatch(/^Bearer /);
+  });
+
+  it("denies a Vapi alias for a different trusted tenant", async () => {
+    process.env.VOICE_VAPI_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "vapi",
+        environment: "production",
+        assistantId: "assistant-test",
+        phoneNumberId: "phone-test",
+        secret: "test_private_key_12345678901234567890",
+      },
+    });
+    const fetcher = vi.fn();
+    const provider = createVapiVoiceProvider({
+      businessId: "20000000-0000-4000-8000-000000000002",
+      providerEnvironment: "production",
+      credentialKey: "tenant_a",
+      assistantId: "assistant-test",
+      phoneNumberId: "phone-test",
+    }, fetcher as typeof fetch);
+
+    await expect(provider.startOutboundCall?.({
+      correlationId: "80000000-0000-4000-8000-000000000009",
+      fromNumber: "+441234567890",
+      toNumber: "+447700900123",
+      webhookUrl: "https://example.test/api/voice/vapi",
+    })).rejects.toThrow(/credential/i);
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it("rejects an unknown provider", () => {
