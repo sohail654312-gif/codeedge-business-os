@@ -15,15 +15,26 @@ export default async function VoiceReceptionistPage({
 }) {
   const query = await searchParams;
   const { client, context } = await requireDashboardTenant();
-  const [services, settingsResult] = await Promise.all([
+  const [services, settingsResult, connectionResult] = await Promise.all([
     listBookingServices(client, context.business.id),
     client
       .from("voice_receptionist_settings")
       .select("*")
       .eq("business_id", context.business.id)
       .maybeSingle(),
+    client
+      .from("channel_connections")
+      .select("id,provider,display_address,credential_environment,enabled")
+      .eq("business_id", context.business.id)
+      .eq("channel", "voice")
+      .eq("provider", "vapi")
+      .eq("enabled", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (settingsResult.error) throw new Error("Unable to load AI Voice settings.");
+  if (connectionResult.error) throw new Error("Unable to load Voice connection status.");
   const settings = settingsResult.data ?? {
     business_id: context.business.id,
     enabled: false,
@@ -77,6 +88,22 @@ export default async function VoiceReceptionistPage({
         </div>
         <span className="pill">{context.business.execution_mode} workspace</span>
       </div>
+
+      <section className="panel">
+        <h2>Vapi adapter status</h2>
+        {connectionResult.data ? (
+          <>
+            <p className="muted">Connection: active for this workspace.</p>
+            <p className="muted">Number: {connectionResult.data.display_address || "Configured provider number"}</p>
+            <p className="muted">Provider environment: {connectionResult.data.credential_environment}</p>
+          </>
+        ) : (
+          <p className="muted">
+            No active tenant-bound Vapi connection is configured. Selecting Vapi below does not create or borrow a global connection.
+          </p>
+        )}
+      </section>
+      <div className="topGap" />
 
       <VoiceSettingsForm settings={settings} role={context.role} />
       <div className="topGap" />

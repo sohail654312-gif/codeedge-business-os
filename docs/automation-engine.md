@@ -97,7 +97,7 @@ When an Automation internal action causes another tracked domain event, Codeedge
 
 ## Worker and retry behavior
 
-`POST /api/internal/automation/run` is a server-only runner entrypoint protected by `AUTOMATION_RUNNER_SECRET`.
+`The runner is exposed only through `/api/internal/automation/run`. Vercel Cron uses authenticated `GET` with `CRON_SECRET`; an explicitly configured internal scheduler/operator may use `POST` with the separate `AUTOMATION_RUNNER_SECRET`.
 
 The worker:
 
@@ -109,6 +109,8 @@ The worker:
 6. records the terminal run status
 
 Runs stuck in `running` for more than ten minutes are eligible for recovery. Recovery is bounded at three attempts. Retry-safe actions are designed to be idempotent or safe internal operations.
+
+The repository contains an explicit Vercel Cron registration in `vercel.json`. Its once-daily baseline is intentionally compatible with Hobby deployments; production operators that require lower workflow latency can use a higher-cadence supported deployment plan or invoke the authenticated POST runner from another scheduler without changing the Automation domain.
 
 ## Current foundation scope
 

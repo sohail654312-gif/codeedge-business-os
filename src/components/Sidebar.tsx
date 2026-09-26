@@ -40,6 +40,7 @@ export function Sidebar({
           </Link>
         ))}
         <div className="navLabel">Workspace</div>
+        <Link className="navItem" href="/dashboard/onboarding">◇ Setup guide</Link>
         <Link className="navItem" href="/dashboard/settings">⚙ Settings</Link>
         <form action={signOut}>
           <button className="navItem navButton" type="submit">↩ Sign out</button>

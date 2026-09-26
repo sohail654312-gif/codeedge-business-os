@@ -17,7 +17,7 @@ export default function Home() {
         <Brand />
         <div className="row">
           <Link className="btn" href="/login">Sign in</Link>
-          <Link className="btn primary" href="/dashboard">View demo</Link>
+          <Link className="btn primary" href="/signup">Create workspace</Link>
         </div>
       </header>
 
@@ -31,8 +31,8 @@ export default function Home() {
             business into a maze of software.
           </p>
           <div className="actions">
-            <Link className="btn primary" href="/dashboard">Open client demo</Link>
-            <Link className="btn" href="/login">Sign in preview</Link>
+            <Link className="btn primary" href="/signup">Create workspace</Link>
+            <Link className="btn" href="/login">Sign in</Link>
           </div>
         </div>
 
