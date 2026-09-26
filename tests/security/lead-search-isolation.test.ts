@@ -69,6 +69,34 @@ describe("Business OS Lead search isolation", () => {
     expect((await search(f.businessA, null, null, null, f.serviceB)).rows).toEqual([]);
   });
 
+  it("supports deterministic pages beyond the former 250-row ceiling with an exact count", async () => {
+    await db.exec("RESET ROLE");
+    await db.query(
+      `insert into public.leads(
+        business_id,contact_name,phone,email,source,enquiry_summary,status,created_by
+      )
+      select $1,'Bulk Lead ' || gs,'07000' || lpad(gs::text,6,'0'),'','manual',
+        'Bulk pagination boundary','new',$2
+      from generate_series(1,275) gs`,
+      [f.businessA, f.ownerA],
+    );
+
+    await asUser(db, f.ownerA);
+    const count = await db.query<{ count_leads: string }>(
+      "select public.count_leads($1,$2,null,null,null)::text",
+      [f.businessA, "Bulk Lead"],
+    );
+    expect(count.rows[0]?.count_leads).toBe("275");
+
+    const lastPage = await db.query<{ contact_name: string }>(
+      `select contact_name
+       from public.search_leads($1,$2,null,null,null)
+       limit 50 offset 250`,
+      [f.businessA, "Bulk Lead"],
+    );
+    expect(lastPage.rows).toHaveLength(25);
+  });
+
   it("denies anonymous RPC access", async () => {
     await asUser(db, null);
     await expect(search(f.businessA, null, null, null, null))

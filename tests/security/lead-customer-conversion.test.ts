@@ -46,8 +46,8 @@ describe("Lead to Customer conversion isolation", () => {
       created_by: f.ownerA,
     }]);
 
-    expect((await db.query("select id from public.leads where id=$1", [f.leadA])).rows)
-      .toEqual([{ id: f.leadA }]);
+    expect((await db.query("select id,status from public.leads where id=$1", [f.leadA])).rows)
+      .toEqual([{ id: f.leadA, status: "won" }]);
   });
 
   it("is idempotent for repeated conversion of the same Lead", async () => {
@@ -67,6 +67,10 @@ describe("Lead to Customer conversion isolation", () => {
       created: false,
     });
     expect((await db.query("select id from public.customers")).rows).toHaveLength(1);
+    expect((await db.query<{ status: string }>(
+      "select status from public.leads where id=$1",
+      [f.leadA],
+    )).rows).toEqual([{ status: "won" }]);
   });
 
   it("rejects cross-tenant conversion", async () => {
