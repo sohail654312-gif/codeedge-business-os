@@ -342,6 +342,12 @@ export function createResendEmailProvider(
       const replyTo = input.replyToEmail ? emailSchema.parse(input.replyToEmail) : "";
       const displayName = safeSenderName(input.senderName);
       const headers: Record<string, string> = {};
+      const credential: ResendCredentialContext = {
+        businessId: input.businessId,
+        providerEnvironment: input.providerEnvironment,
+        credentialKey: input.credentialKey,
+        externalSenderId: senderEmail,
+      };
 
       if (input.inReplyTo && rfcMessageIdSchema.safeParse(input.inReplyTo).success) {
         headers["In-Reply-To"] = input.inReplyTo;
@@ -352,7 +358,7 @@ export function createResendEmailProvider(
         .slice(-50);
       if (references.length) headers.References = references.join(" ");
 
-      const response = await request("/emails", input, {
+      const response = await request("/emails", credential, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -380,7 +386,7 @@ export function createResendEmailProvider(
 
       return {
         providerMessageId: parsed.data.id,
-        rfcMessageId: await getSentRfcMessageId(input, parsed.data.id),
+        rfcMessageId: await getSentRfcMessageId(credential, parsed.data.id),
       };
     },
 
