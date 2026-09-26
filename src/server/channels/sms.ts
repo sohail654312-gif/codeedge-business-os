@@ -12,6 +12,7 @@ type SmsInboundConnection = {
   external_account_id: string;
   external_sender_id: string;
   credential_key: string;
+  credential_environment: "sandbox" | "production";
   provider: string;
 };
 
