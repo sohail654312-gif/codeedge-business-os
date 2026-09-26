@@ -7,21 +7,10 @@ import {
   type VoiceProvider,
   VoiceProviderError,
 } from "./provider";
+import { voiceProviderMetadata } from "./provider-metadata";
 
 export class DemoVoiceProvider implements VoiceProvider {
-  readonly metadata = {
-    id: "demo_voice" as const,
-    environments: ["demo"] as const,
-    capabilities: [
-      "inbound_calling",
-      "outbound_calling",
-      "post_call_transcript",
-      "tool_calling",
-      "multilingual",
-      "sandbox",
-    ] as const,
-    externalEffect: false,
-  };
+  readonly metadata = voiceProviderMetadata.demo_voice;
 
   async startOutboundCall(
     input: StartOutboundVoiceCallInput,

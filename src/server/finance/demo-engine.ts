@@ -31,6 +31,7 @@ import type {
   RecordFinancePaymentInput,
 } from "./engine";
 import { withFinanceCapability } from "./capability";
+import { financeEngineMetadata } from "./provider-metadata";
 
 const requestIdSchema = z.string().uuid();
 
@@ -257,11 +258,7 @@ function sameCurrency(rows: readonly { currency: string }[], fallback: string) {
 
 export const demoFinanceEngine: FinanceEngine = {
   id: "demo_finance",
-  capabilities: new Set([
-    "health","customers","suppliers","quotations","invoices","payments",
-    "bills","expenses","chart_of_accounts","ledger","trial_balance",
-    "profit_and_loss","balance_sheet","cash_flow",
-  ]),
+  capabilities: new Set(financeEngineMetadata.demo_finance.capabilities),
 
   async getStatus(context) {
     assertDemo(context);
