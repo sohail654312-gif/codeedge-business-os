@@ -46,7 +46,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** the lockfile was generated successfully in GitHub Actions using Node 22. Full deterministic install, lint, typecheck, test, build and E2E verification is required from the remediation PR CI.
 
-**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-03 - MODERATE - central architecture documentation is stale
 
@@ -64,7 +64,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** documentation was cross-checked against current V1 feature-completeness and current source boundaries. Final PR review/CI remains required.
 
-**Final status:** VERIFIED — central architecture documentation was cross-checked against current V1/source boundaries and CI #728 is GREEN.
+**Final status:** VERIFIED — central architecture documentation was cross-checked against current V1/source boundaries and CI #733 is GREEN.
 
 ## A1-04 - MODERATE - restricted DB capability infrastructure duplicated/cross-coupled
 
@@ -82,7 +82,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** `tests/unit/restricted-capability.test.ts` proves verified TLS fail-closed behavior, exact domain role separation, bounded pools, COMMIT path, ROLLBACK on failure and broken-client discard after rollback failure.
 
-**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-05 - MODERATE - ERPNext smoke workflow is stale
 
@@ -94,11 +94,13 @@ Required GitHub admin action is documented in the verification register.
 
 **Files/services affected:** `.github/workflows/erpnext-smoke.yml`, `tests/integration/erpnext-finance-smoke.test.ts`, Finance status response mapper/route.
 
-**Fix implemented:** the workflow now starts only a disposable local ERPNext instance, binds credentials through `FINANCE_ERPNEXT_CREDENTIALS_JSON` to a deterministic Codeedge test business, and exercises the current Finance registry/engine/credential boundary. The current HTTP status response shape is produced by a shared Finance status mapper and asserted in the smoke. Relevant Finance/ERPNext PRs trigger this targeted smoke automatically; no production provider credentials or traffic are used.
+**Fix implemented:** the workflow now starts only a disposable local ERPNext instance, creates its deterministic provider fixture before credential generation, generates and commits a disposable ERPNext API credential, clears the disposable site cache, restarts the disposable backend and frontend together so the proxy and credential state are synchronized, verifies token authentication, then binds credentials through `FINANCE_ERPNEXT_CREDENTIALS_JSON` to a deterministic Codeedge test business and exercises the current Finance registry/engine/credential boundary. The current HTTP status response shape is produced by a shared Finance status mapper and asserted in the smoke. Relevant Finance/ERPNext PRs trigger this targeted smoke automatically; no production provider credentials or traffic are used.
 
 **Coverage boundary:** application sign-in/RLS/tenant wiring is validated by the main security and critical-path suites. The disposable provider smoke does not fake an unauthenticated Codeedge API request.
 
-**Final status:** VERIFIED — ERPNext disposable Finance Engine smoke #15 is GREEN, including deterministic install, disposable ERPNext startup, committed API credential generation, token authentication, deterministic fixture creation, current Finance Engine boundary execution and cleanup.
+**Verification evidence:** smoke runs #17-#19 exposed a disposable Frappe credential/proxy propagation race rather than a Codeedge Finance boundary defect. The workflow was stabilized by ordering fixture creation before credential generation and coordinating cache activation with backend+frontend restart. ERPNext disposable Finance Engine smoke #20 then completed GREEN twice on the same remediation head, including deterministic install, disposable ERPNext startup, fixture creation, committed API credential generation, credential activation, token authentication, current Finance Engine boundary execution and cleanup.
+
+**Final status:** VERIFIED — ERPNext disposable Finance Engine smoke #20 passed twice consecutively on remediation head `2954056a4a8ca4159dc12e8967e586a6b8c4801d`.
 
 ## A1-06 - MODERATE - system-level E2E coverage is too thin
 
@@ -112,7 +114,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Security/tenant implications:** the suite explicitly verifies cross-workspace denial and zero external-provider effects. Existing PGlite security tests continue to exercise migrations/RLS; the browser harness validates browser -> server action -> auth/tenant -> service/domain -> test persistence wiring without live provider traffic.
 
-**Final status:** VERIFIED — CI #728 Playwright E2E is GREEN, including the consolidated Business OS critical-path suite.
+**Final status:** VERIFIED — CI #733 Playwright E2E is GREEN, including the consolidated Business OS critical-path suite.
 
 ## A1-07 - MODERATE - no database schema <-> TypeScript contract drift gate
 
@@ -126,9 +128,9 @@ Required GitHub admin action is documented in the verification register.
 
 **Fix implemented:** ordered repository migrations remain authoritative. A deterministic generator hashes and extracts migration tables/functions/enums, extracts the application Database type surface, rejects TypeScript references to nonexistent migration objects, and emits a checked-in TypeScript contract snapshot. CI fails when that snapshot is stale. The generator also has a deliberate mismatch proof command.
 
-**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. CI #728 passed both `schema:check` and `schema:prove-drift`, including the deliberate mismatch proof.
+**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. CI #733 passed both `schema:check` and `schema:prove-drift`, including the deliberate mismatch proof.
 
-**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-08 - LOW - provider capability metadata duplicated
 
@@ -146,4 +148,4 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** provider metadata consistency tests prove runtime adapters match the authoritative declarations and unknown registrations fail closed.
 
-**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
+**Final status:** VERIFIED — CI #733 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
