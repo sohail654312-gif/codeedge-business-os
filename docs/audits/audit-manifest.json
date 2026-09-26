@@ -2,7 +2,6 @@
   "schema_version": 1,
   "repository": "sohail654312-gif/codeedge-business-os",
   "original_four_audit_baseline_sha": "0a7c3e446a097bcf6cbbc0f2571a9cfce6fa5d3a",
-  "current_main_observed_before_archive_commit": "5be0269a6df961c965194dc06f61f9ef51ef9a2e",
   "audit_programme_status": "complete",
   "audits": {
     "audit_1": {
@@ -15,13 +14,16 @@
       "total": 8,
       "remediation": {
         "pr": 48,
-        "head": "65ff2e5613e7008ad0f6f9fa50567c06231feaf9",
+        "final_pr_head": "ac34271e627c88a0b464edfad13ed62a1f2e4f0e",
         "verified": "8/8",
         "blocker": null,
-        "merged": false,
-        "ci": "CI #738 GREEN",
-        "erpnext_smoke": "ERPNext disposable Finance Engine smoke #23 GREEN",
-        "protection": "Protect main ruleset 24045183 ACTIVE"
+        "merged": true,
+        "merge_commit": "780d152f6957c4dd24e6d6e30874ef5ed5edce6d",
+        "final_pr_ci": "CI #739 GREEN",
+        "erpnext_smoke": "ERPNext disposable Finance Engine smoke #24 GREEN",
+        "post_merge_ci": "CI #740 GREEN",
+        "protection": "Protect main ruleset 24045183 ACTIVE",
+        "closure_status": "closed"
       }
     },
     "audit_2": {
