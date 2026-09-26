@@ -14,6 +14,8 @@ export type VoiceProviderRegistration = VoiceProviderMetadata & {
 };
 
 export type VoiceProviderConnectionConfig = {
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
   credentialKey: string;
   assistantId: string;
   phoneNumberId: string;
