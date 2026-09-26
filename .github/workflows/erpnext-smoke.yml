@@ -74,63 +74,44 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsS -c /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/login             --data-urlencode 'usr=Administrator'             --data-urlencode 'pwd=admin' >/tmp/login.json
 
-          curl -fsS -b /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys             --data-urlencode 'user=Administrator' >/tmp/keys.json
+          curl --fail-with-body -sS             -c /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/login             --data-urlencode 'usr=Administrator'             --data-urlencode 'pwd=admin'             >/tmp/login.json
+          jq -e '.message == "Logged In"' /tmp/login.json >/dev/null
 
-          API_KEY="$(jq -r '.message.api_key' /tmp/keys.json)"
-          API_SECRET="$(jq -r '.message.api_secret' /tmp/keys.json)"
-          test -n "$API_KEY"
-          test "$API_KEY" != "null"
-          test -n "$API_SECRET"
-          test "$API_SECRET" != "null"
+          curl --fail-with-body -sS             -b /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys             --data-urlencode 'user=Administrator'             >/tmp/keys.json
+
+          API_KEY="$(jq -er '.message.api_key' /tmp/keys.json)"
+          API_SECRET="$(jq -er '.message.api_secret' /tmp/keys.json)"
           echo "::add-mask::$API_KEY"
           echo "::add-mask::$API_SECRET"
 
           AUTH_HEADER="Authorization: token $API_KEY:$API_SECRET"
 
-          CUSTOMER_GROUP="$(curl --fail-with-body -sS \
-            -H "$AUTH_HEADER" \
-            --get http://127.0.0.1:8080/api/resource/Customer%20Group \
-            --data-urlencode 'fields=["name"]' \
-            --data-urlencode 'filters=[["is_group","=",0]]' \
-            --data-urlencode 'limit_page_length=1' \
-            | jq -r '.data[0].name')"
+          curl --fail-with-body -sS             -H "$AUTH_HEADER"             http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user             | jq -e '.message == "Administrator"' >/dev/null
 
-          TERRITORY="$(curl --fail-with-body -sS \
-            -H "$AUTH_HEADER" \
-            --get http://127.0.0.1:8080/api/resource/Territory \
-            --data-urlencode 'fields=["name"]' \
-            --data-urlencode 'filters=[["is_group","=",0]]' \
-            --data-urlencode 'limit_page_length=1' \
-            | jq -r '.data[0].name')"
+          CUSTOMER_GROUP="Codeedge Finance Smoke Customers"
+          CUSTOMER_GROUP_COUNT="$(curl --fail-with-body -sS             -H "$AUTH_HEADER"             --get http://127.0.0.1:8080/api/resource/Customer%20Group             --data-urlencode 'fields=["name"]'             --data-urlencode 'filters=[["name","=","Codeedge Finance Smoke Customers"],["is_group","=",0]]'             --data-urlencode 'limit_page_length=1'             | jq -er '.data | length')"
 
-          test -n "$CUSTOMER_GROUP"
-          test "$CUSTOMER_GROUP" != "null"
-          test -n "$TERRITORY"
-          test "$TERRITORY" != "null"
+          if [ "$CUSTOMER_GROUP_COUNT" = "0" ]; then
+            curl --fail-with-body -sS               -H "$AUTH_HEADER"               -H "Content-Type: application/json"               -X POST               --data '{"customer_group_name":"Codeedge Finance Smoke Customers","parent_customer_group":"All Customer Groups","is_group":0}'               http://127.0.0.1:8080/api/resource/Customer%20Group               >/tmp/customer-group-created.json
+            jq -e '.data.name == "Codeedge Finance Smoke Customers"' /tmp/customer-group-created.json >/dev/null
+          fi
 
-          CUSTOMER_JSON="$(jq -cn \
-            --arg group "$CUSTOMER_GROUP" \
-            --arg territory "$TERRITORY" \
-            '{customer_name:"Codeedge Finance Smoke Customer",customer_type:"Individual",customer_group:$group,territory:$territory}')"
+          TERRITORY="Codeedge Finance Smoke Territory"
+          TERRITORY_COUNT="$(curl --fail-with-body -sS             -H "$AUTH_HEADER"             --get http://127.0.0.1:8080/api/resource/Territory             --data-urlencode 'fields=["name"]'             --data-urlencode 'filters=[["name","=","Codeedge Finance Smoke Territory"],["is_group","=",0]]'             --data-urlencode 'limit_page_length=1'             | jq -er '.data | length')"
 
-          curl --fail-with-body -sS \
-            -H "$AUTH_HEADER" \
-            -H "Content-Type: application/json" \
-            -X POST \
-            --data "$CUSTOMER_JSON" \
-            http://127.0.0.1:8080/api/resource/Customer \
-            >/tmp/customer-created.json
+          if [ "$TERRITORY_COUNT" = "0" ]; then
+            curl --fail-with-body -sS               -H "$AUTH_HEADER"               -H "Content-Type: application/json"               -X POST               --data '{"territory_name":"Codeedge Finance Smoke Territory","parent_territory":"All Territories","is_group":0}'               http://127.0.0.1:8080/api/resource/Territory               >/tmp/territory-created.json
+            jq -e '.data.name == "Codeedge Finance Smoke Territory"' /tmp/territory-created.json >/dev/null
+          fi
+
+          CUSTOMER_JSON="$(jq -cn             --arg group "$CUSTOMER_GROUP"             --arg territory "$TERRITORY"             '{customer_name:"Codeedge Finance Smoke Customer",customer_type:"Individual",customer_group:$group,territory:$territory}')"
+
+          curl --fail-with-body -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             -X POST             --data "$CUSTOMER_JSON"             http://127.0.0.1:8080/api/resource/Customer             >/tmp/customer-created.json
+          jq -e '.data.customer_name == "Codeedge Finance Smoke Customer"' /tmp/customer-created.json >/dev/null
 
           BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
-          CREDENTIALS="$(jq -cn \
-            --arg businessId "$BUSINESS_ID" \
-            --arg apiKey "$API_KEY" \
-            --arg apiSecret "$API_SECRET" \
-            --arg customerGroup "$CUSTOMER_GROUP" \
-            --arg territory "$TERRITORY" \
-            '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret,customerGroup:$customerGroup,territory:$territory}}')"
+          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$API_KEY"             --arg apiSecret "$API_SECRET"             --arg customerGroup "$CUSTOMER_GROUP"             --arg territory "$TERRITORY"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret,customerGroup:$customerGroup,territory:$territory}}')"
           {
             echo "CODEEDGE_ERPNEXT_SMOKE=1"
             echo "CODEEDGE_SMOKE_BUSINESS_ID=$BUSINESS_ID"
