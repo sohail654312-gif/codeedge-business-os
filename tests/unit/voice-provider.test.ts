@@ -266,7 +266,7 @@ describe("Voice provider boundary", () => {
       fromNumber: "+441234567890",
       toNumber: "+447700900123",
       webhookUrl: "https://example.test/api/voice/vapi",
-    })).rejects.toThrow(/credential/i);
+    })).rejects.toMatchObject({ code: "voice_credential_unavailable" });
     expect(fetcher).not.toHaveBeenCalled();
   });
 
