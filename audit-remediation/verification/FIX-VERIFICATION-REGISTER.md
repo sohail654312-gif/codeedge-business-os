@@ -7,13 +7,13 @@ Remediation branch: `remediation/audit-1-technical-architecture`
 | Finding | Severity | Before | Verification target | Current status |
 |---|---|---|---|---|
 | A1-01 | High | OPEN | main rejects bypass of required PR + CI; force-push/delete disabled | **BLOCKED** |
-| A1-02 | Moderate | OPEN | `npm ci`, lint, typecheck, tests, build, Playwright all green | PARTIALLY VERIFIED |
-| A1-03 | Moderate | OPEN | central docs match current source/V1 and separate deferred work | PARTIALLY VERIFIED |
-| A1-04 | Moderate | OPEN | TLS/role/pool/transaction regression tests + full CI | PARTIALLY VERIFIED |
-| A1-05 | Moderate | OPEN | disposable ERPNext current-Finance smoke green | PARTIALLY VERIFIED |
-| A1-06 | Moderate | PARTIALLY FIXED | consolidated critical-path browser suite green | PARTIALLY VERIFIED |
-| A1-07 | Moderate | OPEN | schema check + deliberate drift proof green | PARTIALLY VERIFIED |
-| A1-08 | Low | OPEN | registry/adapter metadata consistency + fail-closed tests green | PARTIALLY VERIFIED |
+| A1-02 | Moderate | OPEN | `npm ci`, lint, typecheck, tests, build, Playwright all green | **VERIFIED** — CI #728 GREEN |
+| A1-03 | Moderate | OPEN | central docs match current source/V1 and separate deferred work | **VERIFIED** — source/V1 cross-check complete; CI #728 GREEN |
+| A1-04 | Moderate | OPEN | TLS/role/pool/transaction regression tests + full CI | **VERIFIED** — regression suite + CI #728 GREEN |
+| A1-05 | Moderate | OPEN | disposable ERPNext current-Finance smoke green | **VERIFIED** — ERPNext smoke #15 GREEN |
+| A1-06 | Moderate | PARTIALLY FIXED | consolidated critical-path browser suite green | **VERIFIED** — Playwright in CI #728 GREEN |
+| A1-07 | Moderate | OPEN | schema check + deliberate drift proof green | **VERIFIED** — both gates passed in CI #728 |
+| A1-08 | Low | OPEN | registry/adapter metadata consistency + fail-closed tests green | **VERIFIED** — consistency/fail-closed tests passed in CI #728 |
 
 ## A1-01 manual GitHub administration required
 
@@ -52,3 +52,14 @@ Only after those observations may A1-01 move from **BLOCKED** to **VERIFIED**.
 - Super-role introduced: **NO**
 - External Effect Policy bypassed: **NO**
 - Audit 2/3/4 remediation started: **NO**
+
+
+## Current closure evidence
+
+- Remediation head before closure-doc updates: `776ef12d42524721d8811ce1c283f6260acca00f`
+- CI run #728: **GREEN / SUCCESS**
+- ERPNext disposable Finance Engine smoke #15: **GREEN / SUCCESS**
+- PR #48: open, mergeable, clean at the verified remediation head
+- A1-02 through A1-08: **VERIFIED**
+- A1-01: **BLOCKED** until repository-admin protection is applied and enforcement is actually tested
+- PR #48 must remain unmerged while A1-01 is blocked.
