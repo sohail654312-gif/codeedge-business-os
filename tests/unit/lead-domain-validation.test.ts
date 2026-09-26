@@ -142,6 +142,7 @@ describe("Business OS lead validation", () => {
       source: "google",
       service_id: "30000000-0000-4000-8000-000000000001",
     })).toEqual({
+      page: 1,
       q: "boiler leak",
       status: "qualified",
       source: "google",
@@ -154,6 +155,7 @@ describe("Business OS lead validation", () => {
       source: "unknown",
       service_id: "not-a-uuid",
     })).toEqual({
+      page: 1,
       q: null,
       status: null,
       source: null,
