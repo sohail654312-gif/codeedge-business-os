@@ -3,6 +3,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { withVoiceCapability } from "./capability";
 import type { NormalizedVoiceWebhookEvent } from "./provider";
+import { resolveTenantBoundSecret } from "@/server/credentials/tenant-bound";
 
 export type VoiceConnection = {
   business_id: string;
@@ -14,22 +15,6 @@ export type VoiceConnection = {
   credential_environment: "sandbox" | "production";
 };
 
-function webhookSecretMap() {
-  const raw = process.env.VOICE_WEBHOOK_SECRETS_JSON;
-  if (!raw) return {} as Record<string, unknown>;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("Voice webhook credentials configuration is invalid.");
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Voice webhook credentials configuration is invalid.");
-  }
-  return parsed as Record<string, unknown>;
-}
-
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
@@ -38,10 +23,28 @@ function safeEqual(left: string, right: string) {
 
 export function verifyVoiceWebhookBearer(
   headers: Headers,
-  credentialKey: string,
+  connection: VoiceConnection,
 ) {
-  const configured = webhookSecretMap()[credentialKey];
-  if (typeof configured !== "string" || configured.length < 16) return false;
+  let configured: string;
+  try {
+    configured = resolveTenantBoundSecret({
+      raw: process.env.VOICE_WEBHOOK_SECRETS_JSON,
+      credentialKey: connection.credential_key,
+      label: "Voice webhook",
+      minimumSecretLength: 16,
+      expected: {
+        businessId: connection.business_id,
+        provider: connection.provider,
+        environment: connection.credential_environment,
+        expectedMetadata: {
+          externalAccountId: connection.external_account_id,
+          externalSenderId: connection.external_sender_id,
+        },
+      },
+    });
+  } catch {
+    return false;
+  }
 
   const authorization = headers.get("authorization")?.trim() ?? "";
   const prefix = "Bearer ";
