@@ -12,6 +12,13 @@ const structured = JSON.stringify({
     externalSenderId: "109876543210",
     secret: "test-secret-value-that-is-long-enough",
   },
+  tenant_b_alias: {
+    businessId: tenantB,
+    provider: "meta_whatsapp_cloud",
+    environment: "production",
+    externalSenderId: "109876543210",
+    secret: "tenant-b-test-secret-value-long-enough",
+  },
 });
 
 function resolve(overrides: Partial<{
@@ -43,8 +50,30 @@ describe("tenant-bound provider credential resolution", () => {
     expect(resolve()).toBe("test-secret-value-that-is-long-enough");
   });
 
-  it("denies Tenant A from using Tenant B's known alias metadata", () => {
+  it("denies Tenant B from using Tenant A's alias", () => {
     expect(() => resolve({ businessId: tenantB })).toThrow(/credential is unavailable/i);
+  });
+
+  it("denies Tenant A from using Tenant B's alias", () => {
+    expect(() => resolve({ credentialKey: "tenant_b_alias" }))
+      .toThrow(/credential is unavailable/i);
+  });
+
+  it("fails closed for malformed requested or stored business IDs", () => {
+    expect(() => resolve({ businessId: "not-a-business-id" }))
+      .toThrow(/credential is unavailable/i);
+    expect(() => resolve({
+      businessId: "not-a-business-id",
+      raw: JSON.stringify({
+        shared_alias: {
+          businessId: "not-a-business-id",
+          provider: "meta_whatsapp_cloud",
+          environment: "production",
+          externalSenderId: "109876543210",
+          secret: "test-secret-value-that-is-long-enough",
+        },
+      }),
+    })).toThrow(/credential is unavailable/i);
   });
 
   it("denies the wrong provider", () => {
