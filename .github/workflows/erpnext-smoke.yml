@@ -105,6 +105,24 @@ jobs:
             echo "FINANCE_ERPNEXT_CREDENTIALS_JSON=$CREDENTIALS"
           } >> "$GITHUB_ENV"
 
+      - name: Activate disposable ERPNext credential
+        working-directory: /tmp/frappe_docker
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f pwd.yml exec -T backend bench --site frontend clear-cache
+          docker compose -f pwd.yml restart backend
+
+          for i in $(seq 1 60); do
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker compose -f pwd.yml logs backend --tail=120
+          exit 1
+
       - name: Verify disposable ERPNext token authentication
         shell: bash
         run: |
