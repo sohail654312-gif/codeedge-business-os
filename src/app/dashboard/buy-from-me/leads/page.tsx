@@ -1,11 +1,32 @@
 import Link from "next/link";
-import { formatLeadDate, formatLeadValue, listActiveServices, listLeads } from "@/modules/buy-from-me/leads/data";
-import { leadSourceLabels, leadSources, leadStatusLabels, leadStatuses } from "@/modules/buy-from-me/leads/domain";
+import {
+  formatLeadDate,
+  formatLeadValue,
+  listActiveServices,
+  listLeads,
+} from "@/modules/buy-from-me/leads/data";
+import {
+  leadSourceLabels,
+  leadSources,
+  leadStatusLabels,
+  leadStatuses,
+} from "@/modules/buy-from-me/leads/domain";
 import { hasLeadFilters } from "@/modules/buy-from-me/leads/filters";
-import { leadFilterSchema } from "@/modules/buy-from-me/leads/validation";
+import { leadFilterSchema, type LeadFilters } from "@/modules/buy-from-me/leads/validation";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 type LeadSearchParams = Record<string, string | string[] | undefined>;
+
+function pageHref(filters: LeadFilters, page: number) {
+  const query = new URLSearchParams();
+  if (filters.q) query.set("q", filters.q);
+  if (filters.status) query.set("status", filters.status);
+  if (filters.source) query.set("source", filters.source);
+  if (filters.service_id) query.set("service_id", filters.service_id);
+  if (page > 1) query.set("page", String(page));
+  const suffix = query.toString();
+  return `/dashboard/buy-from-me/leads${suffix ? `?${suffix}` : ""}`;
+}
 
 export default async function LeadsPage({
   searchParams,
@@ -14,13 +35,17 @@ export default async function LeadsPage({
 }) {
   const { client, context } = await requireDashboardTenant();
   const filters = leadFilterSchema.parse(await searchParams);
-  const [leads, services] = await Promise.all([
+  const [leadPage, services] = await Promise.all([
     listLeads(client, context.business.id, filters),
     listActiveServices(client, context.business.id),
   ]);
 
+  const leads = leadPage.rows;
   const hasFilters = hasLeadFilters(filters);
-  const potentialValue = leads.reduce((total, lead) => total + (lead.estimated_value_pence ?? 0), 0);
+  const potentialValue = leads.reduce(
+    (total, lead) => total + (lead.estimated_value_pence ?? 0),
+    0,
+  );
   const newCount = leads.filter((lead) => lead.status === "new").length;
   const qualifiedCount = leads.filter((lead) => lead.status === "qualified").length;
 
@@ -34,16 +59,14 @@ export default async function LeadsPage({
             Real CRM Leads for {context.business.name}, protected by the active tenant membership.
           </p>
         </div>
-        <Link className="btn primary" href="/dashboard/buy-from-me/leads/new">
-          + Add lead
-        </Link>
+        <Link className="btn primary" href="/dashboard/buy-from-me/leads/new">+ Add lead</Link>
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">{hasFilters ? "Matching leads" : "Total leads"}</div><div className="statValue">{leads.length}</div></div>
-        <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
-        <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
-        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
+        <div className="stat"><div className="statLabel">{hasFilters ? "Matching leads" : "Total leads"}</div><div className="statValue">{leadPage.total}</div></div>
+        <div className="stat"><div className="statLabel">New on page</div><div className="statValue">{newCount}</div></div>
+        <div className="stat"><div className="statLabel">Qualified on page</div><div className="statValue">{qualifiedCount}</div></div>
+        <div className="stat"><div className="statLabel">Page potential</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -59,47 +82,31 @@ export default async function LeadsPage({
         <form className="leadFilterForm" method="get">
           <div className="leadFilterSearch">
             <label htmlFor="lead_q">Search</label>
-            <input
-              id="lead_q"
-              className="leadSearch"
-              name="q"
-              type="search"
-              maxLength={120}
-              defaultValue={filters.q ?? ""}
-              placeholder="Name, phone, email or enquiry..."
-            />
+            <input id="lead_q" className="leadSearch" name="q" type="search"
+              maxLength={120} defaultValue={filters.q ?? ""}
+              placeholder="Name, phone, email or enquiry..." />
           </div>
-
           <div>
             <label htmlFor="lead_status_filter">Status</label>
             <select id="lead_status_filter" name="status" defaultValue={filters.status ?? ""}>
               <option value="">All statuses</option>
-              {leadStatuses.map((status) => (
-                <option key={status} value={status}>{leadStatusLabels[status]}</option>
-              ))}
+              {leadStatuses.map((status) => <option key={status} value={status}>{leadStatusLabels[status]}</option>)}
             </select>
           </div>
-
           <div>
             <label htmlFor="lead_source_filter">Source</label>
             <select id="lead_source_filter" name="source" defaultValue={filters.source ?? ""}>
               <option value="">All sources</option>
-              {leadSources.map((source) => (
-                <option key={source} value={source}>{leadSourceLabels[source]}</option>
-              ))}
+              {leadSources.map((source) => <option key={source} value={source}>{leadSourceLabels[source]}</option>)}
             </select>
           </div>
-
           <div>
             <label htmlFor="lead_service_filter">Service</label>
             <select id="lead_service_filter" name="service_id" defaultValue={filters.service_id ?? ""}>
               <option value="">All services</option>
-              {services.map((service) => (
-                <option key={service.id} value={service.id}>{service.name}</option>
-              ))}
+              {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
             </select>
           </div>
-
           <div className="leadFilterActions">
             <button className="btn primary" type="submit">Apply</button>
             {hasFilters ? <Link className="btn" href="/dashboard/buy-from-me/leads">Reset</Link> : null}
@@ -108,58 +115,44 @@ export default async function LeadsPage({
 
         <div className="leadTableWrap">
           <table className="leadTable">
-            <thead>
-              <tr>
-                <th>Lead</th>
-                <th>Service</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th>Value</th>
-                <th>Last contact</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              <th>Lead</th><th>Service</th><th>Source</th><th>Status</th><th>Value</th><th>Last contact</th>
+            </tr></thead>
             <tbody>
               {leads.length ? leads.map((lead) => {
                 const statusLabel = leadStatusLabels[lead.status];
                 return (
                   <tr key={lead.id}>
-                    <td>
-                      <Link className="leadNameLink" href={`/dashboard/buy-from-me/leads/${lead.id}`}>
-                        {lead.contact_name}
-                      </Link>
-                    </td>
+                    <td><Link className="leadNameLink" href={`/dashboard/buy-from-me/leads/${lead.id}`}>{lead.contact_name}</Link></td>
                     <td>{lead.service_name ?? "—"}</td>
                     <td>{leadSourceLabels[lead.source]}</td>
-                    <td>
-                      <span className={`leadStatus leadStatus${statusLabel.replace(/\s+/g, "")}`}>
-                        {statusLabel}
-                      </span>
-                    </td>
+                    <td><span className={`leadStatus leadStatus${statusLabel.replace(/\s+/g, "")}`}>{statusLabel}</span></td>
                     <td><b>{formatLeadValue(lead.estimated_value_pence)}</b></td>
-                    <td className="muted">{formatLeadDate(lead.last_contact_at)}</td>
+                    <td className="muted">{formatLeadDate(lead.last_contact_at, context.business.timezone)}</td>
                   </tr>
                 );
               }) : (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="emptyState">
-                      <div className="emptyIcon">↗</div>
-                      <h3>{hasFilters ? "No matching Leads" : "No Leads yet"}</h3>
-                      <p>
-                        {hasFilters
-                          ? "Try a different search or reset the filters."
-                          : "Create the first real Lead for this workspace."}
-                      </p>
-                      {hasFilters
-                        ? <Link className="btn topGap" href="/dashboard/buy-from-me/leads">Reset filters</Link>
-                        : <Link className="btn primary topGap" href="/dashboard/buy-from-me/leads/new">+ Add lead</Link>}
-                    </div>
-                  </td>
-                </tr>
+                <tr><td colSpan={6}><div className="emptyState">
+                  <div className="emptyIcon">↗</div>
+                  <h3>{hasFilters ? "No matching Leads" : "No Leads yet"}</h3>
+                  <p>{hasFilters ? "Try a different search or reset the filters." : "Create the first real Lead for this workspace."}</p>
+                </div></td></tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {leadPage.totalPages > 1 ? (
+          <div className="row topGap">
+            {leadPage.page > 1
+              ? <Link className="btn" href={pageHref(filters, leadPage.page - 1)}>← Previous</Link>
+              : <span className="muted">First page</span>}
+            <span className="pill">Page {leadPage.page} of {leadPage.totalPages}</span>
+            {leadPage.page < leadPage.totalPages
+              ? <Link className="btn" href={pageHref(filters, leadPage.page + 1)}>Next →</Link>
+              : <span className="muted">Last page</span>}
+          </div>
+        ) : null}
       </section>
     </>
   );

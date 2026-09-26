@@ -96,7 +96,7 @@ export type Customer = {
   contact_name: string;
   phone: string;
   email: string;
-  source_lead_id: string;
+  source_lead_id: string | null;
   erpnext_customer_id: string | null;
   erpnext_sync_status: CustomerBackofficeStatus;
   created_by: string | null;
@@ -438,13 +438,19 @@ export type Database = {
           contact_name: string;
           phone: string;
           email: string;
-          source_lead_id: string;
+          source_lead_id: string | null;
           erpnext_customer_id?: string | null;
           erpnext_sync_status?: CustomerBackofficeStatus;
           created_by: string | null;
           id?: string;
         },
-        { erpnext_customer_id?: string | null; erpnext_sync_status?: CustomerBackofficeStatus }
+        {
+          contact_name?: string;
+          phone?: string;
+          email?: string;
+          erpnext_customer_id?: string | null;
+          erpnext_sync_status?: CustomerBackofficeStatus;
+        }
       >;
       businesses: Table<
         Business,
@@ -885,6 +891,24 @@ export type Database = {
       convert_lead_to_customer: {
         Args: { target_lead_id: string };
         Returns: Array<{ customer_id: string; created: boolean }>;
+      };
+      search_customers: {
+        Args: {
+          p_business_id: string;
+          p_query?: string | null;
+          p_source?: string | null;
+        };
+        Returns: Customer[];
+      };
+      count_leads: {
+        Args: {
+          p_business_id: string;
+          p_query?: string | null;
+          p_status?: LeadStatus | null;
+          p_source?: string | null;
+          p_service_id?: string | null;
+        };
+        Returns: number;
       };
       search_leads: {
         Args: {

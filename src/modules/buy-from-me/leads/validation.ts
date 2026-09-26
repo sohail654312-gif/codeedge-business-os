@@ -139,6 +139,10 @@ export type QuoteRequestStatusInput = z.infer<typeof quoteRequestStatusFormSchem
 const firstQueryValue = (value: unknown) => Array.isArray(value) ? value[0] : value;
 
 export const leadFilterSchema = z.object({
+  page: z.preprocess(
+    firstQueryValue,
+    z.coerce.number().int().min(1).max(100000).catch(1),
+  ),
   q: z.preprocess(
     firstQueryValue,
     z.string().trim().max(120).catch(""),
