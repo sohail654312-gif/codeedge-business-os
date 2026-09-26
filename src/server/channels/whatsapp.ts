@@ -96,7 +96,9 @@ export async function sendWhatsAppReply(input: {
     failedExistingStatuses: ["failed"],
     previousFailureMessage: "The previous WhatsApp delivery attempt failed.",
     deliveryFailureMessage: "WhatsApp delivery failed.",
-    send: () => getTextCommunicationProvider(prepared.provider).sendText({
+    send: (context) => getTextCommunicationProvider(prepared.provider).sendText({
+      businessId: context.businessId,
+      providerEnvironment: context.providerEnvironment,
       externalSenderId: prepared.external_sender_id,
       credentialKey: prepared.credential_key,
       recipient: prepared.recipient,

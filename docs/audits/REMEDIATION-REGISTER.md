@@ -1,36 +1,36 @@
 # CODEEDGE BUSINESS OS — REMEDIATION REGISTER
 
 Original four-audit stable baseline: `0a7c3e446a097bcf6cbbc0f2571a9cfce6fa5d3a`
-Audit 1 closure main: `780d152f6957c4dd24e6d6e30874ef5ed5edce6d`
+Current protected main at Audit 2 continuation: `05cf307b40516a2b3253202776ff56eff0662474`
 
 ## Audit 1
 
-Remediation PR #48: `Audit 1 Remediation — Technical & Architecture`
-Final PR head: `ac34271e627c88a0b464edfad13ed62a1f2e4f0e`
-Merge commit: `780d152f6957c4dd24e6d6e30874ef5ed5edce6d`
-State: MERGED.
-Final PR CI #739: GREEN.
-ERPNext disposable Finance Engine smoke #24: GREEN.
-Post-merge main CI #740: GREEN.
+Audit 1 remediation: **8/8 VERIFIED — CLOSED**.  
+PR #48 merged; protected-main and post-merge CI evidence remains recorded in the Audit 1 verification files.
 
-- A1-01 — VERIFIED — active `Protect main` ruleset requires PR + GitHub Actions `build`, requires up-to-date branch, blocks deletion/non-fast-forward pushes, has no bypass actors, and current user cannot bypass.
-- A1-02 — VERIFIED AND MERGED.
-- A1-03 — VERIFIED AND MERGED.
-- A1-04 — VERIFIED AND MERGED.
-- A1-05 — VERIFIED AND MERGED.
-- A1-06 — VERIFIED AND MERGED.
-- A1-07 — VERIFIED AND MERGED.
-- A1-08 — VERIFIED AND MERGED.
+## Audit 2
 
-Audit 1 remediation closure: **8/8 VERIFIED — CLOSED**.
+Remediation branch: `remediation/audit-2-security-tenant-isolation`  
+Starting branch head: `33720d4ad3f28779d01340aedbaffda08dda56f0`  
+Synchronized merge head: `f05f8b4640fb3fced930efdf47c27ef6c224438a`  
+Verified code head before evidence-only update: `3305889d3b1a854fca5970d877f2b982af5f722f`  
+Remediation PR: #50 — OPEN / NOT MERGED  
+Branch CI #749: GREEN.
 
-## Audits 2–4
+- SEC-001 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-002 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-003 — VERIFIED ON REMEDIATION BRANCH; runtime rejects an unsafe DB LOGIN before role switching. Production credential provisioning was not changed.
+- SEC-004 — VERIFIED — active `Protect main` ruleset.
+- SEC-005 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-006 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-007 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-008 — VERIFIED ON REMEDIATION BRANCH.
+- SEC-009 — VERIFIED — tenant-safe retention/deletion policy is now explicitly represented without enabling destructive Production purge.
 
-No formal remediation programme has closed these findings. Keep every SEC-*, FUNC-* and REL-* item OPEN/PENDING RE-VERIFICATION unless a dedicated remediation record proves it.
+Audit 2 remediation verification: **9/9 VERIFIED ON BRANCH**.
 
-Important overlaps:
-- SEC-001: current main uses Next.js 15.5.26 after PR #47, so the original vulnerable-version condition may be addressed; formal Audit 2 re-verification is still required.
-- SEC-004 overlaps A1-01, but Audit 1 closure does not automatically close Audit 2.
-- SEC-005 overlaps A1-02, but Audit 2 has not been re-verified.
-- Later feature-completion work may overlap FUNC findings; do not mark them resolved without targeted verification.
-- Test Supabase/Vercel work does not automatically remediate REL-001/REL-002 or other production findings.
+Audit 2 remains **NOT CLOSED** because PR #50 has not been merged. Final PR CI + ERPNext evidence must be green before final review, and merge requires Sohail's separate explicit approval. Post-merge `main` CI would still be required for formal closure.
+
+## Audits 3–4
+
+No Audit 3 or Audit 4 remediation was started in this Audit 2 session. Historical findings remain unchanged until their dedicated remediation work.

@@ -7,6 +7,7 @@ import {
   type SendTextInput,
   type TextCommunicationProvider,
 } from "./provider";
+import { resolveTenantBoundSecret } from "@/server/credentials/tenant-bound";
 
 const digitsSchema = z.string().regex(/^[0-9]{5,32}$/);
 const providerMessageIdSchema = z.string().trim().min(1).max(255);
@@ -143,30 +144,21 @@ export function parseMetaWebhook(input: unknown): {
   return { messages, statuses };
 }
 
-function metaCredentials() {
-  const raw = process.env.WHATSAPP_META_CREDENTIALS_JSON;
-  if (!raw) throw new Error("WhatsApp credentials are not configured.");
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("WhatsApp credentials configuration is invalid.");
-  }
-
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("WhatsApp credentials configuration is invalid.");
-  }
-
-  return parsed as Record<string, unknown>;
-}
-
-function metaAccessToken(credentialKey: string) {
-  const value = metaCredentials()[credentialKey];
-  if (typeof value !== "string" || value.length < 20) {
-    throw new Error("WhatsApp credential key is not configured.");
-  }
-  return value;
+function metaAccessToken(input: SendTextInput) {
+  return resolveTenantBoundSecret({
+    raw: process.env.WHATSAPP_META_CREDENTIALS_JSON,
+    credentialKey: input.credentialKey,
+    label: "WhatsApp",
+    minimumSecretLength: 20,
+    expected: {
+      businessId: input.businessId,
+      provider: "meta_whatsapp_cloud",
+      environment: input.providerEnvironment,
+      expectedMetadata: {
+        externalSenderId: input.externalSenderId,
+      },
+    },
+  });
 }
 
 function graphVersion() {
@@ -205,7 +197,7 @@ export function createMetaWhatsAppProvider(
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${metaAccessToken(input.credentialKey)}`,
+            Authorization: `Bearer ${metaAccessToken(input)}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({

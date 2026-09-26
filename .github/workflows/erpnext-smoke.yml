@@ -2,6 +2,15 @@ name: ERPNext disposable Finance Engine smoke
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["remediation/**"]
+    paths:
+      - ".github/workflows/erpnext-smoke.yml"
+      - "src/server/finance/**"
+      - "src/integrations/erpnext/**"
+      - "src/app/api/integrations/erpnext/**"
+      - "tests/integration/erpnext-finance-smoke.test.ts"
+      - "package-lock.json"
   pull_request:
     branches: ["main"]
     paths:
@@ -22,9 +31,9 @@ jobs:
 
     steps:
       - name: Checkout Codeedge
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -32,8 +41,14 @@ jobs:
       - name: Install Codeedge dependencies deterministically
         run: npm ci
 
-      - name: Clone official Frappe Docker
-        run: git clone --depth 1 https://github.com/frappe/frappe_docker.git /tmp/frappe_docker
+      - name: Fetch reviewed Frappe Docker revision
+        run: |
+          set -euo pipefail
+          git init /tmp/frappe_docker
+          git -C /tmp/frappe_docker remote add origin https://github.com/frappe/frappe_docker.git
+          git -C /tmp/frappe_docker fetch --depth 1 origin 3061850feface8fbbad15b5dc08a110c596107cb
+          git -C /tmp/frappe_docker checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/frappe_docker rev-parse HEAD)" = "3061850feface8fbbad15b5dc08a110c596107cb"
 
       - name: Start disposable ERPNext
         working-directory: /tmp/frappe_docker
@@ -75,9 +90,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          CUSTOMER_NAME="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.get_doc({'doctype':'Customer','customer_name':'Codeedge Finance Smoke Customer','customer_type':'Individual'}).insert(ignore_permissions=True,ignore_mandatory=True,ignore_links=True).name")"
-
+          CUSTOMER_NAME="$(docker compose -f pwd.yml exec -T backend bench --site frontend execute "frappe.get_doc({'doctype':'Customer','customer_name':'Codeedge Finance Smoke Customer','customer_type':'Individual'}).insert(ignore_permissions=True,ignore_mandatory=True,ignore_links=True).name")"
           test -n "$CUSTOMER_NAME"
 
       - name: Generate committed disposable ERPNext API credential
@@ -85,18 +98,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          KEYS_JSON="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.set_user('Administrator') or frappe.get_attr('frappe.core.doctype.user.user.generate_keys')('Administrator')")"
-
+          KEYS_JSON="$(docker compose -f pwd.yml exec -T backend bench --site frontend execute "frappe.set_user('Administrator') or frappe.get_attr('frappe.core.doctype.user.user.generate_keys')('Administrator')")"
           API_KEY="$(printf '%s' "$KEYS_JSON" | jq -er '.api_key')"
           API_SECRET="$(printf '%s' "$KEYS_JSON" | jq -er '.api_secret')"
-
           echo "::add-mask::$API_KEY"
           echo "::add-mask::$API_SECRET"
-
           BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
-          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$API_KEY"             --arg apiSecret "$API_SECRET"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret}}')"
-
+          CREDENTIALS="$(jq -cn --arg businessId "$BUSINESS_ID" --arg apiKey "$API_KEY" --arg apiSecret "$API_SECRET" '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret}}')"
           {
             echo "ERP_SMOKE_API_KEY=$API_KEY"
             echo "ERP_SMOKE_API_SECRET=$API_SECRET"
@@ -112,14 +120,12 @@ jobs:
           set -euo pipefail
           docker compose -f pwd.yml exec -T backend bench --site frontend clear-cache
           docker compose -f pwd.yml restart backend frontend
-
           for i in $(seq 1 60); do
             if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
               exit 0
             fi
             sleep 2
           done
-
           docker compose -f pwd.yml logs backend --tail=120
           exit 1
 
@@ -128,17 +134,13 @@ jobs:
         run: |
           set -euo pipefail
           AUTH_HEADER="Authorization: token $ERP_SMOKE_API_KEY:$ERP_SMOKE_API_SECRET"
-
           for i in $(seq 1 20); do
-            http_code="$(curl -sS               -o /tmp/erpnext-auth.json               -w '%{http_code}'               -H "$AUTH_HEADER"               http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user || true)"
-
+            http_code="$(curl -sS -o /tmp/erpnext-auth.json -w '%{http_code}' -H "$AUTH_HEADER" http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user || true)"
             if [ "$http_code" = "200" ] && jq -e '.message == "Administrator"' /tmp/erpnext-auth.json >/dev/null; then
               exit 0
             fi
-
             sleep 1
           done
-
           echo "ERPNext token authentication did not become usable." >&2
           jq -c '{message,exc_type,exception}' /tmp/erpnext-auth.json 2>/dev/null || true
           exit 1
@@ -150,6 +152,7 @@ jobs:
         run: |
           echo "This workflow uses a disposable local ERPNext instance only." >> "$GITHUB_STEP_SUMMARY"
           echo "It validates current Finance credential mapping, Finance Engine metadata/capabilities, ERPNext adapter reads, and the current status response mapper." >> "$GITHUB_STEP_SUMMARY"
+          echo "Frappe Docker is pinned to reviewed commit 3061850feface8fbbad15b5dc08a110c596107cb (v3.2.2)." >> "$GITHUB_STEP_SUMMARY"
           echo "Application sign-in/RLS/tenant wiring is covered by the main security and critical-path suites; this provider smoke does not impersonate an unauthenticated app request." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Diagnostics

@@ -28,7 +28,16 @@ function signature(params: URLSearchParams) {
 
 describe("Twilio SMS adapter", () => {
   it("validates the signed form webhook using the credential alias", () => {
-    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({ tenant_a: token });
+    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "twilio_sms",
+        environment: "production",
+        externalAccountId: accountSid,
+        externalSenderId: "+441234567890",
+        secret: token,
+      },
+    });
     const params = new URLSearchParams({
       AccountSid: accountSid,
       Body: "Hello",
@@ -43,6 +52,10 @@ describe("Twilio SMS adapter", () => {
       params,
       signature: signed,
       credentialKey: "tenant_a",
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
+      externalAccountId: accountSid,
+      externalSenderId: "+441234567890",
     })).toBe(true);
 
     params.set("Body", "Tampered");
@@ -51,6 +64,10 @@ describe("Twilio SMS adapter", () => {
       params,
       signature: signed,
       credentialKey: "tenant_a",
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
+      externalAccountId: accountSid,
+      externalSenderId: "+441234567890",
     })).toBe(false);
 
     expect(twilioCredentialConfigured("tenant_a")).toBe(true);
@@ -108,7 +125,16 @@ describe("Twilio SMS adapter", () => {
   });
 
   it("sends form-encoded SMS with Basic auth and a delivery callback", async () => {
-    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({ tenant_a: token });
+    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "twilio_sms",
+        environment: "production",
+        externalAccountId: accountSid,
+        externalSenderId: "+441234567890",
+        secret: token,
+      },
+    });
     const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
       requests.push({ input, init });
@@ -122,6 +148,8 @@ describe("Twilio SMS adapter", () => {
     await expect(provider.sendSms({
       externalAccountId: accountSid,
       externalSenderId: "+441234567890",
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       credentialKey: "tenant_a",
       recipient: "+447700900123",
       body: "Reply by SMS",
@@ -149,7 +177,16 @@ describe("Twilio SMS adapter", () => {
   });
 
   it("maps provider rejection to a sanitized delivery error", async () => {
-    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({ tenant_a: token });
+    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "twilio_sms",
+        environment: "production",
+        externalAccountId: accountSid,
+        externalSenderId: "+441234567890",
+        secret: token,
+      },
+    });
     const provider = createTwilioSmsProvider((async () => new Response(
       JSON.stringify({ code: 21608, message: "not verified" }),
       { status: 400, headers: { "Content-Type": "application/json" } },
@@ -157,6 +194,8 @@ describe("Twilio SMS adapter", () => {
 
     try {
       await provider.sendSms({
+        businessId: "20000000-0000-4000-8000-000000000001",
+        providerEnvironment: "production",
         externalAccountId: accountSid,
         externalSenderId: "+441234567890",
         credentialKey: "tenant_a",
@@ -169,5 +208,32 @@ describe("Twilio SMS adapter", () => {
       expect(error).toBeInstanceOf(ProviderDeliveryError);
       expect((error as ProviderDeliveryError).code).toBe("twilio_21608");
     }
+  });
+
+  it("denies a Twilio alias when trusted tenant metadata does not match", async () => {
+    process.env.SMS_TWILIO_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "twilio_sms",
+        environment: "production",
+        externalAccountId: accountSid,
+        externalSenderId: "+441234567890",
+        secret: token,
+      },
+    });
+    const fetcher = vi.fn();
+    const provider = createTwilioSmsProvider(fetcher as typeof fetch);
+
+    await expect(provider.sendSms({
+      businessId: "20000000-0000-4000-8000-000000000002",
+      providerEnvironment: "production",
+      externalAccountId: accountSid,
+      externalSenderId: "+441234567890",
+      credentialKey: "tenant_a",
+      recipient: "+447700900123",
+      body: "Blocked",
+      statusCallbackUrl: webhookUrl,
+    })).rejects.toThrow(/credential/i);
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });

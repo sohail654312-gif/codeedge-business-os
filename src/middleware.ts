@@ -2,12 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getEnvironmentIfConfigured } from "@/server/env";
 import type { Database } from "@/types/database";
+import { applySecurityHeaders } from "@/server/http/security-headers";
 
 export async function middleware(request: NextRequest) {
   const env = getEnvironmentIfConfigured();
-  if (!env) return NextResponse.next();
-
   let response = NextResponse.next({ request });
+
+  if (!env) {
+    applySecurityHeaders(response.headers, {
+      pathname: request.nextUrl.pathname,
+      protocol: request.nextUrl.protocol,
+    });
+    return response;
+  }
 
   const client = createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -32,6 +39,10 @@ export async function middleware(request: NextRequest) {
 
   await client.auth.getUser();
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  applySecurityHeaders(response.headers, {
+    pathname: request.nextUrl.pathname,
+    protocol: request.nextUrl.protocol,
+  });
   return response;
 }
 

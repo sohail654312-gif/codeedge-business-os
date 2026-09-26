@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 401 });
   }
 
-  if (!verifyVoiceWebhookBearer(request.headers, connection.credential_key)) {
+  if (!verifyVoiceWebhookBearer(request.headers, connection)) {
     return new NextResponse(null, { status: 401 });
   }
 

@@ -4,6 +4,7 @@ import type { DeliveryStatus } from "@/modules/contact-me/conversations/domain";
 import {
   ExternalEffectBlockedError,
   requireCommunicationExternalEffectAllowed,
+  type CommunicationExecutionContext,
 } from "./execution";
 import { ProviderDeliveryError } from "./provider";
 import type { ExternalCommunicationChannel } from "./registry";
@@ -22,7 +23,7 @@ type DispatchOptions<TResult> = {
   failedExistingStatuses: readonly DeliveryStatus[];
   previousFailureMessage: string;
   deliveryFailureMessage: string;
-  send: () => Promise<TResult>;
+  send: (context: CommunicationExecutionContext) => Promise<TResult>;
   complete: (result: TResult) => Promise<void>;
   fail: (errorCode: string) => Promise<void>;
   statusFromResult: (result: TResult) => DeliveryStatus;
@@ -60,11 +61,15 @@ export async function dispatchPreparedExternalMessage<TResult>(
     };
   }
 
+  let executionContext: CommunicationExecutionContext;
   try {
-    await requireCommunicationExternalEffectAllowed(prepared.message_id, {
-      channel: options.channel,
-      provider: prepared.provider,
-    });
+    executionContext = await requireCommunicationExternalEffectAllowed(
+      prepared.message_id,
+      {
+        channel: options.channel,
+        provider: prepared.provider,
+      },
+    );
   } catch (error) {
     const blocked = error instanceof ExternalEffectBlockedError
       ? error
@@ -75,7 +80,7 @@ export async function dispatchPreparedExternalMessage<TResult>(
 
   let result: TResult;
   try {
-    result = await options.send();
+    result = await options.send(executionContext);
   } catch (error) {
     const errorCode = error instanceof ProviderDeliveryError
       ? error.code

@@ -12,6 +12,7 @@ type SmsInboundConnection = {
   external_account_id: string;
   external_sender_id: string;
   credential_key: string;
+  credential_environment: "sandbox" | "production";
   provider: string;
 };
 
@@ -126,7 +127,9 @@ export async function sendSmsReply(input: {
     failedExistingStatuses: ["failed"],
     previousFailureMessage: "The previous SMS delivery attempt failed.",
     deliveryFailureMessage: "SMS delivery failed.",
-    send: () => getSmsCommunicationProvider(prepared.provider).sendSms({
+    send: (context) => getSmsCommunicationProvider(prepared.provider).sendSms({
+      businessId: context.businessId,
+      providerEnvironment: context.providerEnvironment,
       externalAccountId: prepared.external_account_id,
       externalSenderId: prepared.external_sender_id,
       credentialKey: prepared.credential_key,

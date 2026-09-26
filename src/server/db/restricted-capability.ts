@@ -25,6 +25,18 @@ type RestrictedPool = {
   connect(): Promise<RestrictedClient>;
 };
 
+type LoginPrincipalRow = {
+  session_user_name: string;
+  current_user_name: string;
+  rolcanlogin: boolean;
+  rolsuper: boolean;
+  rolcreatedb: boolean;
+  rolcreaterole: boolean;
+  rolreplication: boolean;
+  rolbypassrls: boolean;
+  rolinherit: boolean;
+};
+
 export type RestrictedCapabilityConfig = {
   label: string;
   connectionString: () => string | undefined;
@@ -97,6 +109,44 @@ export function validateRestrictedDatabaseConnection(
   return value;
 }
 
+async function attestRestrictedLoginPrincipal(
+  client: RestrictedClient,
+  label: string,
+) {
+  const result = await client.query<LoginPrincipalRow>(`
+    select
+      session_user::text as session_user_name,
+      current_user::text as current_user_name,
+      r.rolcanlogin,
+      r.rolsuper,
+      r.rolcreatedb,
+      r.rolcreaterole,
+      r.rolreplication,
+      r.rolbypassrls,
+      r.rolinherit
+    from pg_roles r
+    where r.rolname = session_user
+  `);
+  const row = result.rows[0];
+
+  if (
+    !row
+    || row.session_user_name !== row.current_user_name
+    || !row.rolcanlogin
+    || row.rolsuper
+    || row.rolcreatedb
+    || row.rolcreaterole
+    || row.rolreplication
+    || row.rolbypassrls
+    || row.rolinherit
+    || row.session_user_name === "postgres"
+  ) {
+    throw new Error(
+      `${label} database LOGIN principal is not least privilege.`,
+    );
+  }
+}
+
 export function createRestrictedCapability(
   config: RestrictedCapabilityConfig,
   dependencies: RestrictedCapabilityDependencies = {},
@@ -137,6 +187,7 @@ export function createRestrictedCapability(
 
     try {
       await client.query("BEGIN");
+      await attestRestrictedLoginPrincipal(client, config.label);
       await client.query(timeoutSql(
         "statement_timeout",
         config.transaction.statementTimeoutMillis,

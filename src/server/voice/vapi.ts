@@ -11,6 +11,10 @@ import {
   VoiceProviderError,
 } from "./provider";
 import { voiceProviderMetadata } from "./provider-metadata";
+import {
+  resolveTenantBoundSecret,
+  tenantBoundCredentialConfigured,
+} from "@/server/credentials/tenant-bound";
 
 const callResponseSchema = z.object({
   id: z.string().min(1).max(255),
@@ -45,47 +49,44 @@ const serverMessageSchema = z.object({
 });
 
 type VapiConfig = {
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
   credentialKey: string;
   assistantId: string;
   phoneNumberId: string;
 };
 
-function credentialMap() {
-  const raw = process.env.VOICE_VAPI_CREDENTIALS_JSON;
-  if (!raw) return {} as Record<string, unknown>;
-
-  let parsed: unknown;
+function privateKey(config: VapiConfig) {
   try {
-    parsed = JSON.parse(raw);
+    return resolveTenantBoundSecret({
+      raw: process.env.VOICE_VAPI_CREDENTIALS_JSON,
+      credentialKey: config.credentialKey,
+      label: "Voice",
+      minimumSecretLength: 20,
+      expected: {
+        businessId: config.businessId,
+        provider: "vapi",
+        environment: config.providerEnvironment,
+        expectedMetadata: {
+          assistantId: config.assistantId,
+          phoneNumberId: config.phoneNumberId,
+        },
+      },
+    });
   } catch {
-    throw new Error("Voice credentials configuration is invalid.");
-  }
-
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Voice credentials configuration is invalid.");
-  }
-
-  return parsed as Record<string, unknown>;
-}
-
-function privateKey(credentialKey: string) {
-  const value = credentialMap()[credentialKey];
-  if (typeof value !== "string" || value.length < 20) {
     throw new VoiceProviderError("voice_credential_unavailable");
   }
-  return value;
 }
 
 export function vapiCredentialConfigured(
   credentialKey: string | null | undefined,
 ) {
-  if (!credentialKey) return false;
-  try {
-    const value = credentialMap()[credentialKey];
-    return typeof value === "string" && value.length >= 20;
-  } catch {
-    return false;
-  }
+  return tenantBoundCredentialConfigured({
+    raw: process.env.VOICE_VAPI_CREDENTIALS_JSON,
+    credentialKey,
+    label: "Voice",
+    minimumSecretLength: 20,
+  });
 }
 
 export function normalizeVapiStatus(value: string | null | undefined): VoiceCallStatus {
@@ -242,7 +243,7 @@ export function createVapiVoiceProvider(
       const response = await fetcher("https://api.vapi.ai/call", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${privateKey(config.credentialKey)}`,
+          Authorization: `Bearer ${privateKey(config)}`,
           "Content-Type": "application/json",
           "Idempotency-Key": input.correlationId,
         },

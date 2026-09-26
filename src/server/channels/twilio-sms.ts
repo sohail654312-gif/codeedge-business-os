@@ -8,6 +8,10 @@ import {
   type SmsCommunicationProvider,
   type SmsProviderStatus,
 } from "./provider";
+import {
+  resolveTenantBoundSecret,
+  tenantBoundCredentialConfigured,
+} from "@/server/credentials/tenant-bound";
 
 const e164Schema = z.string().regex(/^\+[1-9][0-9]{7,14}$/);
 const accountSidSchema = z.string().regex(/^AC[0-9A-Fa-f]{32}$/);
@@ -38,40 +42,39 @@ export type TwilioSmsDeliveryEvent = {
 
 export type TwilioSmsWebhookEvent = TwilioSmsInboundEvent | TwilioSmsDeliveryEvent;
 
-function credentialMap() {
-  const raw = process.env.SMS_TWILIO_CREDENTIALS_JSON;
-  if (!raw) return {} as Record<string, unknown>;
+type TwilioCredentialContext = {
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
+  credentialKey: string;
+  externalAccountId: string;
+  externalSenderId: string;
+};
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("SMS credentials configuration is invalid.");
-  }
-
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("SMS credentials configuration is invalid.");
-  }
-
-  return parsed as Record<string, unknown>;
-}
-
-function authToken(credentialKey: string) {
-  const value = credentialMap()[credentialKey];
-  if (typeof value !== "string" || value.length < 20) {
-    throw new Error("SMS credential key is not configured.");
-  }
-  return value;
+function authToken(input: TwilioCredentialContext) {
+  return resolveTenantBoundSecret({
+    raw: process.env.SMS_TWILIO_CREDENTIALS_JSON,
+    credentialKey: input.credentialKey,
+    label: "SMS",
+    minimumSecretLength: 20,
+    expected: {
+      businessId: input.businessId,
+      provider: "twilio_sms",
+      environment: input.providerEnvironment,
+      expectedMetadata: {
+        externalAccountId: input.externalAccountId,
+        externalSenderId: input.externalSenderId,
+      },
+    },
+  });
 }
 
 export function twilioCredentialConfigured(credentialKey: string | null | undefined) {
-  if (!credentialKey) return false;
-  try {
-    const value = credentialMap()[credentialKey];
-    return typeof value === "string" && value.length >= 20;
-  } catch {
-    return false;
-  }
+  return tenantBoundCredentialConfigured({
+    raw: process.env.SMS_TWILIO_CREDENTIALS_JSON,
+    credentialKey,
+    label: "SMS",
+    minimumSecretLength: 20,
+  });
 }
 
 function safeEqual(left: string, right: string) {
@@ -98,12 +101,16 @@ export function verifyTwilioWebhookSignature(input: {
   params: URLSearchParams;
   signature: string | null;
   credentialKey: string;
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
+  externalAccountId: string;
+  externalSenderId: string;
 }) {
   if (!input.signature) return false;
 
   let token: string;
   try {
-    token = authToken(input.credentialKey);
+    token = authToken(input);
   } catch {
     return false;
   }
@@ -221,7 +228,7 @@ export function createTwilioSmsProvider(
         throw new ProviderDeliveryError("invalid_body");
       }
 
-      const token = authToken(input.credentialKey);
+      const token = authToken(input);
       const body = new URLSearchParams({
         To: input.recipient,
         From: input.externalSenderId,

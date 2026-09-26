@@ -14,15 +14,8 @@
       "total": 8,
       "remediation": {
         "pr": 48,
-        "final_pr_head": "ac34271e627c88a0b464edfad13ed62a1f2e4f0e",
         "verified": "8/8",
-        "blocker": null,
         "merged": true,
-        "merge_commit": "780d152f6957c4dd24e6d6e30874ef5ed5edce6d",
-        "final_pr_ci": "CI #739 GREEN",
-        "erpnext_smoke": "ERPNext disposable Finance Engine smoke #24 GREEN",
-        "post_merge_ci": "CI #740 GREEN",
-        "protection": "Protect main ruleset 24045183 ACTIVE",
         "closure_status": "closed"
       }
     },
@@ -34,7 +27,17 @@
       "low": 3,
       "informational": 1,
       "total": 9,
-      "formal_remediation": "pending"
+      "remediation": {
+        "branch": "remediation/audit-2-security-tenant-isolation",
+        "starting_head": "33720d4ad3f28779d01340aedbaffda08dda56f0",
+        "synchronized_head": "f05f8b4640fb3fced930efdf47c27ef6c224438a",
+        "verified_code_head": "3305889d3b1a854fca5970d877f2b982af5f722f",
+        "pr": 50,
+        "verified": "9/9",
+        "branch_ci": "CI #749 GREEN",
+        "merged": false,
+        "closure_status": "pending_merge_and_post_merge_ci"
+      }
     },
     "audit_3": {
       "status": "complete",

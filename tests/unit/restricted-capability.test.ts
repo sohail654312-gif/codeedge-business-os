@@ -15,6 +15,7 @@ function harness(options: {
   role?: "codeedge_finance_api";
   workFails?: boolean;
   rollbackFails?: boolean;
+  unsafeLogin?: boolean;
 } = {}) {
   const queries: string[] = [];
   const release = vi.fn();
@@ -25,6 +26,21 @@ function harness(options: {
         queries.push(sql);
         if (sql === "ROLLBACK" && options.rollbackFails) {
           throw new Error("rollback_failed");
+        }
+        if (sql.includes("from pg_roles")) {
+          return {
+            rows: [{
+              session_user_name: options.unsafeLogin ? "postgres" : "codeedge_runtime",
+              current_user_name: options.unsafeLogin ? "postgres" : "codeedge_runtime",
+              rolcanlogin: true,
+              rolsuper: options.unsafeLogin ?? false,
+              rolcreatedb: false,
+              rolcreaterole: false,
+              rolreplication: false,
+              rolbypassrls: false,
+              rolinherit: false,
+            }],
+          };
         }
         return { rows: [] };
       }) as PoolClient["query"],
@@ -116,6 +132,7 @@ describe("restricted database capability infrastructure", () => {
     }));
     expect(item.queries).toEqual([
       "BEGIN",
+      expect.stringContaining("from pg_roles"),
       "SET LOCAL statement_timeout='12000ms'",
       "SET LOCAL lock_timeout='3000ms'",
       "SET LOCAL idle_in_transaction_session_timeout='15000ms'",
@@ -123,6 +140,15 @@ describe("restricted database capability infrastructure", () => {
       "COMMIT",
     ]);
     expect(item.release).toHaveBeenCalledWith(false);
+  });
+
+  it("rejects a privileged application login before SET ROLE", async () => {
+    const item = harness({ unsafeLogin: true });
+
+    await expect(item.capability.withCapability(item.work))
+      .rejects.toThrow(/LOGIN principal is not least privilege/i);
+    expect(item.queries).not.toContain("SET LOCAL ROLE codeedge_finance_api");
+    expect(item.queries.at(-1)).toBe("ROLLBACK");
   });
 
   it("rolls back failed work and releases a healthy client", async () => {

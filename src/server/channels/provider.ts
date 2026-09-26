@@ -2,7 +2,12 @@ import "server-only";
 
 export type CommunicationProviderId = "meta_whatsapp_cloud" | "resend_email" | "twilio_sms";
 
-export type SendTextInput = {
+export type ProviderCredentialContext = {
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
+};
+
+export type SendTextInput = ProviderCredentialContext & {
   externalSenderId: string;
   credentialKey: string;
   recipient: string;
@@ -18,7 +23,7 @@ export interface TextCommunicationProvider {
   sendText(input: SendTextInput): Promise<SendTextResult>;
 }
 
-export type SendEmailInput = {
+export type SendEmailInput = ProviderCredentialContext & {
   credentialKey: string;
   senderName: string;
   senderEmail: string;
@@ -53,15 +58,16 @@ export type ReceivedEmail = {
 export interface EmailCommunicationProvider {
   readonly id: "resend_email";
   sendEmail(input: SendEmailInput): Promise<SendEmailResult>;
-  getReceivedEmail(input: {
+  getReceivedEmail(input: ProviderCredentialContext & {
     credentialKey: string;
     providerMessageId: string;
+    externalSenderId: string;
   }): Promise<ReceivedEmail>;
 }
 
 export type SmsProviderStatus = "sending" | "queued" | "sent" | "delivered" | "failed";
 
-export type SendSmsInput = {
+export type SendSmsInput = ProviderCredentialContext & {
   externalAccountId: string;
   externalSenderId: string;
   credentialKey: string;
