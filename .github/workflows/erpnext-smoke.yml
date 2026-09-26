@@ -70,6 +70,16 @@ jobs:
           done
           exit 1
 
+      - name: Create deterministic disposable ERPNext fixture
+        working-directory: /tmp/frappe_docker
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CUSTOMER_NAME="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.get_doc({'doctype':'Customer','customer_name':'Codeedge Finance Smoke Customer','customer_type':'Individual'}).insert(ignore_permissions=True,ignore_mandatory=True,ignore_links=True).name")"
+
+          test -n "$CUSTOMER_NAME"
+
       - name: Generate committed disposable ERPNext API credential
         working-directory: /tmp/frappe_docker
         shell: bash
@@ -84,9 +94,15 @@ jobs:
           echo "::add-mask::$API_KEY"
           echo "::add-mask::$API_SECRET"
 
+          BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
+          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$API_KEY"             --arg apiSecret "$API_SECRET"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret}}')"
+
           {
             echo "ERP_SMOKE_API_KEY=$API_KEY"
             echo "ERP_SMOKE_API_SECRET=$API_SECRET"
+            echo "CODEEDGE_ERPNEXT_SMOKE=1"
+            echo "CODEEDGE_SMOKE_BUSINESS_ID=$BUSINESS_ID"
+            echo "FINANCE_ERPNEXT_CREDENTIALS_JSON=$CREDENTIALS"
           } >> "$GITHUB_ENV"
 
       - name: Verify disposable ERPNext token authentication
@@ -108,25 +124,6 @@ jobs:
           echo "ERPNext token authentication did not become usable." >&2
           jq -c '{message,exc_type,exception}' /tmp/erpnext-auth.json 2>/dev/null || true
           exit 1
-
-      - name: Create deterministic disposable ERPNext fixture
-        working-directory: /tmp/frappe_docker
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          CUSTOMER_NAME="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.get_doc({'doctype':'Customer','customer_name':'Codeedge Finance Smoke Customer','customer_type':'Individual'}).insert(ignore_permissions=True,ignore_mandatory=True,ignore_links=True).name")"
-
-          test -n "$CUSTOMER_NAME"
-
-          BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
-          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$ERP_SMOKE_API_KEY"             --arg apiSecret "$ERP_SMOKE_API_SECRET"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret}}')"
-
-          {
-            echo "CODEEDGE_ERPNEXT_SMOKE=1"
-            echo "CODEEDGE_SMOKE_BUSINESS_ID=$BUSINESS_ID"
-            echo "FINANCE_ERPNEXT_CREDENTIALS_JSON=$CREDENTIALS"
-          } >> "$GITHUB_ENV"
 
       - name: Exercise current Codeedge Finance -> ERPNext boundary
         run: npx vitest run tests/integration/erpnext-finance-smoke.test.ts
