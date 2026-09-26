@@ -8,6 +8,10 @@ import {
   type ReceivedEmail,
   type SendEmailInput,
 } from "./provider";
+import {
+  resolveTenantBoundSecret,
+  tenantBoundCredentialConfigured,
+} from "@/server/credentials/tenant-bound";
 
 const providerIdSchema = z.string().trim().min(1).max(255);
 const rfcMessageIdSchema = z.string().trim().min(1).max(255);
@@ -176,40 +180,37 @@ function canonicalBody(text: string | null | undefined, html: string | null | un
   return value.length <= 4000 ? value : value.slice(0, 3978) + "… [truncated]";
 }
 
-function credentialMap() {
-  const raw = process.env.EMAIL_RESEND_CREDENTIALS_JSON;
-  if (!raw) return {} as Record<string, unknown>;
+type ResendCredentialContext = {
+  businessId: string;
+  providerEnvironment: "sandbox" | "production";
+  credentialKey: string;
+  externalSenderId: string;
+};
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("Email credentials configuration is invalid.");
-  }
-
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Email credentials configuration is invalid.");
-  }
-
-  return parsed as Record<string, unknown>;
-}
-
-function apiKey(credentialKey: string) {
-  const value = credentialMap()[credentialKey];
-  if (typeof value !== "string" || value.length < 10) {
-    throw new Error("Email credential key is not configured.");
-  }
-  return value;
+function apiKey(input: ResendCredentialContext) {
+  return resolveTenantBoundSecret({
+    raw: process.env.EMAIL_RESEND_CREDENTIALS_JSON,
+    credentialKey: input.credentialKey,
+    label: "Email",
+    minimumSecretLength: 10,
+    expected: {
+      businessId: input.businessId,
+      provider: "resend_email",
+      environment: input.providerEnvironment,
+      expectedMetadata: {
+        externalSenderId: input.externalSenderId.toLowerCase(),
+      },
+    },
+  });
 }
 
 export function resendCredentialConfigured(credentialKey: string | null | undefined) {
-  if (!credentialKey) return false;
-  try {
-    const value = credentialMap()[credentialKey];
-    return typeof value === "string" && value.length >= 10;
-  } catch {
-    return false;
-  }
+  return tenantBoundCredentialConfigured({
+    raw: process.env.EMAIL_RESEND_CREDENTIALS_JSON,
+    credentialKey,
+    label: "Email",
+    minimumSecretLength: 10,
+  });
 }
 
 async function readJson(response: Response) {
@@ -302,13 +303,13 @@ export function createResendEmailProvider(
 ): EmailCommunicationProvider {
   async function request(
     path: string,
-    credentialKey: string,
+    credential: ResendCredentialContext,
     init?: RequestInit,
   ) {
     return fetcher(`https://api.resend.com${path}`, {
       ...init,
       headers: {
-        Authorization: `Bearer ${apiKey(credentialKey)}`,
+        Authorization: `Bearer ${apiKey(credential)}`,
         ...(init?.headers ?? {}),
       },
       signal: AbortSignal.timeout(10_000),
@@ -316,13 +317,13 @@ export function createResendEmailProvider(
   }
 
   async function getSentRfcMessageId(
-    credentialKey: string,
+    credential: ResendCredentialContext,
     providerMessageId: string,
   ) {
     try {
       const response = await request(
         `/emails/${encodeURIComponent(providerMessageId)}`,
-        credentialKey,
+        credential,
       );
       if (!response.ok) return null;
       const parsed = sentSchema.safeParse(await readJson(response));
@@ -351,7 +352,7 @@ export function createResendEmailProvider(
         .slice(-50);
       if (references.length) headers.References = references.join(" ");
 
-      const response = await request("/emails", input.credentialKey, {
+      const response = await request("/emails", input, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -379,14 +380,14 @@ export function createResendEmailProvider(
 
       return {
         providerMessageId: parsed.data.id,
-        rfcMessageId: await getSentRfcMessageId(input.credentialKey, parsed.data.id),
+        rfcMessageId: await getSentRfcMessageId(input, parsed.data.id),
       };
     },
 
     async getReceivedEmail(input): Promise<ReceivedEmail> {
       const response = await request(
         `/emails/receiving/${encodeURIComponent(input.providerMessageId)}`,
-        input.credentialKey,
+        input,
       );
       const payload = await readJson(response);
 
