@@ -10,6 +10,8 @@ type InboundConnection = {
   connection_id: string;
   provider: string;
   credential_key: string;
+  credential_environment: "sandbox" | "production";
+  sender_email: string;
   inbound_email: string;
 };
 
@@ -33,7 +35,7 @@ async function resolveInboundConnection(inboundEmail: string) {
   try {
     return await withCommunicationCapability(async (db) => {
       const result = await db.query<InboundConnection>(
-        "select * from private.active_email_connection($1)",
+        "select * from private.active_email_connection_v2($1)",
         [inboundEmail],
       );
       return result.rows[0] ?? null;
@@ -60,7 +62,10 @@ export async function receiveResendInbound(
 
   const provider = getEmailCommunicationProvider(connection.provider);
   const email = await provider.getReceivedEmail({
+    businessId: connection.business_id,
+    providerEnvironment: connection.credential_environment,
     credentialKey: connection.credential_key,
+    externalSenderId: connection.sender_email,
     providerMessageId,
   });
 
@@ -153,7 +158,9 @@ export async function sendEmailReply(input: {
     failedExistingStatuses: ["bounced", "failed"],
     previousFailureMessage: "The previous Email delivery attempt failed.",
     deliveryFailureMessage: "Email delivery failed.",
-    send: () => getEmailCommunicationProvider(prepared.provider).sendEmail({
+    send: (context) => getEmailCommunicationProvider(prepared.provider).sendEmail({
+      businessId: context.businessId,
+      providerEnvironment: context.providerEnvironment,
       credentialKey: prepared.credential_key,
       senderName: prepared.sender_name,
       senderEmail: prepared.sender_email,
