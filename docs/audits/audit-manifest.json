@@ -15,10 +15,13 @@
       "total": 8,
       "remediation": {
         "pr": 48,
-        "head": "b561fb7e404165fb8ac52039d9c40cb418921485",
-        "verified": "7/8",
-        "blocker": "A1-01 branch protection",
-        "merged": false
+        "head": "65ff2e5613e7008ad0f6f9fa50567c06231feaf9",
+        "verified": "8/8",
+        "blocker": null,
+        "merged": false,
+        "ci": "CI #738 GREEN",
+        "erpnext_smoke": "ERPNext disposable Finance Engine smoke #23 GREEN",
+        "protection": "Protect main ruleset 24045183 ACTIVE"
       }
     },
     "audit_2": {

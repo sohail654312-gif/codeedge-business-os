@@ -10,6 +10,7 @@ import {
   type VoiceProvider,
   VoiceProviderError,
 } from "./provider";
+import { voiceProviderMetadata } from "./provider-metadata";
 
 const callResponseSchema = z.object({
   id: z.string().min(1).max(255),
@@ -229,25 +230,7 @@ export function createVapiVoiceProvider(
   fetcher: typeof fetch = fetch,
 ): VoiceProvider {
   return {
-    metadata: {
-      id: "vapi",
-      environments: ["sandbox", "production"],
-      capabilities: [
-        "inbound_calling",
-        "outbound_calling",
-        "pstn",
-        "realtime_transcript",
-        "post_call_transcript",
-        "recording",
-        "transfer",
-        "dtmf",
-        "tool_calling",
-        "multilingual",
-        "custom_stt",
-        "custom_tts",
-      ],
-      externalEffect: true,
-    },
+    metadata: voiceProviderMetadata.vapi,
 
     async startOutboundCall(
       input: StartOutboundVoiceCallInput,

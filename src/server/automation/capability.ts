@@ -1,45 +1,31 @@
 import "server-only";
 
-import { Pool, type PoolClient } from "pg";
-import { communicationConnection } from "@/server/channels/capability";
+import {
+  createRestrictedCapability,
+  type RestrictedCapabilityDb,
+} from "@/server/db/restricted-capability";
 
-export type AutomationCapabilityDb = Pick<PoolClient, "query">;
+export type AutomationCapabilityDb = RestrictedCapabilityDb;
 
-let pool: Pool | undefined;
-
-export async function withAutomationCapability<T>(
-  work: (db: AutomationCapabilityDb) => Promise<T>,
-): Promise<T> {
-  const connectionString = process.env.AUTOMATION_DATABASE_URL
-    ?? process.env.COMMUNICATION_DATABASE_URL;
-
-  pool ??= new Pool({
-    connectionString: communicationConnection(connectionString),
+export const automationCapabilityConfig = {
+  label: "Automation",
+  connectionString: () => (
+    process.env.AUTOMATION_DATABASE_URL
+    ?? process.env.COMMUNICATION_DATABASE_URL
+  ),
+  role: "codeedge_automation_api" as const,
+  pool: {
     max: 3,
     connectionTimeoutMillis: 3000,
     idleTimeoutMillis: 10000,
-  });
+  },
+  transaction: {
+    statementTimeoutMillis: 12000,
+    lockTimeoutMillis: 3000,
+    idleTransactionTimeoutMillis: 15000,
+  },
+};
 
-  const client = await pool.connect();
-  let broken = false;
+const capability = createRestrictedCapability(automationCapabilityConfig);
 
-  try {
-    await client.query("BEGIN");
-    await client.query("SET LOCAL statement_timeout='12s'");
-    await client.query("SET LOCAL lock_timeout='3s'");
-    await client.query("SET LOCAL idle_in_transaction_session_timeout='15s'");
-    await client.query("SET LOCAL ROLE codeedge_automation_api");
-    const result = await work(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      broken = true;
-    }
-    throw error;
-  } finally {
-    client.release(broken);
-  }
-}
+export const withAutomationCapability = capability.withCapability;

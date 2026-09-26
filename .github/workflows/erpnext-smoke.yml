@@ -1,7 +1,16 @@
-name: ERPNext disposable smoke test
+name: ERPNext disposable Finance Engine smoke
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/erpnext-smoke.yml"
+      - "src/server/finance/**"
+      - "src/integrations/erpnext/**"
+      - "src/app/api/integrations/erpnext/**"
+      - "tests/integration/erpnext-finance-smoke.test.ts"
+      - "package-lock.json"
 
 permissions:
   contents: read
@@ -12,39 +21,23 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - name: Checkout CodeEdge
+      - name: Checkout Codeedge
         uses: actions/checkout@v4
 
-      - name: Show Docker versions
-        run: |
-          docker --version
-          docker compose version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Codeedge dependencies deterministically
+        run: npm ci
 
       - name: Clone official Frappe Docker
-        run: |
-          git clone --depth 1 https://github.com/frappe/frappe_docker.git /tmp/frappe_docker
+        run: git clone --depth 1 https://github.com/frappe/frappe_docker.git /tmp/frappe_docker
 
-      - name: Start ERPNext disposable stack
+      - name: Start disposable ERPNext
         working-directory: /tmp/frappe_docker
-        run: |
-          docker compose -f pwd.yml up -d
-
-      - name: Wait for ERPNext HTTP
-        id: wait
-        working-directory: /tmp/frappe_docker
-        shell: bash
-        run: |
-          set -euo pipefail
-          for i in $(seq 1 120); do
-            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
-              echo "ready=1" >> "$GITHUB_OUTPUT"
-              echo "ERPNext HTTP responded."
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "ERPNext HTTP did not become ready."
-          exit 1
+        run: docker compose -f pwd.yml up -d
 
       - name: Wait for ERPNext site installation
         working-directory: /tmp/frappe_docker
@@ -53,192 +46,121 @@ jobs:
           set -euo pipefail
           container_id="$(docker compose -f pwd.yml ps -q create-site)"
           test -n "$container_id"
-
           for i in $(seq 1 120); do
             status="$(docker inspect -f '{{.State.Status}}' "$container_id")"
             exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$container_id")"
-            echo "create-site status=$status exit=$exit_code"
-
             if [ "$status" = "exited" ]; then
-              if [ "$exit_code" = "0" ]; then
-                echo "ERPNext site installation finished."
-                exit 0
-              fi
-              docker compose -f pwd.yml logs create-site --tail=200
-              exit 1
+              test "$exit_code" = "0"
+              exit 0
             fi
             sleep 5
           done
-
           docker compose -f pwd.yml logs create-site --tail=200
           exit 1
 
-      - name: Login and generate temporary API credentials
+      - name: Wait for ERPNext HTTP
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Create deterministic disposable ERPNext fixture
+        working-directory: /tmp/frappe_docker
         shell: bash
         run: |
           set -euo pipefail
 
-          curl -fsS -c /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/login             --data-urlencode 'usr=Administrator'             --data-urlencode 'pwd=admin'             >/tmp/login.json
+          CUSTOMER_NAME="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.get_doc({'doctype':'Customer','customer_name':'Codeedge Finance Smoke Customer','customer_type':'Individual'}).insert(ignore_permissions=True,ignore_mandatory=True,ignore_links=True).name")"
 
-          curl -fsS -b /tmp/erpnext-cookie.txt             -X POST http://127.0.0.1:8080/api/method/frappe.core.doctype.user.user.generate_keys             --data-urlencode 'user=Administrator'             >/tmp/keys.json
+          test -n "$CUSTOMER_NAME"
 
-          API_KEY="$(jq -r '.message.api_key' /tmp/keys.json)"
-          API_SECRET="$(jq -r '.message.api_secret' /tmp/keys.json)"
+      - name: Generate committed disposable ERPNext API credential
+        working-directory: /tmp/frappe_docker
+        shell: bash
+        run: |
+          set -euo pipefail
 
-          test -n "$API_KEY"
-          test "$API_KEY" != "null"
-          test -n "$API_SECRET"
-          test "$API_SECRET" != "null"
+          KEYS_JSON="$(docker compose -f pwd.yml exec -T backend             bench --site frontend execute             "frappe.set_user('Administrator') or frappe.get_attr('frappe.core.doctype.user.user.generate_keys')('Administrator')")"
+
+          API_KEY="$(printf '%s' "$KEYS_JSON" | jq -er '.api_key')"
+          API_SECRET="$(printf '%s' "$KEYS_JSON" | jq -er '.api_secret')"
 
           echo "::add-mask::$API_KEY"
           echo "::add-mask::$API_SECRET"
 
+          BUSINESS_ID="20000000-0000-4000-8000-00000000e501"
+          CREDENTIALS="$(jq -cn             --arg businessId "$BUSINESS_ID"             --arg apiKey "$API_KEY"             --arg apiSecret "$API_SECRET"             '{ci_erpnext:{businessId:$businessId,baseUrl:"http://127.0.0.1:8080",apiKey:$apiKey,apiSecret:$apiSecret}}')"
+
           {
-            echo "ERPNEXT_BASE_URL=http://127.0.0.1:8080"
-            echo "ERPNEXT_API_KEY=$API_KEY"
-            echo "ERPNEXT_API_SECRET=$API_SECRET"
+            echo "ERP_SMOKE_API_KEY=$API_KEY"
+            echo "ERP_SMOKE_API_SECRET=$API_SECRET"
+            echo "CODEEDGE_ERPNEXT_SMOKE=1"
+            echo "CODEEDGE_SMOKE_BUSINESS_ID=$BUSINESS_ID"
+            echo "FINANCE_ERPNEXT_CREDENTIALS_JSON=$CREDENTIALS"
           } >> "$GITHUB_ENV"
 
-      - name: Verify temporary API token
+      - name: Activate disposable ERPNext credential
+        working-directory: /tmp/frappe_docker
         shell: bash
         run: |
           set -euo pipefail
-          for i in $(seq 1 30); do
-            if result="$(curl -fsS               -H "Authorization: token $ERPNEXT_API_KEY:$ERPNEXT_API_SECRET"               http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user 2>/tmp/token.err)"; then
-              echo "$result" | jq -e '.message == "Administrator"'
-              exit 0
-            fi
-            sleep 2
-          done
-          cat /tmp/token.err || true
-          exit 1
-
-      - name: Create one ERPNext customer
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          cat >/tmp/customer-group-root.json <<'JSON'
-          {
-            "customer_group_name": "All Customer Groups",
-            "is_group": 1
-          }
-          JSON
-
-          cat >/tmp/customer-group-leaf.json <<'JSON'
-          {
-            "customer_group_name": "CodeEdge Demo Customers",
-            "parent_customer_group": "All Customer Groups",
-            "is_group": 0
-          }
-          JSON
-
-          cat >/tmp/territory-root.json <<'JSON'
-          {
-            "territory_name": "All Territories",
-            "is_group": 1
-          }
-          JSON
-
-          cat >/tmp/territory-leaf.json <<'JSON'
-          {
-            "territory_name": "CodeEdge Demo Territory",
-            "parent_territory": "All Territories",
-            "is_group": 0
-          }
-          JSON
-
-          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/customer-group-root.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-root-created.json
-
-          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/customer-group-leaf.json             http://127.0.0.1:8080/api/resource/Customer%20Group             >/tmp/customer-group-leaf-created.json
-
-          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/territory-root.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-root-created.json
-
-          curl -fsS -b /tmp/erpnext-cookie.txt -H "Content-Type: application/json"             -X POST --data-binary @/tmp/territory-leaf.json             http://127.0.0.1:8080/api/resource/Territory             >/tmp/territory-leaf-created.json
-
-          cat >/tmp/customer.json <<'JSON'
-          {
-            "customer_name": "CodeEdge Sync Test Customer",
-            "customer_type": "Individual",
-            "customer_group": "CodeEdge Demo Customers",
-            "territory": "CodeEdge Demo Territory"
-          }
-          JSON
-
-          curl -fsS             -b /tmp/erpnext-cookie.txt             -H "Content-Type: application/json"             -X POST             --data-binary @/tmp/customer.json             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/created-customer.json
-
-          jq -e '.data.customer_name == "CodeEdge Sync Test Customer"' /tmp/created-customer.json
-
-      - name: Verify ERPNext customer exists
-        run: |
-          curl -fsS --get             -b /tmp/erpnext-cookie.txt             --data-urlencode 'fields=["name","customer_name","customer_group","territory"]'             --data-urlencode 'filters=[["customer_name","=","CodeEdge Sync Test Customer"]]'             http://127.0.0.1:8080/api/resource/Customer             | tee /tmp/erpnext-customer.json
-
-          jq -e '.data | length == 1' /tmp/erpnext-customer.json
-          jq -e '.data[0].customer_name == "CodeEdge Sync Test Customer"' /tmp/erpnext-customer.json
-
-      - name: Install CodeEdge dependencies
-        run: npm install
-
-      - name: Build CodeEdge
-        run: npm run build
-
-      - name: Start CodeEdge
-        shell: bash
-        run: |
-          nohup npm start >/tmp/codeedge.log 2>&1 &
-          echo $! >/tmp/codeedge.pid
+          docker compose -f pwd.yml exec -T backend bench --site frontend clear-cache
+          docker compose -f pwd.yml restart backend frontend
 
           for i in $(seq 1 60); do
-            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then
+            if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:8080 >/dev/null 2>&1; then
               exit 0
             fi
             sleep 2
           done
 
-          cat /tmp/codeedge.log || true
+          docker compose -f pwd.yml logs backend --tail=120
           exit 1
 
-      - name: Verify CodeEdge ERPNext connection
+      - name: Verify disposable ERPNext token authentication
+        shell: bash
         run: |
-          curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/status | tee /tmp/status.json
-          jq -e '.connected == true and .authenticatedUser == "Administrator"' /tmp/status.json
+          set -euo pipefail
+          AUTH_HEADER="Authorization: token $ERP_SMOKE_API_KEY:$ERP_SMOKE_API_SECRET"
 
-      - name: Verify customer reaches CodeEdge adapter
-        run: |
           for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:3000/api/integrations/erpnext/customers?limit=50 >/tmp/codeedge-customers.json 2>/dev/null; then
-              if jq -e '.data | any(.customer_name == "CodeEdge Sync Test Customer")' /tmp/codeedge-customers.json >/dev/null; then
-                cat /tmp/codeedge-customers.json
-                exit 0
-              fi
+            http_code="$(curl -sS               -o /tmp/erpnext-auth.json               -w '%{http_code}'               -H "$AUTH_HEADER"               http://127.0.0.1:8080/api/method/frappe.auth.get_logged_user || true)"
+
+            if [ "$http_code" = "200" ] && jq -e '.message == "Administrator"' /tmp/erpnext-auth.json >/dev/null; then
+              exit 0
             fi
-            sleep 2
+
+            sleep 1
           done
 
-          cat /tmp/codeedge-customers.json || true
+          echo "ERPNext token authentication did not become usable." >&2
+          jq -c '{message,exc_type,exception}' /tmp/erpnext-auth.json 2>/dev/null || true
           exit 1
 
-      - name: Verify customer renders on Customers page
+      - name: Exercise current Codeedge Finance -> ERPNext boundary
+        run: npx vitest run tests/integration/erpnext-finance-smoke.test.ts
+
+      - name: Record coverage boundary
         run: |
-          curl -fsS http://127.0.0.1:3000/dashboard/buy-from-me/customers >/tmp/customers-page.html
-          grep -F "CodeEdge Sync Test Customer" /tmp/customers-page.html
-          grep -F "ERPNext live" /tmp/customers-page.html
+          echo "This workflow uses a disposable local ERPNext instance only." >> "$GITHUB_STEP_SUMMARY"
+          echo "It validates current Finance credential mapping, Finance Engine metadata/capabilities, ERPNext adapter reads, and the current status response mapper." >> "$GITHUB_STEP_SUMMARY"
+          echo "Application sign-in/RLS/tenant wiring is covered by the main security and critical-path suites; this provider smoke does not impersonate an unauthenticated app request." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Diagnostics
         if: always()
         working-directory: /tmp/frappe_docker
         run: |
-          echo "===== CONTAINERS ====="
           docker compose -f pwd.yml ps || true
-          echo "===== CREATE-SITE ====="
           docker compose -f pwd.yml logs create-site --tail=120 || true
-          echo "===== BACKEND ====="
           docker compose -f pwd.yml logs backend --tail=120 || true
-          echo "===== FRONTEND ====="
-          docker compose -f pwd.yml logs frontend --tail=120 || true
 
       - name: Shut down disposable ERPNext
         if: always()
         working-directory: /tmp/frappe_docker
-        run: |
-          docker compose -f pwd.yml down -v || true
+        run: docker compose -f pwd.yml down -v || true

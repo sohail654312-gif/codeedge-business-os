@@ -6,6 +6,7 @@ import type {
   ERPNextSalesInvoice,
 } from "@/integrations/erpnext/types";
 import type { ERPNextFinanceCredential } from "./credentials";
+import { financeEngineMetadata } from "./provider-metadata";
 import { decimalMoneySchema } from "./domain";
 import type {
   CreateFinanceCustomerInput,
@@ -94,9 +95,7 @@ export function createERPNextFinanceEngine(
 
   return {
     id: "erpnext",
-    capabilities: new Set([
-      "health","customers","suppliers","quotations","invoices",
-    ]),
+    capabilities: new Set(financeEngineMetadata.erpnext.capabilities),
 
     async getStatus() {
       await client.getAuthenticatedUser();
