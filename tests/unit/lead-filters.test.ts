@@ -10,6 +10,7 @@ describe("Lead search and filters", () => {
       source: "google",
       service_id: "30000000-0000-4000-8000-000000000001",
     })).toEqual({
+      page: 1,
       q: "boiler",
       status: "qualified",
       source: "google",
@@ -24,6 +25,7 @@ describe("Lead search and filters", () => {
       source: "erpnext",
       service_id: "not-a-uuid",
     })).toEqual({
+      page: 1,
       q: null,
       status: null,
       source: null,
@@ -32,7 +34,7 @@ describe("Lead search and filters", () => {
   });
 
   it("reports whether a filtered inbox is active", () => {
-    expect(hasLeadFilters({ q: null, status: null, source: null, service_id: null })).toBe(false);
-    expect(hasLeadFilters({ q: "phone", status: null, source: null, service_id: null })).toBe(true);
+    expect(hasLeadFilters({ page: 1, q: null, status: null, source: null, service_id: null })).toBe(false);
+    expect(hasLeadFilters({ page: 1, q: "phone", status: null, source: null, service_id: null })).toBe(true);
   });
 });
