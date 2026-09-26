@@ -50,9 +50,9 @@ export function extractApplicationTypeContract(source) {
   const enumsBlock = between(source, "    Enums: {", "    CompositeTypes:");
 
   return {
-    tables: names(tablesBlock, /^\s*([a-zA-Z_][a-zA-Z0-9_]*):\s*Table</gm),
-    functions: names(functionsBlock, /^\s*([a-zA-Z_][a-zA-Z0-9_]*):\s*\{/gm),
-    enums: names(enumsBlock, /^\s*([a-zA-Z_][a-zA-Z0-9_]*):/gm),
+    tables: names(tablesBlock, /^      ([a-zA-Z_][a-zA-Z0-9_]*):\s*Table</gm),
+    functions: names(functionsBlock, /^      ([a-zA-Z_][a-zA-Z0-9_]*):\s*\{/gm),
+    enums: names(enumsBlock, /^      ([a-zA-Z_][a-zA-Z0-9_]*):/gm),
   };
 }
 
