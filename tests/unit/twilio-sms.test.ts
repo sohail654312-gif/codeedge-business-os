@@ -194,6 +194,8 @@ describe("Twilio SMS adapter", () => {
 
     try {
       await provider.sendSms({
+        businessId: "20000000-0000-4000-8000-000000000001",
+        providerEnvironment: "production",
         externalAccountId: accountSid,
         externalSenderId: "+441234567890",
         credentialKey: "tenant_a",
