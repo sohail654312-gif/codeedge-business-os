@@ -80,8 +80,9 @@ export async function startOutboundVoiceCall(input: {
     };
   }
 
+  let executionContext;
   try {
-    await requireVoiceExternalEffectAllowed(
+    executionContext = await requireVoiceExternalEffectAllowed(
       prepared.voice_call_id,
       prepared.provider,
     );
@@ -96,6 +97,8 @@ export async function startOutboundVoiceCall(input: {
   let provider;
   try {
     provider = getVoiceProvider(prepared.provider, {
+      businessId: executionContext.businessId,
+      providerEnvironment: executionContext.providerEnvironment,
       credentialKey: prepared.credential_key,
       assistantId: prepared.assistant_id,
       phoneNumberId: prepared.phone_number_id,
