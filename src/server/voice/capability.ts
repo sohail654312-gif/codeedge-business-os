@@ -1,45 +1,31 @@
 import "server-only";
 
-import { Pool, type PoolClient } from "pg";
-import { communicationConnection } from "@/server/channels/capability";
+import {
+  createRestrictedCapability,
+  type RestrictedCapabilityDb,
+} from "@/server/db/restricted-capability";
 
-export type VoiceCapabilityDb = Pick<PoolClient, "query">;
+export type VoiceCapabilityDb = RestrictedCapabilityDb;
 
-let pool: Pool | undefined;
-
-export async function withVoiceCapability<T>(
-  work: (db: VoiceCapabilityDb) => Promise<T>,
-): Promise<T> {
-  const connectionString = process.env.VOICE_DATABASE_URL
-    ?? process.env.COMMUNICATION_DATABASE_URL;
-
-  pool ??= new Pool({
-    connectionString: communicationConnection(connectionString),
+export const voiceCapabilityConfig = {
+  label: "Voice",
+  connectionString: () => (
+    process.env.VOICE_DATABASE_URL
+    ?? process.env.COMMUNICATION_DATABASE_URL
+  ),
+  role: "codeedge_voice_api" as const,
+  pool: {
     max: 3,
     connectionTimeoutMillis: 3000,
     idleTimeoutMillis: 10000,
-  });
+  },
+  transaction: {
+    statementTimeoutMillis: 8000,
+    lockTimeoutMillis: 3000,
+    idleTransactionTimeoutMillis: 10000,
+  },
+};
 
-  const client = await pool.connect();
-  let broken = false;
+const capability = createRestrictedCapability(voiceCapabilityConfig);
 
-  try {
-    await client.query("BEGIN");
-    await client.query("SET LOCAL statement_timeout='8s'");
-    await client.query("SET LOCAL lock_timeout='3s'");
-    await client.query("SET LOCAL idle_in_transaction_session_timeout='10s'");
-    await client.query("SET LOCAL ROLE codeedge_voice_api");
-    const result = await work(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      broken = true;
-    }
-    throw error;
-  } finally {
-    client.release(broken);
-  }
-}
+export const withVoiceCapability = capability.withCapability;

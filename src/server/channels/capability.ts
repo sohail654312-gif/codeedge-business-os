@@ -1,60 +1,33 @@
 import "server-only";
 
-import { Pool, type PoolClient } from "pg";
+import {
+  createRestrictedCapability,
+  type RestrictedCapabilityDb,
+  validateRestrictedDatabaseConnection,
+} from "@/server/db/restricted-capability";
 
-export type CommunicationCapabilityDb = Pick<PoolClient, "query">;
+export type CommunicationCapabilityDb = RestrictedCapabilityDb;
 
 export function communicationConnection(value: string | undefined) {
-  if (!value) throw new Error("Communication database connection is not configured.");
-
-  const url = new URL(value);
-  if (!["postgres:", "postgresql:"].includes(url.protocol)) {
-    throw new Error("Communication database connection must use PostgreSQL.");
-  }
-
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (!local && (
-    url.searchParams.get("sslmode") !== "verify-full" ||
-    url.searchParams.has("uselibpqcompat")
-  )) {
-    throw new Error("Communication database connection requires verified TLS.");
-  }
-
-  return value;
+  return validateRestrictedDatabaseConnection(value, "Communication");
 }
 
-let pool: Pool | undefined;
-
-export async function withCommunicationCapability<T>(
-  work: (db: CommunicationCapabilityDb) => Promise<T>,
-): Promise<T> {
-  pool ??= new Pool({
-    connectionString: communicationConnection(process.env.COMMUNICATION_DATABASE_URL),
+export const communicationCapabilityConfig = {
+  label: "Communication",
+  connectionString: () => process.env.COMMUNICATION_DATABASE_URL,
+  role: "codeedge_communication_api" as const,
+  pool: {
     max: 3,
     connectionTimeoutMillis: 3000,
     idleTimeoutMillis: 10000,
-  });
+  },
+  transaction: {
+    statementTimeoutMillis: 8000,
+    lockTimeoutMillis: 3000,
+    idleTransactionTimeoutMillis: 10000,
+  },
+};
 
-  const client = await pool.connect();
-  let broken = false;
+const capability = createRestrictedCapability(communicationCapabilityConfig);
 
-  try {
-    await client.query("BEGIN");
-    await client.query("SET LOCAL statement_timeout='8s'");
-    await client.query("SET LOCAL lock_timeout='3s'");
-    await client.query("SET LOCAL idle_in_transaction_session_timeout='10s'");
-    await client.query("SET LOCAL ROLE codeedge_communication_api");
-    const result = await work(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      broken = true;
-    }
-    throw error;
-  } finally {
-    client.release(broken);
-  }
-}
+export const withCommunicationCapability = capability.withCapability;
