@@ -46,7 +46,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** the lockfile was generated successfully in GitHub Actions using Node 22. Full deterministic install, lint, typecheck, test, build and E2E verification is required from the remediation PR CI.
 
-**Final status:** PARTIALLY VERIFIED pending final remediation PR CI.
+**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-03 - MODERATE - central architecture documentation is stale
 
@@ -64,7 +64,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests/verification:** documentation was cross-checked against current V1 feature-completeness and current source boundaries. Final PR review/CI remains required.
 
-**Final status:** PARTIALLY VERIFIED pending final remediation PR verification.
+**Final status:** VERIFIED — central architecture documentation was cross-checked against current V1/source boundaries and CI #728 is GREEN.
 
 ## A1-04 - MODERATE - restricted DB capability infrastructure duplicated/cross-coupled
 
@@ -82,7 +82,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** `tests/unit/restricted-capability.test.ts` proves verified TLS fail-closed behavior, exact domain role separation, bounded pools, COMMIT path, ROLLBACK on failure and broken-client discard after rollback failure.
 
-**Final status:** PARTIALLY VERIFIED pending final remediation PR CI.
+**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-05 - MODERATE - ERPNext smoke workflow is stale
 
@@ -98,7 +98,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Coverage boundary:** application sign-in/RLS/tenant wiring is validated by the main security and critical-path suites. The disposable provider smoke does not fake an unauthenticated Codeedge API request.
 
-**Final status:** PARTIALLY VERIFIED pending the remediation PR disposable ERPNext smoke result.
+**Final status:** VERIFIED — ERPNext disposable Finance Engine smoke #15 is GREEN, including deterministic install, disposable ERPNext startup, committed API credential generation, token authentication, deterministic fixture creation, current Finance Engine boundary execution and cleanup.
 
 ## A1-06 - MODERATE - system-level E2E coverage is too thin
 
@@ -112,7 +112,7 @@ Required GitHub admin action is documented in the verification register.
 
 **Security/tenant implications:** the suite explicitly verifies cross-workspace denial and zero external-provider effects. Existing PGlite security tests continue to exercise migrations/RLS; the browser harness validates browser -> server action -> auth/tenant -> service/domain -> test persistence wiring without live provider traffic.
 
-**Final status:** PARTIALLY VERIFIED pending final Playwright CI.
+**Final status:** VERIFIED — CI #728 Playwright E2E is GREEN, including the consolidated Business OS critical-path suite.
 
 ## A1-07 - MODERATE - no database schema <-> TypeScript contract drift gate
 
@@ -126,9 +126,9 @@ Required GitHub admin action is documented in the verification register.
 
 **Fix implemented:** ordered repository migrations remain authoritative. A deterministic generator hashes and extracts migration tables/functions/enums, extracts the application Database type surface, rejects TypeScript references to nonexistent migration objects, and emits a checked-in TypeScript contract snapshot. CI fails when that snapshot is stale. The generator also has a deliberate mismatch proof command.
 
-**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. Final PR CI must pass both `schema:check` and `schema:prove-drift`.
+**Verification evidence:** the first bootstrap correctly failed on an over-broad parser; the parser was corrected and the subsequent bootstrap run succeeded, generating migration digest `87137fbb04db270839ba5a5f10283131367aa6c205f020617e987ede5f253857`. CI #728 passed both `schema:check` and `schema:prove-drift`, including the deliberate mismatch proof.
 
-**Final status:** PARTIALLY VERIFIED pending final remediation PR CI.
+**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
 
 ## A1-08 - LOW - provider capability metadata duplicated
 
@@ -146,4 +146,4 @@ Required GitHub admin action is documented in the verification register.
 
 **Tests added:** provider metadata consistency tests prove runtime adapters match the authoritative declarations and unknown registrations fail closed.
 
-**Final status:** PARTIALLY VERIFIED pending final remediation PR CI.
+**Final status:** VERIFIED — CI #728 passed deterministic install, schema checks, lint, typecheck, unit/security tests, production build and Playwright E2E.
