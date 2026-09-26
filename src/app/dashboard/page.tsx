@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
 import { formatMoney } from "@/modules/money/format";
 import { requireDashboardTenant } from "@/server/auth/session";
@@ -121,7 +122,7 @@ export default async function Dashboard() {
             </div>
             <p className="muted customerSubtext">A quick view of customers directly on the Command Centre.</p>
           </div>
-          <a className="btn" href="/dashboard/buy-from-me/customers">View customers</a>
+          <Link className="btn" href="/dashboard/buy-from-me/customers">View customers</Link>
         </div>
 
         <div className="customerSummaryGrid">
@@ -152,7 +153,7 @@ export default async function Dashboard() {
       <div className="panel topGap">
         <h2>My Codeedge</h2>
         <div className="moduleTiles">
-          {modules.map(([title, desc, href]) => <a className="moduleTile" href={href} key={title}><b>{title}</b><span className="muted">{desc}</span></a>)}
+          {modules.map(([title, desc, href]) => <Link className="moduleTile" href={href} key={title}><b>{title}</b><span className="muted">{desc}</span></Link>)}
         </div>
       </div>
     </>
