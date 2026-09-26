@@ -70,6 +70,10 @@ export async function POST(request: NextRequest) {
     params,
     signature: request.headers.get("x-twilio-signature"),
     credentialKey: connection.credential_key,
+    businessId: connection.business_id,
+    providerEnvironment: connection.credential_environment,
+    externalAccountId: connection.external_account_id,
+    externalSenderId: connection.external_sender_id,
   })) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
