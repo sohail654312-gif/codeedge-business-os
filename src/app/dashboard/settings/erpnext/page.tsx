@@ -1,8 +1,41 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { getERPNextPublicStatus } from "@/integrations/erpnext";
+import { requireDashboardTenant } from "@/server/auth/session";
+import { loadFinanceContext } from "@/server/finance/context";
+import { getFinanceEngine } from "@/server/finance/registry";
+import { financeEngineMetadata } from "@/server/finance/provider-metadata";
 
-export default function ERPNextSettingsPage() {
-  const status = getERPNextPublicStatus();
+const label = (value: string) => value.replaceAll("_", " ");
+
+export default async function ERPNextSettingsPage() {
+  const { context } = await requireDashboardTenant();
+  const metadata = financeEngineMetadata.erpnext;
+
+  let activeContext: Awaited<ReturnType<typeof loadFinanceContext>> | null = null;
+  let credentialsReady = false;
+
+  try {
+    activeContext = await loadFinanceContext({
+      businessId: context.business.id,
+      userId: context.userId,
+      correlationId: randomUUID(),
+    });
+
+    if (activeContext.engine === "erpnext") {
+      getFinanceEngine({
+        businessId: context.business.id,
+        engine: activeContext.engine,
+        credentialKey: activeContext.credentialKey,
+      });
+      credentialsReady = true;
+    }
+  } catch {
+    activeContext = null;
+    credentialsReady = false;
+  }
+
+  const active = activeContext?.engine === "erpnext";
+  const configured = active && credentialsReady;
 
   return (
     <>
@@ -10,33 +43,52 @@ export default function ERPNextSettingsPage() {
         <div>
           <div className="eyebrow">Integration</div>
           <h1>ERPNext</h1>
-          <p className="muted">CodeEdge uses ERPNext as a replaceable back-office engine for finance and operations.</p>
+          <p className="muted">
+            Tenant-bound Codeedge Finance Engine adapter status for this workspace only.
+          </p>
         </div>
-        <span className="pill">{status.configured ? "Configured" : "Not configured"}</span>
+        <span className="pill">{configured ? "Configured" : active ? "Credential unavailable" : "Not active"}</span>
       </div>
 
       <div className="twoCol">
         <div className="panel">
           <h2>Connection</h2>
-          <p className="muted">Base URL: {status.baseUrl ?? "Not set"}</p>
-          <p className="muted">API credentials stay server-side and are never rendered in the browser.</p>
-          <p>Status endpoint: <code>/api/integrations/erpnext/status</code></p>
+          <p className="muted">Workspace: {context.business.name}</p>
+          <p className="muted">Execution mode: {context.business.execution_mode}</p>
+          <p className="muted">
+            Provider environment: {activeContext?.engine === "erpnext"
+              ? activeContext.credentialEnvironment ?? "Not set"
+              : "Not active"}
+          </p>
+          <p className="muted">
+            Credentials are resolved from the current tenant&apos;s Finance connection and remain server-side.
+          </p>
         </div>
 
         <div className="panel">
-          <h2>What ERPNext will power</h2>
-          <p className="muted">Customers and contacts</p>
-          <p className="muted">Leads and quotations</p>
-          <p className="muted">Sales invoices and payments</p>
-          <p className="muted">Suppliers and purchase documents</p>
-          <p className="muted">Projects, tasks and selected operations</p>
+          <h2>Implemented ERPNext capability</h2>
+          <p className="muted">
+            Read: {metadata.capabilities.filter((item) => item !== "health").map(label).join(", ")}.
+          </p>
+          <p className="muted">
+            Write: {metadata.writeCapabilities.map(label).join(", ")} only.
+          </p>
+          <p className="muted">
+            Payments, supplier writes, quotation writes and invoice writes are not advertised until their adapter methods exist.
+          </p>
         </div>
       </div>
 
       <div className="panel topGap">
         <h2>Integration principle</h2>
-        <p className="muted">CodeEdge remains the client-facing product. ERPNext stays behind an adapter so it can be upgraded or replaced without redesigning the CodeEdge customer experience.</p>
-        <Link className="btn" href="/dashboard/settings">Back to settings</Link>
+        <p className="muted">
+          Codeedge remains the client-facing product. ERPNext is a replaceable Finance Engine adapter;
+          unsupported operations fail closed rather than bypassing Codeedge domain services.
+        </p>
+        <div className="row">
+          <Link className="btn" href="/dashboard/money">Open Money</Link>
+          <Link className="btn" href="/dashboard/settings">Back to settings</Link>
+        </div>
       </div>
     </>
   );

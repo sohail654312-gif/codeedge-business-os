@@ -80,6 +80,7 @@ export type CreateFinanceExpenseInput = {
 export interface FinanceEngine {
   readonly id: string;
   readonly capabilities: ReadonlySet<FinanceCapability>;
+  readonly writeCapabilities: ReadonlySet<FinanceCapability>;
 
   getStatus(context: FinanceExecutionContext): Promise<FinanceEngineStatus>;
 
@@ -153,6 +154,16 @@ export function requireFinanceCapability(
   capability: FinanceCapability,
 ) {
   if (!engine.capabilities.has(capability)) {
+    throw new FinanceCapabilityError(engine.id, capability);
+  }
+  return engine;
+}
+
+export function requireFinanceWriteCapability(
+  engine: FinanceEngine,
+  capability: FinanceCapability,
+) {
+  if (!engine.writeCapabilities.has(capability)) {
     throw new FinanceCapabilityError(engine.id, capability);
   }
   return engine;

@@ -28,6 +28,12 @@ describe("provider capability metadata", () => {
       .toEqual(asSortedArray(financeEngineMetadata.demo_finance.capabilities));
     expect(asSortedArray(erp.capabilities))
       .toEqual(asSortedArray(financeEngineMetadata.erpnext.capabilities));
+    expect(asSortedArray(demoFinanceEngine.writeCapabilities))
+      .toEqual(asSortedArray(financeEngineMetadata.demo_finance.writeCapabilities));
+    expect(asSortedArray(erp.writeCapabilities))
+      .toEqual(asSortedArray(financeEngineMetadata.erpnext.writeCapabilities));
+    expect(financeEngineMetadata.erpnext.writeCapabilities)
+      .toEqual(["customers"]);
     expect(getFinanceEngineRegistration("erpnext"))
       .toBe(financeEngineMetadata.erpnext);
     expect(() => getFinanceEngineRegistration("unknown"))

@@ -259,6 +259,7 @@ function sameCurrency(rows: readonly { currency: string }[], fallback: string) {
 export const demoFinanceEngine: FinanceEngine = {
   id: "demo_finance",
   capabilities: new Set(financeEngineMetadata.demo_finance.capabilities),
+  writeCapabilities: new Set(financeEngineMetadata.demo_finance.writeCapabilities),
 
   async getStatus(context) {
     assertDemo(context);

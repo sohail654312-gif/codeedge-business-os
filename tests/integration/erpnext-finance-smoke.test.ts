@@ -24,6 +24,7 @@ smoke("ERPNext disposable Finance Engine smoke", () => {
       "quotations",
       "invoices",
     ]);
+    expect(registration.writeCapabilities).toEqual(["customers"]);
 
     const engine = getFinanceEngine({
       businessId: businessId!,

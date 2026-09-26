@@ -96,6 +96,7 @@ export function createERPNextFinanceEngine(
   return {
     id: "erpnext",
     capabilities: new Set(financeEngineMetadata.erpnext.capabilities),
+    writeCapabilities: new Set(financeEngineMetadata.erpnext.writeCapabilities),
 
     async getStatus() {
       await client.getAuthenticatedUser();
