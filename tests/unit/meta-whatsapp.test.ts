@@ -87,7 +87,13 @@ describe("Meta WhatsApp adapter", () => {
   it("sends plain text through the configured provider credential alias", async () => {
     process.env.WHATSAPP_META_GRAPH_API_VERSION = "v99.0";
     process.env.WHATSAPP_META_CREDENTIALS_JSON = JSON.stringify({
-      client_primary: "test-token-that-is-long-enough",
+      client_primary: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "meta_whatsapp_cloud",
+        environment: "production",
+        externalSenderId: "109876543210",
+        secret: "test-token-that-is-long-enough",
+      },
     });
 
     const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
@@ -101,6 +107,8 @@ describe("Meta WhatsApp adapter", () => {
 
     const provider = createMetaWhatsAppProvider(fetcher);
     await expect(provider.sendText({
+      businessId: "20000000-0000-4000-8000-000000000001",
+      providerEnvironment: "production",
       externalSenderId: "109876543210",
       credentialKey: "client_primary",
       recipient: "447700900123",
@@ -120,5 +128,30 @@ describe("Meta WhatsApp adapter", () => {
       type: "text",
       text: { body: "Reply" },
     });
+  });
+
+  it("denies a known credential alias when the trusted tenant does not match", async () => {
+    process.env.WHATSAPP_META_GRAPH_API_VERSION = "v99.0";
+    process.env.WHATSAPP_META_CREDENTIALS_JSON = JSON.stringify({
+      tenant_a: {
+        businessId: "20000000-0000-4000-8000-000000000001",
+        provider: "meta_whatsapp_cloud",
+        environment: "production",
+        externalSenderId: "109876543210",
+        secret: "test-token-that-is-long-enough",
+      },
+    });
+
+    const fetcher = vi.fn();
+    const provider = createMetaWhatsAppProvider(fetcher as typeof fetch);
+    await expect(provider.sendText({
+      businessId: "20000000-0000-4000-8000-000000000002",
+      providerEnvironment: "production",
+      externalSenderId: "109876543210",
+      credentialKey: "tenant_a",
+      recipient: "447700900123",
+      body: "Blocked",
+    })).rejects.toThrow(/credential/i);
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });
