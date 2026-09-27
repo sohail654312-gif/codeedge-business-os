@@ -14,6 +14,7 @@ import {
   type CreateFinanceSupplierInput,
   type FinanceEngine,
   type RecordFinancePaymentInput,
+  financeProviderFailureStatus,
   requireFinanceCapability,
 } from "./engine";
 import { loadFinanceContext, type LoadedFinanceContext } from "./context";
