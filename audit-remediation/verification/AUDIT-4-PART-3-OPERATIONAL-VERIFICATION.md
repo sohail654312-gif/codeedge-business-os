@@ -41,7 +41,7 @@ The workflow proves:
 
 | Finding | Status | Evidence / blocker |
 | --- | --- | --- |
-| REL-001 | OPEN | 29 repository migrations vs 9 hosted migrations. |
+| REL-001 | OPEN — DELTA IDENTIFIED AND REVIEWED | 29 repository migrations vs 9 hosted migrations; exact missing 20-file suffix reviewed, representative later objects confirmed absent, and no migration applied. |
 | REL-002 | PARTIAL — BACKUP/RESTORE VERIFIED | Recoverable bundle and isolated restore both verified; exact schema fingerprints, forced RLS and tenant isolation passed. Formal RPO/RTO approval remains. |
 | REL-003 | PARTIAL | Readiness/Automation health exist; external alert delivery and uptime proof remain. |
 | REL-004 | PARTIAL | Protected main, CI and runbook exist; current staging deployment/rollback proof remains. |
@@ -80,3 +80,12 @@ Isolated restore evidence is recorded in
 The technical restore drill is complete. REL-002 remains **PARTIAL** only because
 the production-readiness runbook requires explicit RPO/RTO acceptance; those values
 were not invented during this technical proof.
+
+
+## Final closure continuation — Part 3 migration parity review
+
+The exact hosted/repository migration delta and dependency/risk review are recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-3-MIGRATION-PARITY-REVIEW.md`.
+
+Part 3 is review-only. REL-001 remains **OPEN** until the reviewed migration chain is
+successfully applied and hosted parity is re-verified in the dedicated application phase.
