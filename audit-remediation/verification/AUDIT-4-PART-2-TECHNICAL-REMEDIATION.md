@@ -19,8 +19,10 @@ to the live Supabase project and does not deploy public production.
 ## Still required in Part 2 / Part 3
 
 - REL-002: real backup plus isolated restore drill.
-- REL-006/REL-007: Automation scheduler/liveness and database-enforced runaway
-  protection.
+- REL-006: authenticated Automation runtime health is implemented; actual
+  scheduler deployment/cadence proof remains a Part 3 gate.
+- REL-007: database-enforced correlation depth, total-event and external-effect
+  budgets are implemented on this branch.
 - REL-009: production connection/pool topology evidence.
 - REL-010: online migration operational discipline.
 - REL-011: retention/archive/pagination scale hardening.
