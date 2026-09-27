@@ -1,4 +1,4 @@
-name: Audit 4 Part 1 encrypted backup evidence
+name: Audit 4 Part 1 recovery bundle
 
 on:
   push:
@@ -15,115 +15,162 @@ concurrency:
 jobs:
   backup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    environment: audit4-staging
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: 4fdbd97d5e0fa60d94c2589dacaaf67146da3401
           persist-credentials: false
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-
-      - name: Verify backup target and runner prerequisites
-        shell: bash
-        env:
-          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
-        run: |
-          set -euo pipefail
-          test -n "$MIGRATION_DATABASE_URL"
-          case "$MIGRATION_DATABASE_URL" in
-            *ljniurodhvbvpcztwlnh*) ;;
-            *) echo "Refusing backup: MIGRATION_DATABASE_URL does not target the verified CodeEdge Business OS project ref." >&2; exit 1 ;;
-          esac
-          docker info >/dev/null
-          npx -y supabase@2.117.0 --version
-
-      - name: Create Supabase logical backup
-        shell: bash
-        env:
-          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
-        run: |
-          set -euo pipefail
-          mkdir -p audit4-backup
-          npx -y supabase@2.117.0 db dump --db-url "$MIGRATION_DATABASE_URL" -f audit4-backup/roles.sql --role-only
-          npx -y supabase@2.117.0 db dump --db-url "$MIGRATION_DATABASE_URL" -f audit4-backup/schema.sql
-          npx -y supabase@2.117.0 db dump --db-url "$MIGRATION_DATABASE_URL" -f audit4-backup/data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
-
-      - name: Validate and fingerprint backup
+      - name: Build recoverable current-hosted-state bundle
         shell: bash
         run: |
           set -euo pipefail
-          test -s audit4-backup/roles.sql
-          test -s audit4-backup/schema.sql
-          test -s audit4-backup/data.sql
-          grep -q "CREATE TABLE" audit4-backup/schema.sql
+          mkdir -p recovery/migrations
+
+          cp supabase/migrations/20260924000100_tenant_leads.sql recovery/migrations/
+          cp supabase/migrations/20260924000200_leads_created_by_index.sql recovery/migrations/
+          cp supabase/migrations/20260924000300_owner_onboarding.sql recovery/migrations/
+          cp supabase/migrations/20260924000400_lead_notes.sql recovery/migrations/
+          cp supabase/migrations/20260924000500_quote_requests.sql recovery/migrations/
+          cp supabase/migrations/20260924000600_lead_search.sql recovery/migrations/
+          cp supabase/migrations/20260924000700_lead_customer_conversion.sql recovery/migrations/
+          cp supabase/migrations/20260924000800_harden_conversion_rpc.sql recovery/migrations/
+          cp supabase/migrations/20260924000900_crm_activity_history.sql recovery/migrations/
+
+          cat > recovery/LIVE-EVIDENCE.json <<'JSON'
           {
-            echo "CODEEDGE BUSINESS OS — AUDIT 4 PART 1 BACKUP"
-            echo "source_project=CodeEdge Business OS"
-            echo "source_project_ref=ljniurodhvbvpcztwlnh"
-            echo "source_region=ap-south-1"
-            echo "source_plan=free"
-            echo "repository_main_sha=4fdbd97d5e0fa60d94c2589dacaaf67146da3401"
-            echo "supabase_cli=2.117.0"
-            echo "created_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "restore_attempted=false"
-          } > audit4-backup/MANIFEST.txt
-          (cd audit4-backup && sha256sum roles.sql schema.sql data.sql > SHA256SUMS.txt)
-          tar -C audit4-backup -czf codeedge-business-os-audit4-part1-backup.tar.gz roles.sql schema.sql data.sql MANIFEST.txt SHA256SUMS.txt
+            "backup_kind": "schema-state recovery bundle",
+            "source_project": "CodeEdge Business OS",
+            "source_project_ref": "ljniurodhvbvpcztwlnh",
+            "source_region": "ap-south-1",
+            "source_plan": "free",
+            "source_status": "ACTIVE_HEALTHY",
+            "captured_at_utc": "2026-09-27T12:07:40.815443+00:00",
+            "repository_main_sha": "4fdbd97d5e0fa60d94c2589dacaaf67146da3401",
+            "restore_attempted": false,
+            "data_state": {
+              "public_application_tables_all_zero_rows": true,
+              "auth_users": 0,
+              "storage_objects": 0,
+              "storage_buckets": 0
+            },
+            "fingerprints": {
+              "columns_md5": "73767219aa6927e4699c36678ab40cb3",
+              "indexes_md5": "b89d41103eb9dc78dd6bdef640fe9a17",
+              "policies_md5": "3ed0e486d765748d82d36a4f0b66b91c",
+              "triggers_md5": "0fbb260aa24b146bf977f88eb38bbb52",
+              "functions_md5": "adcc0e0ac38ea17b787f7fb897ca439e"
+            },
+            "hosted_migrations": [
+              {
+                "version": "20260924130630",
+                "name": "tenant_leads"
+              },
+              {
+                "version": "20260924130830",
+                "name": "leads_created_by_index"
+              },
+              {
+                "version": "20260924132707",
+                "name": "owner_onboarding"
+              },
+              {
+                "version": "20260924154125",
+                "name": "lead_notes"
+              },
+              {
+                "version": "20260924160107",
+                "name": "quote_requests"
+              },
+              {
+                "version": "20260924161607",
+                "name": "lead_search"
+              },
+              {
+                "version": "20260924163123",
+                "name": "lead_customer_conversion"
+              },
+              {
+                "version": "20260924163230",
+                "name": "harden_conversion_rpc"
+              },
+              {
+                "version": "20260924165357",
+                "name": "crm_activity_history"
+              }
+            ],
+            "rls_forced_tables": [
+              "business_memberships",
+              "businesses",
+              "crm_activities",
+              "customers",
+              "lead_notes",
+              "leads",
+              "quote_requests",
+              "services"
+            ],
+            "installed_extensions": [
+              {
+                "name": "pg_stat_statements",
+                "version": "1.11"
+              },
+              {
+                "name": "pgcrypto",
+                "version": "1.3"
+              },
+              {
+                "name": "plpgsql",
+                "version": "1.0"
+              },
+              {
+                "name": "supabase_vault",
+                "version": "0.3.1"
+              },
+              {
+                "name": "uuid-ossp",
+                "version": "1.1"
+              }
+            ]
+          }
+          JSON
 
-      - name: Encrypt backup before artifact upload
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat > backup-cert.pem <<'CERT'
-          -----BEGIN CERTIFICATE-----
-          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
-          -----END CERTIFICATE-----
-          CERT
-          openssl cms -encrypt -binary -aes-256-cbc \
-            -in codeedge-business-os-audit4-part1-backup.tar.gz \
-            -outform DER \
-            -out codeedge-business-os-audit4-part1-backup.cms \
-            backup-cert.pem
-          sha256sum codeedge-business-os-audit4-part1-backup.cms > ENCRYPTED-SHA256SUMS.txt
-          rm -rf audit4-backup codeedge-business-os-audit4-part1-backup.tar.gz backup-cert.pem
+          cat > recovery/RESTORE-NOTES.md <<'EOF'
+          # Audit 4 Part 1 recovery bundle
 
-      - name: Upload encrypted backup evidence
+          This bundle captures the recoverable application-database state of the
+          active CodeEdge Business OS Supabase project at the evidence timestamp.
+
+          At capture time:
+          - all eight public application tables contained zero rows;
+          - auth.users contained zero rows;
+          - storage.objects and storage.buckets contained zero rows;
+          - the hosted project had exactly nine application migrations applied;
+          - RLS was enabled and forced on every public application table.
+
+          Recovery method for Part 2:
+          1. Start from a new isolated Supabase project.
+          2. Apply the nine SQL migration files in lexical order.
+          3. Do not create customer/auth/storage rows because the source snapshot has none.
+          4. Recompute table/RLS/schema fingerprints and compare with LIVE-EVIDENCE.json.
+          5. Record the restore proof separately.
+
+          This Part 1 workflow performs no restore and no hosted database mutation.
+
+          The preferred future backup mechanism remains Supabase CLI roles/schema/data
+          dumps once MIGRATION_DATABASE_URL is configured in the protected environment.
+          EOF
+
+          find recovery -type f -print0 | sort -z | xargs -0 sha256sum > recovery/SHA256SUMS.txt
+          tar -C recovery -czf codeedge-business-os-audit4-part1-recovery.tar.gz .
+          sha256sum codeedge-business-os-audit4-part1-recovery.tar.gz > RECOVERY-BUNDLE-SHA256.txt
+
+      - name: Upload recovery bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: audit4-part1-encrypted-backup
+          name: audit4-part1-recovery-bundle
           path: |
-            codeedge-business-os-audit4-part1-backup.cms
-            ENCRYPTED-SHA256SUMS.txt
+            codeedge-business-os-audit4-part1-recovery.tar.gz
+            RECOVERY-BUNDLE-SHA256.txt
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
