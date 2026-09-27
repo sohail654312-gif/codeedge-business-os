@@ -161,7 +161,7 @@ jobs:
           dumps once MIGRATION_DATABASE_URL is configured in the protected environment.
           EOF
 
-          find recovery -type f -print0 | sort -z | xargs -0 sha256sum > recovery/SHA256SUMS.txt
+          (cd recovery && find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           tar -C recovery -czf codeedge-business-os-audit4-part1-recovery.tar.gz .
           sha256sum codeedge-business-os-audit4-part1-recovery.tar.gz > RECOVERY-BUNDLE-SHA256.txt
 
