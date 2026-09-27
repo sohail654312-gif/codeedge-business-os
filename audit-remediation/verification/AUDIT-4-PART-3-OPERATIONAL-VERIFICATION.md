@@ -42,7 +42,7 @@ The workflow proves:
 | Finding | Status | Evidence / blocker |
 | --- | --- | --- |
 | REL-001 | OPEN | 29 repository migrations vs 9 hosted migrations. |
-| REL-002 | PARTIAL — BACKUP EVIDENCE COMPLETE | Recoverable current-hosted-state bundle captured and checksum-verified; isolated restore proof remains Part 2 of final closure. |
+| REL-002 | PARTIAL — BACKUP/RESTORE VERIFIED | Recoverable bundle and isolated restore both verified; exact schema fingerprints, forced RLS and tenant isolation passed. Formal RPO/RTO approval remains. |
 | REL-003 | PARTIAL | Readiness/Automation health exist; external alert delivery and uptime proof remain. |
 | REL-004 | PARTIAL | Protected main, CI and runbook exist; current staging deployment/rollback proof remains. |
 | REL-005 | REMEDIATED IN CODE | Vapi trusted-ingest transient failures return retryable 503; Part 2 CI green. |
@@ -70,3 +70,13 @@ Backup evidence is recorded in
 
 This changes REL-002 from fully blocked to **PARTIAL** only. No restore has been
 performed, so REL-002 is not closed.
+
+
+## Final closure continuation — Part 2 isolated restore
+
+Isolated restore evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-2-ISOLATED-RESTORE.md`.
+
+The technical restore drill is complete. REL-002 remains **PARTIAL** only because
+the production-readiness runbook requires explicit RPO/RTO acceptance; those values
+were not invented during this technical proof.
