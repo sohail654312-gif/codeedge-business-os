@@ -99,6 +99,72 @@ describe("Automation Engine", () => {
     );
   });
 
+  it("claims a correlation external-effect budget before a live-capable action", async () => {
+    const runId = "90000000-0000-4000-8000-000000000010";
+
+    mocks.email.mockResolvedValue({
+      messageId: "67000000-0000-4000-8000-000000000010",
+      status: "sent",
+    });
+
+    mocks.dbQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("automation_load_run")) {
+        return {
+          rows: [{
+            run_id: runId,
+            business_id: "20000000-0000-4000-8000-000000000001",
+            workflow_id: "91000000-0000-4000-8000-000000000010",
+            workflow_version: 1,
+            trigger_type: "message.received",
+            conditions: [],
+            actions: [{
+              type: "communication.send_email",
+              conversationIdPath: "conversation.id",
+              body: "Thanks.",
+            }],
+            actor_user_id: "10000000-0000-4000-8000-000000000001",
+            event_id: "92000000-0000-4000-8000-000000000010",
+            event_type: "message.received",
+            subject_type: "conversation",
+            subject_id: "66000000-0000-4000-8000-000000000010",
+            payload: {
+              message: {
+                id: "67000000-0000-4000-8000-000000000010",
+                sender_type: "customer",
+                direction: "inbound",
+              },
+              conversation: {
+                id: "66000000-0000-4000-8000-000000000010",
+                channel: "email",
+              },
+            },
+            execution_mode: "sandbox",
+            correlation_id: "93000000-0000-4000-8000-000000000010",
+          }],
+        };
+      }
+      if (sql.includes("automation_claim_external_effect_budget")) {
+        return { rows: [{ external_effect_count: 1 }] };
+      }
+      if (sql.includes("automation_record_action")) {
+        return { rows: [{ automation_record_action: "ok" }] };
+      }
+      if (sql.includes("automation_complete_run")) {
+        return { rows: [{ automation_complete_run: null }] };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    await expect(executeAutomationRun(runId)).resolves.toEqual({
+      runId,
+      status: "succeeded",
+    });
+    expect(mocks.email).toHaveBeenCalledTimes(1);
+    expect(mocks.dbQuery.mock.calls.some(([sql]) =>
+      String(sql).includes("automation_claim_external_effect_budget"),
+    )).toBe(true);
+  });
+
   it("dry-runs external actions in Demo without calling a provider", async () => {
     const runId = "90000000-0000-4000-8000-000000000001";
     const records: unknown[][] = [];

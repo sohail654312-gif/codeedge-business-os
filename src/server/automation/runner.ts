@@ -46,6 +46,21 @@ async function completeRun(
   });
 }
 
+async function claimExternalEffectBudget(runId: string) {
+  const raw = await withAutomationCapability(async (db) => {
+    const result = await db.query(
+      "select public.automation_claim_external_effect_budget($1) as external_effect_count",
+      [runId],
+    );
+    return result.rows[0]?.external_effect_count;
+  });
+  const count = Number(raw);
+  if (!Number.isInteger(count) || count <= 0) {
+    throw new Error("automation_external_effect_budget_unavailable");
+  }
+  return count;
+}
+
 async function recordAction(input: {
   runId: string;
   actionIndex: number;
@@ -139,6 +154,9 @@ export async function executeAutomationRun(runId: string) {
       }
 
       try {
+        if (registration.externalEffect) {
+          await claimExternalEffectBudget(run.run_id);
+        }
         const result = await executeAutomationAction(context, action, index);
         await recordAction({
           runId: run.run_id,

@@ -20,8 +20,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Verify migration-to-TypeScript schema contract
-        run: npm run schema:check
+      - name: Preview migration-to-TypeScript schema contract
+        run: |
+          npm run schema:generate
+          git diff -- src/types/database-contract.generated.ts
+          git diff --exit-code -- src/types/database-contract.generated.ts
       - name: Prove schema drift gate rejects a mismatch
         run: npm run schema:prove-drift
       - run: npm run lint
