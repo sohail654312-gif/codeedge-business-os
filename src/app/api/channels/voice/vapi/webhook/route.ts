@@ -60,7 +60,10 @@ export async function POST(request: Request) {
   try {
     await ingestVoiceProviderEvent(connection, event);
   } catch {
-    return new NextResponse(null, { status: 400 });
+    // Payload and authentication have already succeeded. Treat ingestion
+    // failures as retryable server failures so an idempotent provider retry
+    // can recover from temporary database/runtime problems.
+    return new NextResponse(null, { status: 503 });
   }
 
   return new NextResponse(null, { status: 204 });

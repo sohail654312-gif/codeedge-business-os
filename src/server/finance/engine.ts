@@ -157,3 +157,21 @@ export function requireFinanceCapability(
   }
   return engine;
 }
+
+
+export function financeProviderFailureStatus(
+  error: unknown,
+): "failed" | "ambiguous" {
+  if (
+    error
+    && typeof error === "object"
+    && "code" in error
+    && typeof (error as { code?: unknown }).code === "string"
+    && /^[a-z0-9_]+_outcome_ambiguous$/.test(
+      (error as { code: string }).code,
+    )
+  ) {
+    return "ambiguous";
+  }
+  return "failed";
+}

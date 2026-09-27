@@ -159,7 +159,7 @@ async function executeWrite<T>(input: {
   } catch (error) {
     await completeFinanceExecution({
       executionId: prepared.execution_id,
-      status: "failed",
+      status: financeProviderFailureStatus(error),
       errorCode: safeFinanceErrorCode(error),
     }).catch(() => undefined);
     throw new Error(safeFinanceErrorCode(error));

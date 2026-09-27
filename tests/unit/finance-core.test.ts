@@ -19,6 +19,7 @@ import {
   createERPNextClient,
   ERPNextRequestError,
 } from "@/integrations/erpnext/client";
+import { financeProviderFailureStatus } from "@/server/finance/engine";
 import {
   assertFinanceExternalEffectAllowed,
   type FinanceExternalEffectContext,
@@ -133,11 +134,18 @@ describe("Codeedge Money finance contracts", () => {
     })).toBe("external_effect_production_environment_blocked");
   });
 
-  it("normalizes ERPNext HTTP failures without exposing provider response bodies", async () => {
-    const fetcher = vi.fn(async () => new Response(
-      "SECRET_PROVIDER_STACK_TRACE api_key=should-never-leak",
-      { status:500 },
-    ));
+  it("treats ambiguous ERPNext failures safely without exposing provider bodies", async () => {
+    let capturedInit: RequestInit | undefined;
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      capturedInit = init;
+      return new Response(
+        "SECRET_PROVIDER_STACK_TRACE api_key=should-never-leak",
+        { status:500 },
+      );
+    });
 
     const client = createERPNextClient({
       baseUrl:"https://erp.example.test",
@@ -153,8 +161,23 @@ describe("Codeedge Money finance contracts", () => {
     }
 
     expect(error).toBeInstanceOf(ERPNextRequestError);
+    expect((error as ERPNextRequestError).code).toBe("erpnext_outcome_ambiguous");
+    expect(financeProviderFailureStatus(error)).toBe("ambiguous");
+    expect(capturedInit?.signal).toBeDefined();
     expect(String((error as Error).message)).not.toContain("SECRET_PROVIDER_STACK_TRACE");
     expect(String((error as Error).message)).not.toContain("api_key");
+
+    const networkClient = createERPNextClient({
+      baseUrl:"https://erp.example.test",
+      apiKey:"test_api_key",
+      apiSecret:"test_api_secret",
+    },vi.fn(async () => {
+      throw new TypeError("network lost");
+    }) as typeof fetch);
+
+    await expect(networkClient.listCustomers()).rejects.toMatchObject({
+      code:"erpnext_outcome_ambiguous",
+    });
   });
 
   it("normalizes ERPNext finance reads behind the FinanceEngine adapter", async () => {
