@@ -40,6 +40,7 @@ jobs:
           mkdir -p restore-lab
           cd restore-lab
           npx -y supabase@2.117.0 init
+          mkdir -p supabase/migrations
           cd ..
           cp supabase/migrations/20260924000100_tenant_leads.sql restore-lab/supabase/migrations/
           cp supabase/migrations/20260924000200_leads_created_by_index.sql restore-lab/supabase/migrations/
