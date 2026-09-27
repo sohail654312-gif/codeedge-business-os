@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "schema:generate": "node scripts/generate-schema-contract.mjs --write",
     "schema:check": "node scripts/generate-schema-contract.mjs --check",
-    "schema:prove-drift": "node scripts/generate-schema-contract.mjs --prove-drift"
+    "schema:prove-drift": "node scripts/generate-schema-contract.mjs --prove-drift",
+    "schema:hosted-parity": "node scripts/check-hosted-migration-parity.mjs"
   },
   "dependencies": {
     "next": "15.5.26",
