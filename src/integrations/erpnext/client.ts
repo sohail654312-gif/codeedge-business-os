@@ -18,6 +18,7 @@ export class ERPNextRequestError extends Error {
       | "erpnext_not_found"
       | "erpnext_rate_limited"
       | "erpnext_request_failed"
+      | "erpnext_outcome_ambiguous"
       | "erpnext_invalid_response",
     public readonly status: number | null = null,
   ) {
@@ -34,10 +35,13 @@ function headers(config: ERPNextConfig) {
   };
 }
 
+const ERP_NEXT_REQUEST_TIMEOUT_MS = 10_000;
+
 function normalizeStatus(status: number) {
   if (status === 401 || status === 403) return "erpnext_unauthorized" as const;
   if (status === 404) return "erpnext_not_found" as const;
   if (status === 429) return "erpnext_rate_limited" as const;
+  if (status >= 500) return "erpnext_outcome_ambiguous" as const;
   return "erpnext_request_failed" as const;
 }
 
@@ -46,14 +50,22 @@ export function createERPNextClient(
   fetcher: typeof fetch = fetch,
 ) {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetcher(`${config.baseUrl}${path}`, {
-      ...init,
-      headers: {
-        ...headers(config),
-        ...(init?.headers ?? {}),
-      },
-      cache: "no-store",
-    });
+    let response: Response;
+    try {
+      response = await fetcher(`${config.baseUrl}${path}`, {
+        ...init,
+        headers: {
+          ...headers(config),
+          ...(init?.headers ?? {}),
+        },
+        cache: "no-store",
+        signal: init?.signal ?? AbortSignal.timeout(ERP_NEXT_REQUEST_TIMEOUT_MS),
+      });
+    } catch {
+      // A write may have reached the provider before the network/timeout
+      // failure became visible to Codeedge. Preserve that uncertainty.
+      throw new ERPNextRequestError("erpnext_outcome_ambiguous");
+    }
 
     if (!response.ok) {
       // Never propagate provider response bodies: they can contain sensitive
