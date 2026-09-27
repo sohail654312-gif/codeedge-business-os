@@ -42,7 +42,7 @@ The workflow proves:
 | Finding | Status | Evidence / blocker |
 | --- | --- | --- |
 | REL-001 | OPEN | 29 repository migrations vs 9 hosted migrations. |
-| REL-002 | BLOCKED — EXTERNAL OPERATIONAL PROOF | No verified backup + isolated restore drill. |
+| REL-002 | PARTIAL — BACKUP EVIDENCE COMPLETE | Recoverable current-hosted-state bundle captured and checksum-verified; isolated restore proof remains Part 2 of final closure. |
 | REL-003 | PARTIAL | Readiness/Automation health exist; external alert delivery and uptime proof remain. |
 | REL-004 | PARTIAL | Protected main, CI and runbook exist; current staging deployment/rollback proof remains. |
 | REL-005 | REMEDIATED IN CODE | Vapi trusted-ingest transient failures return retryable 503; Part 2 CI green. |
@@ -61,3 +61,12 @@ No Vercel deployment was changed.
 No WhatsApp, SMS, Email, Voice, Finance, Booking or other external business
 effect was triggered.
 The original Codeedge MVP repository was not touched.
+
+
+## Final closure continuation — Part 1 backup evidence
+
+Backup evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-1-BACKUP-EVIDENCE.md`.
+
+This changes REL-002 from fully blocked to **PARTIAL** only. No restore has been
+performed, so REL-002 is not closed.
