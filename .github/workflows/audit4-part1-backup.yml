@@ -22,6 +22,7 @@ jobs:
         with:
           ref: 4fdbd97d5e0fa60d94c2589dacaaf67146da3401
           persist-credentials: false
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -78,38 +79,42 @@ jobs:
         run: |
           set -euo pipefail
           cat > backup-cert.pem <<'CERT'
------BEGIN CERTIFICATE-----
-MIIFLTCCAxWgAwIBAgIUSt1kk/FNYyiRW/6OGe8CD3J5/8EwDQYJKoZIhvcNAQEL
-BQAwJjEkMCIGA1UEAwwbQ29kZWVkZ2UgQXVkaXQ0IEJhY2t1cCBUZW1wMB4XDTI2
-MDkyNzEyMDEzOVoXDTI2MDkyOTEyMDEzOVowJjEkMCIGA1UEAwwbQ29kZWVkZ2Ug
-QXVkaXQ0IEJhY2t1cCBUZW1wMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC
-AgEAkwhO9LfVtmGn5pckAT8VEvuFJfVOJkCvuPNGZM718KTQfpcZbl541K5Fzixb
-afDw9b+GKHG9Asq7bR78iQl5kWqv0NT3/6oCS+lVLEbKLpOWPUxmoN0voi3gNWUp
-62Yo2L4mEVFE7VUCjTckWHuUXpz8t+1IIZ3CYspr44StKETwlVGa8rrum9mKhy8P
-0cFHB5HrR2xiI4sFURcdSLiwWzGLK+jOe2kbkuQnxr+9I8ZYDzFYfD+xMv6XDTdW
-FBS1Q+Ns1w9c/oJjOlAR2jnWMIBzETrNaKN8c/RlbFI097Wt987v/hBH9ftNXVBY
-oZDaeLLDPu9xbFtft0jdF8MlvvAQ+TLzYx0BCagCmJiwFYuf0WSSDbROiPXpMrgJ
-Ce4chlS9/iQEi77CuDqLNqN9vC1U219Vymn3WE1p5JdNGddO0/Ga5jHfFHr+HQpv
-ruIxTYCPMHjFu9tbceLs6AzkLI13GUC9PstroXSMSW0lKxkpXVwEl3mgn5I+HDAA
-GigSSKvKGJAEYTTRA6v6t8Exw/9jnuAhzoXb4AS2MNFb1P7HkKuVEusm46eo86ox
-nVmcmxh5pMYzeUSuwqeZt90aWTmF0ktryGHGuGzmZkAMyXwVaWinvjjMuZbNMKUP
-OjeeSbLb42kFgep2QKZ6EsKKyvqZO05+Dy6HD89ZsBPPepECAwEAAaNTMFEwHQYD
-VR0OBBYEFD0GcyBZc/BobetOyXDlP8V4JjxCMB8GA1UdIwQYMBaAFD0GcyBZc/Bo
-betOyXDlP8V4JjxCMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggIB
-ADCJyN+Re6LUl3S7AmSzJUUafuRrAhXOXxZ8+095LsiqH1L9LacMct+au0rNFDxa
-oOxzeBiE7t27xeBM4m1AleyLsbOF6Tm3Y5gHZJBlkbjxNe+Rm2wTo2T11URl8mvo
-pQ4C1nCmTo1W4NVSDLAWm9XKXNRV8erLj8X/o0Mucfj5C2k1HdhVKisamiFT/tCZ
-LDdYJOBKJWCE4HGGh58KVodhjA80F6Aq1GSTXYhQT1O221BHMsTZPnL/vGOdLaBg
-q1Mo2kii10U+TtvG93EnL2VCKj0SNkZDuL+P+nQ8ByWcIJfzHoC+HiGTmPl/mjlZ
-z2TydlcRsR3OjyMKZ/h6Ya/N9wdVF+S7+jUIsbcIUJwyDir7S7Tqbgo5oskoTqxT
-cCm2OMsSabvAGTOeZV9L6hAlQx4Fn4MyOmO35nMVHXvWP0O0xDMrqn+FuGbP1gPF
-xHkYbLRsaa1+QeiQJX+Sr9O7OtglI0VjlMS++OLoW/2BffTD5y/iNZPic8wwi4Fl
-oEzDjySPamhApKvpkdLUnf+Cxfw5VsHUuQYBFgm5xm8fvUlrPy7+eonNBECswNnI
-xhJqyaXL72+HC9BXVuBPLgLbk9hneJEQtZ8craEpBoOiLqrzB1Al4uSbkp1JYO9s
-LLi+ffPda1I6ZKmHJvNj9dLBSSpS5bs7vqzNYrIecGka
------END CERTIFICATE-----
-CERT
-          openssl cms -encrypt -binary -aes-256-cbc             -in codeedge-business-os-audit4-part1-backup.tar.gz             -outform DER             -out codeedge-business-os-audit4-part1-backup.cms             backup-cert.pem
+          -----BEGIN CERTIFICATE-----
+          MIIFLTCCAxWgAwIBAgIUSt1kk/FNYyiRW/6OGe8CD3J5/8EwDQYJKoZIhvcNAQEL
+          BQAwJjEkMCIGA1UEAwwbQ29kZWVkZ2UgQXVkaXQ0IEJhY2t1cCBUZW1wMB4XDTI2
+          MDkyNzEyMDEzOVoXDTI2MDkyOTEyMDEzOVowJjEkMCIGA1UEAwwbQ29kZWVkZ2Ug
+          QXVkaXQ0IEJhY2t1cCBUZW1wMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC
+          AgEAkwhO9LfVtmGn5pckAT8VEvuFJfVOJkCvuPNGZM718KTQfpcZbl541K5Fzixb
+          afDw9b+GKHG9Asq7bR78iQl5kWqv0NT3/6oCS+lVLEbKLpOWPUxmoN0voi3gNWUp
+          62Yo2L4mEVFE7VUCjTckWHuUXpz8t+1IIZ3CYspr44StKETwlVGa8rrum9mKhy8P
+          0cFHB5HrR2xiI4sFURcdSLiwWzGLK+jOe2kbkuQnxr+9I8ZYDzFYfD+xMv6XDTdW
+          FBS1Q+Ns1w9c/oJjOlAR2jnWMIBzETrNaKN8c/RlbFI097Wt987v/hBH9ftNXVBY
+          oZDaeLLDPu9xbFtft0jdF8MlvvAQ+TLzYx0BCagCmJiwFYuf0WSSDbROiPXpMrgJ
+          Ce4chlS9/iQEi77CuDqLNqN9vC1U219Vymn3WE1p5JdNGddO0/Ga5jHfFHr+HQpv
+          ruIxTYCPMHjFu9tbceLs6AzkLI13GUC9PstroXSMSW0lKxkpXVwEl3mgn5I+HDAA
+          GigSSKvKGJAEYTTRA6v6t8Exw/9jnuAhzoXb4AS2MNFb1P7HkKuVEusm46eo86ox
+          nVmcmxh5pMYzeUSuwqeZt90aWTmF0ktryGHGuGzmZkAMyXwVaWinvjjMuZbNMKUP
+          OjeeSbLb42kFgep2QKZ6EsKKyvqZO05+Dy6HD89ZsBPPepECAwEAAaNTMFEwHQYD
+          VR0OBBYEFD0GcyBZc/BobetOyXDlP8V4JjxCMB8GA1UdIwQYMBaAFD0GcyBZc/Bo
+          betOyXDlP8V4JjxCMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggIB
+          ADCJyN+Re6LUl3S7AmSzJUUafuRrAhXOXxZ8+095LsiqH1L9LacMct+au0rNFDxa
+          oOxzeBiE7t27xeBM4m1AleyLsbOF6Tm3Y5gHZJBlkbjxNe+Rm2wTo2T11URl8mvo
+          pQ4C1nCmTo1W4NVSDLAWm9XKXNRV8erLj8X/o0Mucfj5C2k1HdhVKisamiFT/tCZ
+          LDdYJOBKJWCE4HGGh58KVodhjA80F6Aq1GSTXYhQT1O221BHMsTZPnL/vGOdLaBg
+          q1Mo2kii10U+TtvG93EnL2VCKj0SNkZDuL+P+nQ8ByWcIJfzHoC+HiGTmPl/mjlZ
+          z2TydlcRsR3OjyMKZ/h6Ya/N9wdVF+S7+jUIsbcIUJwyDir7S7Tqbgo5oskoTqxT
+          cCm2OMsSabvAGTOeZV9L6hAlQx4Fn4MyOmO35nMVHXvWP0O0xDMrqn+FuGbP1gPF
+          xHkYbLRsaa1+QeiQJX+Sr9O7OtglI0VjlMS++OLoW/2BffTD5y/iNZPic8wwi4Fl
+          oEzDjySPamhApKvpkdLUnf+Cxfw5VsHUuQYBFgm5xm8fvUlrPy7+eonNBECswNnI
+          xhJqyaXL72+HC9BXVuBPLgLbk9hneJEQtZ8craEpBoOiLqrzB1Al4uSbkp1JYO9s
+          LLi+ffPda1I6ZKmHJvNj9dLBSSpS5bs7vqzNYrIecGka
+          -----END CERTIFICATE-----
+          CERT
+          openssl cms -encrypt -binary -aes-256-cbc \
+            -in codeedge-business-os-audit4-part1-backup.tar.gz \
+            -outform DER \
+            -out codeedge-business-os-audit4-part1-backup.cms \
+            backup-cert.pem
           sha256sum codeedge-business-os-audit4-part1-backup.cms > ENCRYPTED-SHA256SUMS.txt
           rm -rf audit4-backup codeedge-business-os-audit4-part1-backup.tar.gz backup-cert.pem
 
