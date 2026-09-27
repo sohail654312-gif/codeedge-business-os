@@ -43,8 +43,8 @@ The workflow proves:
 | --- | --- | --- |
 | REL-001 | VERIFIED / CLOSED | Reviewed 20-migration suffix applied successfully; hosted/repository migration-name parity is now 29/29. |
 | REL-002 | PARTIAL — BACKUP/RESTORE VERIFIED | Recoverable bundle and isolated restore both verified; exact schema fingerprints, forced RLS and tenant isolation passed. Formal RPO/RTO approval remains. |
-| REL-003 | PARTIAL | Readiness/Automation health exist; external alert delivery and uptime proof remain. |
-| REL-004 | PARTIAL | Protected main, CI and runbook exist; current staging deployment/rollback proof remains. |
+| REL-003 | PARTIAL — CURRENT STAGING READINESS BLOCKED | Readiness route exists, but current main is not deployed to staging; protected historical deployment cannot be accepted as current readiness proof. External alert/uptime proof also remains. |
+| REL-004 | PARTIAL — CURRENT STAGING DEPLOYMENT BLOCKED | Protected main, CI and runbook exist; existing staging deployment predates current main and no authenticated deployment write path is currently available. Rollback proof remains. |
 | REL-005 | REMEDIATED IN CODE | Vapi trusted-ingest transient failures return retryable 503; Part 2 CI green. |
 | REL-006 | PARTIAL | Automation health exists; real scheduler cadence/liveness still needs staging proof. |
 | REL-007 | REMEDIATED IN CODE | Correlation event/depth/external-effect budgets merged; Part 2 CI green. |
@@ -99,3 +99,13 @@ Hosted migration application evidence is recorded in
 The reviewed migrations 10–29 were applied in exact order with stop-on-first-failure
 behavior. All 20 succeeded. Hosted/repository parity is now **29/29**, so REL-001 is
 **VERIFIED / CLOSED**.
+
+
+## Final closure continuation — Part 5 staging deployment/readiness attempt
+
+Evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-5-STAGING-DEPLOYMENT-READINESS.md`.
+
+Part 5 is **BLOCKED**, not passed. Current main is not deployed to the staging
+Vercel project, and the protected historical deployment cannot be substituted as
+readiness evidence.
