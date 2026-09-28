@@ -46,7 +46,7 @@ The workflow proves:
 | REL-003 | PARTIAL — CURRENT STAGING READINESS BLOCKED | Readiness route exists, but current main is not deployed to staging; protected historical deployment cannot be accepted as current readiness proof. External alert/uptime proof also remains. |
 | REL-004 | PARTIAL — CURRENT STAGING DEPLOYMENT BLOCKED | Protected main, CI and runbook exist; existing staging deployment predates current main and no authenticated deployment write path is currently available. Rollback proof remains. |
 | REL-005 | REMEDIATED IN CODE | Vapi trusted-ingest transient failures return retryable 503; Part 2 CI green. |
-| REL-006 | PARTIAL | Automation health exists; real scheduler cadence/liveness still needs staging proof. |
+| REL-006 | PARTIAL — RUNTIME HEALTH VERIFIED | Runner authentication/health and live hosted queue state verified; real scheduler cadence/liveness still requires staging proof. |
 | REL-007 | REMEDIATED IN CODE | Correlation event/depth/external-effect budgets merged; Part 2 CI green. |
 | REL-008 | REMEDIATED IN CODE / OPERATIONS PARTIAL | Timeout and ambiguous state merged; live reconciliation proof remains. |
 | REL-009 | PARTIAL — CAPACITY/BOUNDS VERIFIED | Live DB max/current usage and six bounded application pools verified; deployed Vercel pooler host topology still requires environment proof. |
@@ -128,3 +128,14 @@ Evidence is recorded in
 Four previously unbounded list/history reads are now bounded. REL-011 remains
 **PARTIAL** because destructive retention/archive durations require explicit business
 approval and were not invented during this technical remediation.
+
+
+## Final closure continuation — Part 6 Automation liveness
+
+Evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-6-AUTOMATION-LIVENESS.md`.
+
+The hosted queue is currently clean (0 pending, 0 running, 0 stale), the authenticated
+runner/health implementation is verified, and no database cron scheduler exists.
+REL-006 remains **PARTIAL** until a deployed staging scheduler cadence/heartbeat is
+proved without external business effects.
