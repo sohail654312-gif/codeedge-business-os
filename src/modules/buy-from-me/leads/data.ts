@@ -123,7 +123,8 @@ export async function listLeadNotes(
     .select("*")
     .eq("business_id", businessId)
     .eq("lead_id", leadId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   if (error) throw new Error("Unable to load Lead notes.");
   return data ?? [];
@@ -148,7 +149,8 @@ export async function listQuoteRequests(
     .select("*")
     .eq("business_id", businessId)
     .eq("lead_id", leadId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) throw new Error("Unable to load Quote Requests.");
   return data ?? [];
