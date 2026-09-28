@@ -158,3 +158,51 @@ No hosted database migration or row mutation occurred.
 No Vercel protection setting was weakened.
 No stale deployment was promoted.
 No original Codeedge MVP resource was changed.
+
+
+## Resume probe — authenticated GitHub Actions deployment path
+
+A second safe deployment-path probe was executed from a disposable branch after this
+blocker record was first created.
+
+Workflow run:
+
+- run: `36375225999`
+- workflow: `Audit 4 Part 5 current staging deploy`
+- target project: `codeedge-business-os-test`
+- intended exact application source: `00ce47c4686548633dc26f4a4f1c053d987417c9`
+- result: **FAILED CLOSED BEFORE DEPLOYMENT**
+
+The workflow targeted the protected `audit4-staging` GitHub Environment and required
+`VERCEL_TOKEN` before checkout/build/deploy.
+
+The first credential preflight failed because `VERCEL_TOKEN` is not configured in
+the protected environment/repository. All deployment/build/readiness steps were
+therefore skipped.
+
+This provides stronger evidence that there is currently no unattended authenticated
+Vercel write path available from GitHub Actions either.
+
+Safety result:
+
+- no Vercel deployment created;
+- no deployment alias changed;
+- no build executed;
+- no readiness request executed;
+- no Supabase mutation;
+- no provider traffic;
+- no MVP resource changed.
+
+The temporary workflow was removed after the probe.
+
+### Current exact continuation requirement
+
+Part 5 remains **BLOCKED** until one of these controlled write paths exists:
+
+1. configure a scoped `VERCEL_TOKEN` for the protected `audit4-staging` environment
+   (preferred for the existing GitHub Actions verification path); or
+2. Git-link `codeedge-business-os-test` to
+   `sohail654312-gif/codeedge-business-os` and explicitly trigger/deploy the approved
+   main revision through Vercel.
+
+No token value should be committed to the repository or pasted into audit evidence.
