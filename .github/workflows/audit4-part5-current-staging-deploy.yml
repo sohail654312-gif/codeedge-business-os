@@ -1,0 +1,142 @@
+name: Audit 4 Part 5 current staging deploy
+
+on:
+  push:
+    branches:
+      - audit4-part5-current-staging-deploy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit4-part5-current-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: audit4-staging
+    env:
+      VERCEL_ORG_ID: team_a8T8lqP82nDRhkKg9qn0oiu7
+      VERCEL_PROJECT_ID: prj_B55tV0GJmSzpiiTWYRaiSJugep3A
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      EXPECTED_SHA: 00ce47c4686548633dc26f4a4f1c053d987417c9
+
+    steps:
+      - name: Verify deployment credential exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN is not configured in the protected GitHub environment/repository." >&2
+            exit 78
+          fi
+
+      - name: Checkout exact approved main revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: 00ce47c4686548633dc26f4a4f1c053d987417c9
+          path: app
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Verify exact source revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C app rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Link existing staging project and pull staging-project production config
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest --version
+          npx --yes vercel@latest pull \
+            --yes \
+            --environment=production \
+            --scope=codeedge \
+            --token="$VERCEL_TOKEN" \
+            --cwd app
+
+      - name: Build exact approved revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest build \
+            --prod \
+            --scope=codeedge \
+            --token="$VERCEL_TOKEN" \
+            --cwd app
+
+      - name: Deploy to dedicated Business OS test project
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          OUTPUT="$(npx --yes vercel@latest deploy \
+            --prebuilt \
+            --prod \
+            --yes \
+            --scope=codeedge \
+            --token="$VERCEL_TOKEN" \
+            --cwd app 2>&1)"
+          printf '%s\n' "$OUTPUT" | tee evidence/deploy-output.txt
+          DEPLOY_URL="$(printf '%s\n' "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n 1)"
+          test -n "$DEPLOY_URL"
+          echo "deployment_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$DEPLOY_URL" > evidence/deployment-url.txt
+          printf '%s\n' "$EXPECTED_SHA" > evidence/source-sha.txt
+
+      - name: Inspect immutable deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest inspect \
+            "${{ steps.deploy.outputs.deployment_url }}" \
+            --scope=codeedge \
+            --token="$VERCEL_TOKEN" \
+            > evidence/inspect.txt
+          cat evidence/inspect.txt
+
+      - name: Verify readiness endpoint through authenticated Vercel CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          READY_RAW="$(npx --yes vercel@latest curl \
+            /api/health/ready \
+            --deployment "${{ steps.deploy.outputs.deployment_url }}" \
+            --scope=codeedge \
+            --token="$VERCEL_TOKEN" 2>&1)"
+          printf '%s\n' "$READY_RAW" | tee evidence/readiness.txt
+          export READY_RAW
+          node <<'NODE'
+          const raw = process.env.READY_RAW || "";
+          const start = raw.indexOf("{");
+          const end = raw.lastIndexOf("}");
+          if (start < 0 || end < start) {
+            console.error("No JSON readiness body returned.");
+            process.exit(1);
+          }
+          const body = JSON.parse(raw.slice(start, end + 1));
+          if (body.status !== "ready") {
+            console.error("Readiness is not ready:", JSON.stringify(body));
+            process.exit(1);
+          }
+          console.log("Readiness verified:", JSON.stringify(body));
+          NODE
+
+      - name: Upload non-secret staging evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: audit4-part5-staging-evidence
+          path: evidence/
+          if-no-files-found: ignore
+          retention-days: 7
