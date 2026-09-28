@@ -45,9 +45,9 @@ The workflow proves:
 | REL-002 | PARTIAL — BACKUP/RESTORE VERIFIED | Recoverable bundle and isolated restore both verified; exact schema fingerprints, forced RLS and tenant isolation passed. Formal RPO/RTO approval remains. |
 | REL-003 | PARTIAL — CURRENT STAGING READINESS BLOCKED | Readiness route exists, but current main is not deployed to staging; protected historical deployment cannot be accepted as current readiness proof. External alert/uptime proof also remains. |
 | REL-004 | PARTIAL — CURRENT STAGING DEPLOYMENT BLOCKED | Protected main, CI and runbook exist; existing staging deployment predates current main and no authenticated deployment write path is currently available. Rollback proof remains. |
-| REL-005 | REMEDIATED IN CODE | Vapi trusted-ingest transient failures return retryable 503; Part 2 CI green. |
+| REL-005 | VERIFIED / CLOSED | Trusted Vapi ingest failures return retryable 503 while malformed input remains 400; regression tests directly prove the original failure mode. |
 | REL-006 | PARTIAL — RUNTIME HEALTH VERIFIED | Runner authentication/health and live hosted queue state verified; real scheduler cadence/liveness still requires staging proof. |
-| REL-007 | REMEDIATED IN CODE | Correlation event/depth/external-effect budgets merged; Part 2 CI green. |
+| REL-007 | VERIFIED / CLOSED | DB-enforced 32-event, depth-8 and 16-external-effect budgets are merged and exercised at exact boundary values by disposable-database security tests. |
 | REL-008 | REMEDIATED IN CODE / OPERATIONS PARTIAL | Timeout and ambiguous state merged; live reconciliation proof remains. |
 | REL-009 | PARTIAL — CAPACITY/BOUNDS VERIFIED | Live DB max/current usage and six bounded application pools verified; deployed Vercel pooler host topology still requires environment proof. |
 | REL-010 | VERIFIED / CLOSED | Online-migration risk classes, stop conditions and expand/contract rules are codified; Parts 1–4 demonstrated backup→review→ordered apply→29/29 parity→RLS/security verification. |
@@ -149,3 +149,13 @@ Evidence is recorded in
 The production runbook now contains explicit future-scale online migration rules and
 Audit 4 Parts 1–4 already exercised the guarded operational path. REL-010 is
 **VERIFIED / CLOSED** as a process/operational-discipline finding.
+
+
+## Final closure continuation — REL-005 / REL-007
+
+Technical closure evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-REL-005-REL-007.md`.
+
+REL-005 and REL-007 are **VERIFIED / CLOSED**. Both findings are directly covered by
+the code/database behavior that constituted the original defects and by regression
+tests that fail if those protections are removed.
