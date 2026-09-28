@@ -49,9 +49,9 @@ The workflow proves:
 | REL-006 | PARTIAL | Automation health exists; real scheduler cadence/liveness still needs staging proof. |
 | REL-007 | REMEDIATED IN CODE | Correlation event/depth/external-effect budgets merged; Part 2 CI green. |
 | REL-008 | REMEDIATED IN CODE / OPERATIONS PARTIAL | Timeout and ambiguous state merged; live reconciliation proof remains. |
-| REL-009 | OPEN | Production pooler/connection budget not verified. |
+| REL-009 | PARTIAL — CAPACITY/BOUNDS VERIFIED | Live DB max/current usage and six bounded application pools verified; deployed Vercel pooler host topology still requires environment proof. |
 | REL-010 | PARTIAL | Schema gates exist; live online migration procedure still needs operational proof. |
-| REL-011 | OPEN | Retention execution/archive/pagination hardening remains. |
+| REL-011 | PARTIAL — SCALE HARDENING IMPROVED | Remaining unbounded dashboard/history reads were capped; owner-approved retention/archive durations are still required before cleanup can be implemented. |
 
 ## Safety
 
@@ -109,3 +109,22 @@ Evidence is recorded in
 Part 5 is **BLOCKED**, not passed. Current main is not deployed to the staging
 Vercel project, and the protected historical deployment cannot be substituted as
 readiness evidence.
+
+
+## Final closure continuation — Part 8 connection/pool verification
+
+Evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-8-CONNECTION-POOL-VERIFICATION.md`.
+
+Live database capacity and application-side pool bounds are verified. REL-009 remains
+**PARTIAL** only because the deployed Vercel connection host/mode cannot be inspected
+until the staging credential blocker is resolved.
+
+## Final closure continuation — Part 9 retention/scale hardening
+
+Evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-PART-9-RETENTION-SCALE-HARDENING.md`.
+
+Four previously unbounded list/history reads are now bounded. REL-011 remains
+**PARTIAL** because destructive retention/archive durations require explicit business
+approval and were not invented during this technical remediation.

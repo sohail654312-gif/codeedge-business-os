@@ -122,7 +122,9 @@ export async function getConversationDetail(
       .from("message_deliveries")
       .select("message_id,status")
       .eq("business_id", businessId)
-      .eq("conversation_id", conversationId),
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(500),
     conversation.lead_id
       ? client
         .from("leads")
