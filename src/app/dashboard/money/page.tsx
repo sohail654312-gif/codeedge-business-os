@@ -2,6 +2,10 @@ import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { DemoMoneySetupForm } from "@/components/money/DemoMoneySetupForm";
 import { formatMoney } from "@/modules/money/format";
+import {
+  formatFinanceExecutionTime,
+  listAmbiguousFinanceExecutions,
+} from "@/modules/money/reconciliation";
 import { requireDashboardTenant } from "@/server/auth/session";
 import { loadFinanceContext } from "@/server/finance/context";
 import {
@@ -18,12 +22,23 @@ const sections = [
 ];
 
 export default async function MoneyPage() {
-  const { context } = await requireDashboardTenant();
+  const { client, context } = await requireDashboardTenant();
   const correlationId = randomUUID();
 
   let financeContext: Awaited<ReturnType<typeof loadFinanceContext>> | null = null;
   let overview: Awaited<ReturnType<typeof getMoneyOverview>> | null = null;
   let statusMessage = "Finance connection not configured.";
+  let reconciliationQueue: Awaited<ReturnType<typeof listAmbiguousFinanceExecutions>> = [];
+  let reconciliationAvailable = true;
+
+  try {
+    reconciliationQueue = await listAmbiguousFinanceExecutions(
+      client,
+      context.business.id,
+    );
+  } catch {
+    reconciliationAvailable = false;
+  }
 
   try {
     financeContext = await loadFinanceContext({
@@ -102,6 +117,54 @@ export default async function MoneyPage() {
           </p>
         </section>
       )}
+
+      <section className="panel topGap">
+        <div className="pageHead">
+          <div>
+            <div className="eyebrow">Operational safety</div>
+            <h2>Finance reconciliation queue</h2>
+          </div>
+          <span className="pill">
+            {reconciliationAvailable ? reconciliationQueue.length : "Unavailable"}
+          </span>
+        </div>
+        {!reconciliationAvailable ? (
+          <p className="muted">
+            Reconciliation status could not be loaded. Do not retry an uncertain
+            provider write until the Finance execution record can be reviewed.
+          </p>
+        ) : reconciliationQueue.length === 0 ? (
+          <p className="muted">
+            No ambiguous Finance writes require reconciliation.
+          </p>
+        ) : (
+          <>
+            <p className="muted">
+              These writes have an uncertain provider outcome. Verify the provider
+              record manually before any follow-up action. Codeedge does not
+              automatically retry ambiguous writes.
+            </p>
+            <div className="topGap">
+              {reconciliationQueue.map((item) => (
+                <div className="panel" key={item.id}>
+                  <b>{item.operation}</b>
+                  <p className="muted">
+                    Engine: {item.engine} · Document: {item.document_type || "—"} ·
+                    Created: {formatFinanceExecutionTime(item.created_at)}
+                  </p>
+                  <p className="muted">
+                    Codeedge ref: {item.codeedge_reference || "—"} · External ref:
+                    {item.external_reference || "—"}
+                  </p>
+                  <p className="muted">
+                    Request ID: {item.request_id} · Error: {item.error_code || "Unspecified"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
       <div className="moduleTiles topGap">
         {sections.map(([title,description,href]) => (
