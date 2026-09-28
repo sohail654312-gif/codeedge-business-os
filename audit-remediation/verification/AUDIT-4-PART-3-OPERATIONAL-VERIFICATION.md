@@ -50,7 +50,7 @@ The workflow proves:
 | REL-007 | REMEDIATED IN CODE | Correlation event/depth/external-effect budgets merged; Part 2 CI green. |
 | REL-008 | REMEDIATED IN CODE / OPERATIONS PARTIAL | Timeout and ambiguous state merged; live reconciliation proof remains. |
 | REL-009 | PARTIAL — CAPACITY/BOUNDS VERIFIED | Live DB max/current usage and six bounded application pools verified; deployed Vercel pooler host topology still requires environment proof. |
-| REL-010 | PARTIAL | Schema gates exist; live online migration procedure still needs operational proof. |
+| REL-010 | VERIFIED / CLOSED | Online-migration risk classes, stop conditions and expand/contract rules are codified; Parts 1–4 demonstrated backup→review→ordered apply→29/29 parity→RLS/security verification. |
 | REL-011 | PARTIAL — SCALE HARDENING IMPROVED | Remaining unbounded dashboard/history reads were capped; owner-approved retention/archive durations are still required before cleanup can be implemented. |
 
 ## Safety
@@ -139,3 +139,13 @@ The hosted queue is currently clean (0 pending, 0 running, 0 stale), the authent
 runner/health implementation is verified, and no database cron scheduler exists.
 REL-006 remains **PARTIAL** until a deployed staging scheduler cadence/heartbeat is
 proved without external business effects.
+
+
+## Final closure continuation — REL-010 migration discipline
+
+Evidence is recorded in
+`audit-remediation/verification/AUDIT-4-FINAL-CLOSURE-REL-010-MIGRATION-DISCIPLINE.md`.
+
+The production runbook now contains explicit future-scale online migration rules and
+Audit 4 Parts 1–4 already exercised the guarded operational path. REL-010 is
+**VERIFIED / CLOSED** as a process/operational-discipline finding.
