@@ -206,3 +206,31 @@ Part 5 remains **BLOCKED** until one of these controlled write paths exists:
    main revision through Vercel.
 
 No token value should be committed to the repository or pasted into audit evidence.
+
+
+## Permanent controlled deployment path added
+
+The repository now includes a manual, protected staging deployment workflow:
+
+`.github/workflows/audit4-staging-deploy.yml`
+
+Properties:
+
+- `workflow_dispatch` only;
+- refuses to run unless dispatched from `main`;
+- targets GitHub Environment `audit4-staging`;
+- targets only Vercel project `codeedge-business-os-test`;
+- requires `VERCEL_TOKEN` from the protected environment;
+- checks out the exact dispatched `github.sha`;
+- verifies the repository schema contract before deployment;
+- pulls the existing test-project configuration;
+- builds and deploys an immutable release;
+- records the deployment URL and source SHA;
+- inspects the immutable deployment;
+- calls protected `/api/health/ready` through authenticated Vercel CLI access;
+- requires readiness body `status: "ready"`;
+- uploads only non-secret deployment evidence.
+
+The workflow does not run automatically and cannot deploy while `VERCEL_TOKEN` is
+absent. This converts the remaining Part 5 deployment problem from an undefined
+operational path into one explicit credential gate.
