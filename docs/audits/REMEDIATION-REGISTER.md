@@ -30,6 +30,51 @@ Audit 2 remediation closure: **9/9 VERIFIED — CLOSED**.
 
 Safety: no Production Supabase change, Production deployment, live provider traffic or Production secret addition was used for closure. PR #46 was left untouched.
 
-## Audits 3–4
+## Audit 3
 
-No Audit 3 or Audit 4 remediation was started in this Audit 2 closure session. Historical findings remain unchanged until their dedicated remediation work.
+Audit 3 is complete as an audit but has not yet received a dedicated formal remediation closure record.
+
+## Audit 4
+
+Audit 4 remediation is **ACTIVE / IN PROGRESS**.
+
+Current verified main before this status sync:
+`5caf6c4b0fb39b49a7a9bdacea6eddcb656d7908`
+
+Post-merge CI #805: **GREEN**.
+
+### Closed findings
+
+- REL-001 — **VERIFIED / CLOSED** — hosted/repository migration parity 29/29.
+- REL-005 — **VERIFIED / CLOSED** — trusted Vapi ingestion failures return retryable 503; malformed input remains 400.
+- REL-007 — **VERIFIED / CLOSED** — database-enforced event/depth/external-effect circuit breakers pass exact boundary tests.
+- REL-010 — **VERIFIED / CLOSED** — migration risk classes, stop conditions, expand/contract discipline and guarded hosted-apply procedure are verified.
+
+### Partial / remaining findings
+
+- REL-002 — backup + isolated restore technically verified; explicit RPO/RTO and recurring backup policy remain.
+- REL-003 — readiness endpoint exists; current staging readiness and central alert-delivery proof remain.
+- REL-004 — protected main + runbook verified; current staging deployment and rollback rehearsal remain.
+- REL-006 — Automation runtime health verified; deployed scheduler cadence/heartbeat remains.
+- REL-008 — timeout/ambiguity/retry suppression/reconciliation visibility implemented; controlled provider/sandbox reconciliation proof remains.
+- REL-009 — DB capacity and bounded application pools verified; deployed Vercel pool topology remains.
+- REL-011 — large-read hardening completed; retention/archive durations remain an explicit business-policy gate.
+
+### Completed operational evidence
+
+- backup evidence captured;
+- isolated restore drill completed;
+- migration delta reviewed before mutation;
+- hosted migrations 10–29 applied in order;
+- 29/29 hosted parity achieved;
+- hosted project remained healthy;
+- 40/40 public tables have RLS enabled and forced;
+- controlled staging deployment workflow merged;
+- Automation queue/runtime health inspected;
+- connection capacity and pool bounds recorded;
+- Finance ambiguous-result operator queue merged;
+- scale hardening applied to remaining unbounded reads.
+
+Audit 4 remains open until the explicitly listed operational/policy gates are closed.
+Do not substitute historical Vercel deployments, guessed RPO/RTO, or invented retention
+durations for real closure evidence.
