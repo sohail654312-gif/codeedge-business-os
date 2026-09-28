@@ -1,0 +1,115 @@
+name: Audit 4 staging deploy and readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit4-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: audit4-staging
+    env:
+      VERCEL_ORG_ID: team_a8T8lqP82nDRhkKg9qn0oiu7
+      VERCEL_PROJECT_ID: prj_B55tV0GJmSzpiiTWYRaiSJugep3A
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Require protected Vercel credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN is not configured in audit4-staging." >&2
+            exit 78
+          fi
+
+      - name: Checkout dispatched main revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies and verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          npm run schema:check
+
+      - name: Pull existing test-project production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest pull             --yes             --environment=production             --scope=codeedge             --token="$VERCEL_TOKEN"
+
+      - name: Build immutable staging release
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest build             --prod             --scope=codeedge             --token="$VERCEL_TOKEN"
+
+      - name: Deploy to dedicated Business OS test project
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit4-staging-evidence
+          OUTPUT="$(npx --yes vercel@latest deploy             --prebuilt             --prod             --yes             --scope=codeedge             --token="$VERCEL_TOKEN" 2>&1)"
+          printf '%s\n' "$OUTPUT" | tee audit4-staging-evidence/deploy-output.txt
+          DEPLOY_URL="$(printf '%s\n' "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n 1)"
+          test -n "$DEPLOY_URL"
+          echo "deployment_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$DEPLOY_URL" > audit4-staging-evidence/deployment-url.txt
+          printf '%s\n' "$GITHUB_SHA" > audit4-staging-evidence/source-sha.txt
+
+      - name: Inspect immutable deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest inspect             "${{ steps.deploy.outputs.deployment_url }}"             --scope=codeedge             --token="$VERCEL_TOKEN"             | tee audit4-staging-evidence/inspect.txt
+
+      - name: Verify readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          READY_RAW="$(npx --yes vercel@latest curl             /api/health/ready             --deployment "${{ steps.deploy.outputs.deployment_url }}"             --scope=codeedge             --token="$VERCEL_TOKEN" 2>&1)"
+          printf '%s\n' "$READY_RAW" | tee audit4-staging-evidence/readiness.txt
+          export READY_RAW
+          node <<'NODE'
+          const raw = process.env.READY_RAW || "";
+          const start = raw.indexOf("{");
+          const end = raw.lastIndexOf("}");
+          if (start < 0 || end < start) {
+            console.error("No JSON readiness body returned.");
+            process.exit(1);
+          }
+          const body = JSON.parse(raw.slice(start, end + 1));
+          if (body.status !== "ready") {
+            console.error("Readiness is not ready:", JSON.stringify(body));
+            process.exit(1);
+          }
+          console.log("Readiness verified:", JSON.stringify(body));
+          NODE
+
+      - name: Upload non-secret deployment evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: audit4-staging-deployment-evidence
+          path: audit4-staging-evidence/
+          if-no-files-found: ignore
+          retention-days: 14
