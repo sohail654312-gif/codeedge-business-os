@@ -64,7 +64,9 @@ export async function listAppointments(
   if (filters.customerId) query = query.eq("customer_id", filters.customerId);
   if (filters.leadId) query = query.eq("lead_id", filters.leadId);
 
-  const { data, error } = await query.order("starts_at", { ascending: true });
+  const { data, error } = await query
+    .order("starts_at", { ascending: true })
+    .limit(500);
 
   if (error) throw new Error("Unable to load appointments.");
   const rows = data ?? [];
