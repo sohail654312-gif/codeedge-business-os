@@ -105,20 +105,22 @@ describe("Audit 4 Automation reliability circuit breakers", () => {
     const runId = "99000000-0000-4000-8000-000000000001";
     const correlationId = "95000000-0000-4000-8000-000000000003";
 
-    await db.query(
-      `insert into public.automation_workflows(
-        id,business_id,name,trigger_type,conditions,actions,created_by
-      ) values ($1,$2,'Reliability budget test','lead.status_changed',
-        '[]'::jsonb,'[]'::jsonb,$3)`,
-      [workflowId, f.businessA, f.ownerA],
-    );
-
+    // Insert the event before the workflow so the event trigger cannot
+    // auto-schedule a matching run; this test creates the running row explicitly.
     await db.query(
       `insert into public.automation_domain_events(
         id,business_id,event_type,subject_type,subject_id,
         correlation_id,payload
       ) values ($1,$2,'lead.status_changed','lead',$3,$4,'{}'::jsonb)`,
       [eventId, f.businessA, f.leadA, correlationId],
+    );
+
+    await db.query(
+      `insert into public.automation_workflows(
+        id,business_id,name,trigger_type,conditions,actions,created_by
+      ) values ($1,$2,'Reliability budget test','lead.status_changed',
+        '[]'::jsonb,'[]'::jsonb,$3)`,
+      [workflowId, f.businessA, f.ownerA],
     );
 
     await db.query(
