@@ -97,3 +97,55 @@ restricted database URL. If the serverless deployment uses a supported pooled to
 REL-009 can be closed with connection-budget evidence.
 
 No database setting or application pool size was changed during this verification.
+
+
+## 29 September 2026 — safe deployed-topology proof path prepared
+
+Part 8 preparation continued without waiting for Part 5 and without reading or
+recording any database credential value.
+
+A server-only topology classifier now maps configured restricted database URLs to
+a redacted host class only:
+
+- `supabase_direct`
+- `supavisor_transaction_pooler`
+- `supavisor_session_pooler`
+- `managed_pooler`
+- `other_postgresql`
+- `not_configured`
+
+An authenticated internal endpoint was added:
+
+`GET /api/internal/operations/database-topology`
+
+It requires the existing protected `AUTOMATION_RUNNER_SECRET` and returns only:
+
+- whether each restricted capability URL is configured;
+- the redacted host class;
+- the configured pool maximum.
+
+It does **not** return a hostname, username, password, query string, project reference
+or complete connection URL.
+
+The endpoint resolves the same fallback chain used by the application:
+
+- Voice → `VOICE_DATABASE_URL` or Communication
+- Automation → `AUTOMATION_DATABASE_URL` or Communication
+- Finance → `FINANCE_DATABASE_URL` or Communication
+- AI → `AI_DATABASE_URL`, then Finance, then Communication
+
+Unit coverage verifies direct Supabase, Supavisor transaction pooler, Supavisor
+session pooler and missing-value classification.
+
+### Remaining Part 8 closure gate
+
+After the Part 5 staging release is accepted by Vercel, call this endpoint against the
+exact immutable staging deployment and record only the returned host classes.
+
+REL-009 can close if the deployed topology and connection budget are acceptable.
+If a restricted capability resolves to `supabase_direct` in the serverless staging
+environment, that is a real topology finding and must be remediated rather than
+relabelled.
+
+No Part 5 branch, database data, provider traffic or MVP resource was changed by this
+preparation.
