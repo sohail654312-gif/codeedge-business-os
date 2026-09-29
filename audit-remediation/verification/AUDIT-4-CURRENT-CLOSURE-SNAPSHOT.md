@@ -1,6 +1,6 @@
 # Audit 4 — Current Closure Snapshot
 
-Status date: 28 September 2026
+Status date: 29 September 2026
 
 Verified main before this status-sync branch:
 
@@ -72,3 +72,23 @@ No token value should be committed or recorded in audit documentation.
 - No historical Vercel deployment is being represented as current-main proof.
 - No guessed RPO/RTO is being represented as approved.
 - No destructive retention duration was invented.
+
+
+## 29 September 2026 continuation — Vercel Git integration connected
+
+The existing Vercel staging project `codeedge-business-os-test` is now connected to
+`sohail654312-gif/codeedge-business-os` through the Vercel GitHub application.
+The GitHub installation is scoped to the Business OS repository.
+
+This removes the previous requirement that a manually supplied `VERCEL_TOKEN` be the
+only available deployment path. The controlled continuation is now:
+
+1. merge this audit-only status update through the protected-main pull-request path;
+2. allow the connected Vercel project to deploy the resulting exact `main` revision;
+3. record the immutable Vercel deployment ID/URL and Git revision;
+4. verify deployment state `READY`;
+5. verify `/api/health/ready` on that deployment;
+6. inspect current-release runtime errors/logs;
+7. preserve the previous known-good deployment for rollback rehearsal.
+
+Until steps 2–6 are verified, REL-003/REL-004 remain PARTIAL and Part 5 remains open.
