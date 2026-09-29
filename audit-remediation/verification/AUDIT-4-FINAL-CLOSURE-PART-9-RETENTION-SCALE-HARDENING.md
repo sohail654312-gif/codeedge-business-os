@@ -81,3 +81,20 @@ least:
 
 Once approved, cleanup/archive execution can be added with dry-run reporting,
 tenant-safe batches and audit logging before deletion.
+
+
+## 29 September 2026 — retention decision gate formalized
+
+The remaining REL-011 policy dependency is now represented by:
+
+`docs/operations/audit4-retention-policy-decision.md`
+
+This record lists the seven required retention classes, preserves the rule that
+engineering must not invent durations, and defines the mandatory safe rollout sequence
+for any future cleanup/archive implementation.
+
+This materially reduces the remaining Part 9 ambiguity: the technical query-scale
+hardening is already implemented, while the only policy blocker is explicit owner
+approval of retention/archive durations and hold requirements.
+
+No destructive cleanup code or scheduler was activated by this preparation.
