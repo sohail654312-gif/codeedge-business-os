@@ -173,3 +173,47 @@ No Automation run was claimed.
 No provider or customer action was triggered.
 No Part 5 branch or Vercel deployment was modified.
 No MVP or website repository was touched.
+
+
+## 29 September 2026 — CI and inherited Vercel blocker evidence
+
+The Part 6 preparation branch passed the full repository CI suite:
+
+- pull request: #69
+- branch: `audit4-part6-liveness-prep`
+- candidate SHA: `16f16245455c9f7b7218b9e8ff237115e02b8daf`
+- CI run: `36548378082`
+- result: **SUCCESS**
+
+Vercel also attempted preview deployments for this branch. The latest inspected
+deployment was:
+
+- deployment ID: `dpl_BNxSHHHT9UmC5nXtjbsq2Bsr6VdR`
+- source SHA: `16f16245455c9f7b7218b9e8ff237115e02b8daf`
+- state: `ERROR`
+- Vercel error code: `VULNERABLE_NEXTJS_VERSION`
+- error step: `direct:build`
+
+An earlier deployment created from the Part 6 probe-code commit
+`c5edf7bde9da9fe8cddf43a0ab98afea811b9d66` failed with the same Vercel
+security code.
+
+### External-audit interpretation
+
+These Vercel preview failures are **not evidence that the Part 6 Automation changes
+failed CI, broke the runner, or introduced an application regression**.
+
+They occur before the application reaches runtime and are the same inherited
+framework-security gate already recorded for Part 5 while the repository remains
+pinned to Next.js 15.5.26.
+
+The correct interpretation is:
+
+- Part 6 repository implementation/preflight: **CI verified**
+- Part 6 deployed runtime proof: **not yet obtainable**
+- reason deployed proof is unavailable: **inherited Part 5 / Next.js Vercel security gate**
+- database/provider impact from the Part 6 preparation: **none**
+
+This distinction must be preserved in any external audit report so that repeated
+Vercel `VULNERABLE_NEXTJS_VERSION` preview failures are not counted as separate
+Part 6 defects.
