@@ -47,23 +47,23 @@ Post-merge CI #805: **GREEN**
 
 ## Current operational blocker
 
-The repository now contains:
+The existing Vercel staging project is now Git-linked to
+`sohail654312-gif/codeedge-business-os`. A fresh deployment was created from
+`audit4-part5-git-deploy-trigger` at
+`5c7f7238cf7ac387079bea487539c01ef7c93ab7`, proving that the repository-to-Vercel
+deployment path is working.
 
-`.github/workflows/audit4-staging-deploy.yml`
+That deployment (`dpl_A6iQGUsurSgehKWjLC2DNS2hekZL`) failed at Vercel's build
+security gate with `VULNERABLE_NEXTJS_VERSION` while the candidate is pinned to
+Next.js `15.5.26`.
 
-This workflow is manual, main-only, protected by the `audit4-staging` GitHub
-Environment, and targets only the existing `codeedge-business-os-test` Vercel project.
+Therefore the active Part 5 blocker is the framework security gate, not credentials
+or Git integration. Part 5 remains open until a stable security-fixed Next.js release
+accepted by Vercel is installed, CI is green, the exact candidate deployment reaches
+`READY`, and `/api/health/ready` is verified.
 
-Its deployment preflight requires:
-
-`VERCEL_TOKEN`
-
-The connected GitHub integration cannot create/read sensitive GitHub environment
-secrets, and the connected Vercel integration does not expose token issuance or a
-working deployment-write endpoint. Therefore the workflow remains intentionally
-inert until a scoped token is stored in the protected environment.
-
-No token value should be committed or recorded in audit documentation.
+The previous known-good deployment
+`dpl_5ox53kxHdv4kzissb4JvvubtPGJT` remains preserved for rollback evidence.
 
 ## Safety
 
