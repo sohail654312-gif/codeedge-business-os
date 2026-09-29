@@ -103,3 +103,73 @@ No provider action was triggered.
 No database row was mutated.
 No scheduler was installed.
 No production or MVP resource was changed.
+
+
+## 29 September 2026 — Part 6 safe preparation started
+
+Part 6 preparation has started independently of the Part 5 framework-security
+blocker. This preparation does not deploy or alter the current staging release.
+
+Fresh read-only hosted verification on the Business OS Supabase project showed:
+
+- pending Automation runs: **0**
+- running Automation runs: **0**
+- stale running Automation runs: **0**
+- oldest pending age: **0 seconds**
+- last started: **null**
+- last completed: **null**
+- total rows in `automation_runs`: **0**
+- total Automation workflows: **0**
+- enabled Automation workflows: **0**
+- `pg_cron` installed: **false**
+- `cron` schema present: **false**
+
+The empty queue/workflow state means a liveness proof must not manufacture a
+Production business event merely to obtain timestamps.
+
+### Safe liveness preflight added
+
+A protected probe mode has been added to:
+
+`POST /api/internal/automation/run?probe=1`
+
+The probe:
+
+- requires the existing `AUTOMATION_RUNNER_SECRET` authentication;
+- uses the existing Automation capability/database boundary;
+- evaluates current Automation runtime health;
+- does **not** claim a pending run;
+- does **not** execute actions;
+- does **not** create provider traffic.
+
+A non-secret verification script and protected manual workflow were also added:
+
+- `scripts/audit4-automation-liveness-probe.mjs`
+- `.github/workflows/audit4-part6-automation-liveness.yml`
+
+The workflow is intentionally `workflow_dispatch` only at this stage. A recurring
+scheduler is **not** activated while Part 5 has not produced a current, verified
+staging deployment. This prevents a scheduler from repeatedly targeting a stale or
+security-blocked release.
+
+### Remaining Part 6 closure gate
+
+After Part 5 is verified:
+
+1. run the protected liveness preflight against the exact current staging release;
+2. verify repeated authenticated probe delivery at an explicit cadence;
+3. perform a controlled Demo/Sandbox runner exercise if a safe test run is available;
+4. confirm queue health before/after and capture non-secret run/heartbeat evidence;
+5. add/verify missed-cadence or backlog alert proof;
+6. only then mark REL-006 closed.
+
+Part 6 therefore remains **PARTIAL**, but the safe verification path is now prepared.
+
+### Safety
+
+No database row was inserted, updated or deleted.
+No migration was applied.
+No Automation run was claimed.
+No provider or customer action was triggered.
+No Part 5 branch or Vercel deployment was modified.
+No MVP or website repository was touched.
