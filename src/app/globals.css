@@ -97,3 +97,57 @@
 .aiSessionLinks{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:1000px){.aiAccountantGrid{grid-template-columns:1fr}.aiProposalList{grid-template-columns:1fr 1fr}.aiProposalList>.panel:first-child{grid-column:1/-1}}
 @media(max-width:680px){.aiStatusRow,.aiEvidenceRow,.aiProposalHead{flex-direction:column}.aiStatusPills{justify-content:flex-start}.aiProposalList{grid-template-columns:1fr}.aiProposalList>.panel:first-child{grid-column:auto}.aiMessage{max-width:100%}.aiEvidenceRow span{text-align:left}.aiProposalDetails>div{grid-template-columns:1fr;gap:4px}}
+
+
+/* Codeedge website visual alignment — isolated design preview.
+   Keeps Business OS behavior intact while matching codeedge.online branding. */
+:root{
+  --codeedge-bg:#050914;
+  --codeedge-panel:#0b1730;
+  --codeedge-panel-2:#07111f;
+  --codeedge-text:#f7fbff;
+  --codeedge-muted:#a6b8cf;
+  --codeedge-line:rgba(176,211,255,.14);
+  --codeedge-blue:#2f7fff;
+  --codeedge-cyan:#68e3ff;
+}
+html,body{background:var(--codeedge-bg);color:var(--codeedge-text)}
+body{background:linear-gradient(180deg,#050914,#07111f 55%,#050914);line-height:1.6;-webkit-font-smoothing:antialiased}
+.brand{display:flex;align-items:center;text-decoration:none}
+.brandLogo{display:block;width:150px;height:auto;max-width:100%}
+.mark{display:none}
+.topbar{height:74px}
+.loginWrap{background:var(--codeedge-bg)}
+.loginCard{border-color:rgba(132,198,255,.22);background:var(--codeedge-panel);border-radius:28px;box-shadow:0 35px 90px rgba(0,0,0,.38)}
+.loginCard h1{letter-spacing:-.04em}
+.field input,.field textarea,.field select,
+.customerSearch,.leadSearch,.conversationStatusControls select{background:#071321;border-color:var(--codeedge-line);border-radius:12px}
+.btn{border-color:var(--codeedge-line);border-radius:14px;background:var(--codeedge-panel);min-height:46px}
+.btn.primary{border-color:transparent;background:#155fd6;box-shadow:0 14px 38px rgba(47,127,255,.18)}
+.btn.primary:hover{background:#1d6deb}
+.eyebrow{color:#70dfff}
+.muted,.statLabel{color:var(--codeedge-muted)}
+.sidebar{background:var(--codeedge-panel-2);border-right-color:rgba(255,255,255,.06)}
+.navItem{border:1px solid transparent;border-radius:12px}
+.navItem:hover{background:var(--codeedge-panel);border-color:var(--codeedge-line)}
+.workspaceIdentity{border-color:var(--codeedge-line)}
+.stat,.panel,.metric,.card,.moduleTile,.kanbanCol,.lead,
+.customerMiniRow,.conversationMessage,.appointmentCard,.aiProposalCard{
+  background:var(--codeedge-panel);
+  border-color:var(--codeedge-line);
+}
+.stat,.panel,.metric,.card{border-radius:20px}
+.moduleTile,.kanbanCol,.lead,.customerMiniRow,.conversationMessage,.appointmentCard,.aiProposalCard{border-radius:14px}
+.insight{background:#0b1730;border-color:rgba(80,180,255,.32)}
+.pill{background:rgba(80,190,255,.1);color:#72e0ff;border:1px solid rgba(80,190,255,.18)}
+.pageHead h1{letter-spacing:-.045em}
+.moduleIcon,.emptyIcon{background:#102846;color:#72e0ff}
+.alert{background:#07111f;border-color:var(--codeedge-line)}
+.customerTableWrap,.leadTableWrap{border-color:var(--codeedge-line)}
+.customerTable th,.leadTable th{background:#07111f;color:#8fa3bc}
+.customerTable th,.customerTable td,.leadTable th,.leadTable td{border-bottom-color:var(--codeedge-line)}
+.publicChatPreview{background:var(--codeedge-bg)}
+.aiSuggestion,.aiSessionLink{background:rgba(80,190,255,.08);border-color:rgba(80,190,255,.2);color:#bfefff}
+.aiSuggestion:hover,.aiSessionLink:hover,.aiSessionLinkActive{border-color:#5de0ff;background:#0f2944}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--codeedge-cyan);outline-offset:3px}
+@media(max-width:600px){.brandLogo{width:132px}}
