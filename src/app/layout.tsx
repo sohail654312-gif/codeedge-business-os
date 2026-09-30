@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CodeEdge Business OS",
+  title: "Codeedge Business OS",
   description: "One Business. One Account. One Control Centre.",
+  icons: { icon: "/assets/favicon.svg" },
+  themeColor: "#050914",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
