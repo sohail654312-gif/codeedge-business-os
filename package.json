@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run verify:next-security && next build",
     "start": "next start",
     "erpnext:demo:start": "bash scripts/erpnext-demo.sh",
     "erpnext:demo:stop": "bash scripts/erpnext-demo-stop.sh",
@@ -17,7 +17,8 @@
     "schema:generate": "node scripts/generate-schema-contract.mjs --write",
     "schema:check": "node scripts/generate-schema-contract.mjs --check",
     "schema:prove-drift": "node scripts/generate-schema-contract.mjs --prove-drift",
-    "schema:hosted-parity": "node scripts/check-hosted-migration-parity.mjs"
+    "schema:hosted-parity": "node scripts/check-hosted-migration-parity.mjs",
+    "verify:next-security": "node scripts/verify-next-security.mjs"
   },
   "dependencies": {
     "next": "15.5.27",
