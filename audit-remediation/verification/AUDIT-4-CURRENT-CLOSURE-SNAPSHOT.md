@@ -1,12 +1,10 @@
 # Audit 4 — Current Closure Snapshot
 
-Status date: 29 September 2026
+Status date: 1 October 2026
 
-Verified main before this status-sync branch:
+Verified main before this Part 5 branch:
 
-`5caf6c4b0fb39b49a7a9bdacea6eddcb656d7908`
-
-Post-merge CI #805: **GREEN**
+`d518ac8431b33b0c88389412e6950818f5bd3090`
 
 ## Finding summary
 
@@ -30,37 +28,41 @@ Post-merge CI #805: **GREEN**
 2. Isolated restore — complete.
 3. Migration parity review — complete.
 4. Hosted migration application — complete; 29/29 parity.
-5. Current staging deployment/readiness — implementation path exists, but execution
-   remains blocked because the protected staging environment does not contain an
-   authenticated Vercel deployment credential.
-6. Automation runtime/liveness inspection — repository/hosted runtime health verified;
-   deployed cadence proof still depends on Part 5.
+5. Current staging deployment/readiness — Git integration proven; security-fixed candidate verification in progress.
+6. Automation runtime/liveness inspection — repository/hosted runtime health verified; deployed cadence proof still depends on Part 5.
 7. Rollback proof — pending current staging deployment.
-8. Connection/pool verification — capacity and bounded code pools verified; deployed
-   host-mode proof depends on Part 5.
+8. Connection/pool verification — capacity and bounded code pools verified; deployed host-mode proof depends on Part 5.
 9. Retention/scale hardening — read hardening completed; retention policy remains.
 10. Migration discipline — REL-010 closed.
 11. Vapi retry semantics — REL-005 closed.
 12. Automation circuit breakers — REL-007 closed.
-13. Finance ambiguous reconciliation visibility — merged; provider-side reconciliation
-   exercise remains intentionally unperformed without a sandbox/current staging path.
+13. Finance ambiguous reconciliation visibility — merged; provider-side reconciliation exercise remains intentionally unperformed without a sandbox/current staging path.
 
-## Current operational blocker
+## Current operational state
 
-The existing Vercel staging project is now Git-linked to
-`sohail654312-gif/codeedge-business-os`. A fresh deployment was created from
-`audit4-part5-git-deploy-trigger` at
-`5c7f7238cf7ac387079bea487539c01ef7c93ab7`, proving that the repository-to-Vercel
-deployment path is working.
+The existing Vercel staging project `codeedge-business-os-test` is Git-linked to
+`sohail654312-gif/codeedge-business-os`.
 
-That deployment (`dpl_A6iQGUsurSgehKWjLC2DNS2hekZL`) failed at Vercel's build
-security gate with `VULNERABLE_NEXTJS_VERSION` while the candidate is pinned to
-Next.js `15.5.26`.
+The Part 5 branch is pinned consistently to Next.js and `eslint-config-next`
+`15.5.27` at candidate commit
+`9c2cdaeeb30678ba25ac2e98b9802dfc1b621d45`.
 
-Therefore the active Part 5 blocker is the framework security gate, not credentials
-or Git integration. Part 5 remains open until a stable security-fixed Next.js release
-accepted by Vercel is installed, CI is green, the exact candidate deployment reaches
-`READY`, and `/api/health/ready` is verified.
+On 30 September the first install attempt failed because the npm tarball had not yet
+propagated. On 1 October the package is published in npm and the exact candidate's
+GitHub checks have recovered:
+
+- CI run `36740495702`: **GREEN**
+- ERPNext disposable Finance Engine smoke run `36740495845`: **GREEN**
+
+The prior Vercel deployment for that SHA,
+`dpl_3PXWigBPyq8FHVEYzktiDCDZDXRT`, remains an historical **ERROR** deployment
+created before package publication/acceptance completed. It is not treated as current
+runtime proof.
+
+This documentation update intentionally advances the Git-linked branch to trigger a
+fresh Vercel candidate after npm publication. Part 5 remains open until the new exact
+candidate reaches `READY`, `/api/health/ready` returns ready, and current-release
+runtime/build errors are reviewed.
 
 The previous known-good deployment
 `dpl_5ox53kxHdv4kzissb4JvvubtPGJT` remains preserved for rollback evidence.
@@ -69,26 +71,6 @@ The previous known-good deployment
 
 - No live provider traffic was generated.
 - No original Codeedge MVP resource was modified.
-- No historical Vercel deployment is being represented as current-main proof.
-- No guessed RPO/RTO is being represented as approved.
+- No historical Vercel deployment is represented as current-main proof.
+- No guessed RPO/RTO is represented as approved.
 - No destructive retention duration was invented.
-
-
-## 29 September 2026 continuation — Vercel Git integration connected
-
-The existing Vercel staging project `codeedge-business-os-test` is now connected to
-`sohail654312-gif/codeedge-business-os` through the Vercel GitHub application.
-The GitHub installation is scoped to the Business OS repository.
-
-This removes the previous requirement that a manually supplied `VERCEL_TOKEN` be the
-only available deployment path. The controlled continuation is now:
-
-1. merge this audit-only status update through the protected-main pull-request path;
-2. allow the connected Vercel project to deploy the resulting exact `main` revision;
-3. record the immutable Vercel deployment ID/URL and Git revision;
-4. verify deployment state `READY`;
-5. verify `/api/health/ready` on that deployment;
-6. inspect current-release runtime errors/logs;
-7. preserve the previous known-good deployment for rollback rehearsal.
-
-Until steps 2–6 are verified, REL-003/REL-004 remain PARTIAL and Part 5 remains open.
