@@ -46,8 +46,12 @@ describe("Lead to Customer conversion isolation", () => {
       created_by: f.ownerA,
     }]);
 
-    expect((await db.query("select id from public.leads where id=$1", [f.leadA])).rows)
-      .toEqual([{ id: f.leadA }]);
+    expect((await db.query("select id, status from public.leads where id=$1", [f.leadA])).rows)
+      .toEqual([{ id: f.leadA, status: "won" }]);
+    expect((await db.query<{ event_type: string }>(
+      "select event_type from public.crm_activities where lead_id=$1 and event_type='lead_status_changed'",
+      [f.leadA],
+    )).rows).toEqual([{ event_type: "lead_status_changed" }]);
   });
 
   it("is idempotent for repeated conversion of the same Lead", async () => {
@@ -56,6 +60,8 @@ describe("Lead to Customer conversion isolation", () => {
       "select * from public.convert_lead_to_customer($1)",
       [f.leadA],
     );
+    // Simulate a legacy converted Lead that was left in a non-Won status.
+    await db.query("update public.leads set status='contacted' where id=$1", [f.leadA]);
     const second = await db.query<{ customer_id: string; created: boolean }>(
       "select * from public.convert_lead_to_customer($1)",
       [f.leadA],
@@ -67,6 +73,8 @@ describe("Lead to Customer conversion isolation", () => {
       created: false,
     });
     expect((await db.query("select id from public.customers")).rows).toHaveLength(1);
+    expect((await db.query("select status from public.leads where id=$1", [f.leadA])).rows)
+      .toEqual([{ status: "won" }]);
   });
 
   it("rejects cross-tenant conversion", async () => {
