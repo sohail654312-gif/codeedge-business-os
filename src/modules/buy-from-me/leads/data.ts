@@ -103,12 +103,12 @@ export function formatLeadValue(pence: number | null) {
   }).format(pence / 100);
 }
 
-export function formatLeadDate(value: string | null) {
+export function formatLeadDate(value: string | null, timeZone: string) {
   if (!value) return "Not contacted";
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "UTC",
+    timeZone,
   }).format(new Date(value));
 }
 
@@ -130,11 +130,11 @@ export async function listLeadNotes(
   return data ?? [];
 }
 
-export function formatNoteDate(value: string) {
+export function formatNoteDate(value: string, timeZone: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "UTC",
+    timeZone,
   }).format(new Date(value));
 }
 
