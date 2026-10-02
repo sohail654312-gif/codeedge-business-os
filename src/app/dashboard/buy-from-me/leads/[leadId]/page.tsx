@@ -67,7 +67,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
             <div><dt>Service</dt><dd>{lead.service_name ?? "—"}</dd></div>
             <div><dt>Status</dt><dd>{leadStatusLabels[lead.status]}</dd></div>
             <div><dt>Estimated value</dt><dd>{formatLeadValue(lead.estimated_value_pence)}</dd></div>
-            <div><dt>Last contact</dt><dd>{formatLeadDate(lead.last_contact_at)}</dd></div>
+            <div><dt>Last contact</dt><dd>{formatLeadDate(lead.last_contact_at, context.business.timezone)}</dd></div>
           </dl>
         </section>
       </div>
@@ -193,7 +193,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
               <div className="activityBody">
                 <div className="activityHead">
                   <b>{activity.description}</b>
-                  <span className="muted">{formatNoteDate(activity.created_at)}</span>
+                  <span className="muted">{formatNoteDate(activity.created_at, context.business.timezone)}</span>
                 </div>
                 <div className="activityMeta">
                   {activity.actor_user_id
@@ -225,7 +225,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
               <article className="noteCard" key={note.id}>
                 <div className="noteMeta">
                   <span>{note.created_by === context.userId ? "You" : "Team member"}</span>
-                  <span>{formatNoteDate(note.created_at)}</span>
+                  <span>{formatNoteDate(note.created_at, context.business.timezone)}</span>
                 </div>
                 <p>{note.body}</p>
                 {context.role === "owner" ? (
@@ -256,7 +256,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
                     <span className={"quoteStatus quoteStatus" + quote.status.replace(/\s+/g, "")}>
                       {quoteRequestStatusLabels[quote.status]}
                     </span>
-                    <div className="muted quoteDate">{formatNoteDate(quote.created_at)}</div>
+                    <div className="muted quoteDate">{formatNoteDate(quote.created_at, context.business.timezone)}</div>
                   </div>
                   <QuoteRequestStatusForm
                     leadId={lead.id}
