@@ -234,3 +234,65 @@ Properties:
 The workflow does not run automatically and cannot deploy while `VERCEL_TOKEN` is
 absent. This converts the remaining Part 5 deployment problem from an undefined
 operational path into one explicit credential gate.
+
+
+## 29 September 2026 — Git-integrated staging attempt
+
+The Vercel GitHub application is now installed and scoped to
+`sohail654312-gif/codeedge-business-os`. The existing staging project
+`codeedge-business-os-test` is connected to that repository.
+
+A fresh preview deployment was automatically created from branch
+`audit4-part5-git-deploy-trigger` at commit:
+
+`5c7f7238cf7ac387079bea487539c01ef7c93ab7`
+
+Deployment evidence:
+
+- deployment ID: `dpl_A6iQGUsurSgehKWjLC2DNS2hekZL`
+- deployment URL: `codeedge-business-os-test-ia9yjwxdj-codeedge.vercel.app`
+- source: Git
+- source repository: `sohail654312-gif/codeedge-business-os`
+- source branch: `audit4-part5-git-deploy-trigger`
+- state: `ERROR`
+- Vercel error code: `VULNERABLE_NEXTJS_VERSION`
+- Vercel error step: `direct:build`
+- Vercel message: `Vulnerable version of Next.js detected, please update immediately.`
+
+The branch CI run `36537659532` completed successfully. Therefore the current
+remaining Part 5 blocker is no longer Git/Vercel authentication or repository
+linkage. The blocker is Vercel's framework security gate.
+
+Current branch dependency state:
+
+- `next`: `15.5.26`
+- `eslint-config-next`: `15.5.26`
+- `react`: `19.1.1`
+- `react-dom`: `19.1.1`
+
+The deployment did not reach application runtime, so `/api/health/ready` cannot
+yet be accepted and current-release runtime-log inspection is not possible.
+
+The previous known-good staging deployment remains preserved:
+
+- deployment ID: `dpl_5ox53kxHdv4kzissb4JvvubtPGJT`
+- state: `READY`
+- rollback candidate: yes
+
+### Updated Part 5 continuation
+
+1. upgrade Next.js and `eslint-config-next` to the next stable security-fixed
+   release accepted by Vercel;
+2. require green repository CI;
+3. require a successful Vercel staging/preview deployment from the exact candidate
+   commit before merge;
+4. merge through the protected-main pull-request path only after those checks pass;
+5. verify the exact resulting `main` revision is deployed to
+   `codeedge-business-os-test`;
+6. require Vercel state `READY`;
+7. require `GET /api/health/ready` HTTP 200 with `status: "ready"`;
+8. inspect current-release runtime errors/logs;
+9. retain the previous known-good deployment for Part 7 rollback proof.
+
+No Vercel security check will be bypassed and no canary/pre-release framework build
+will be accepted as production-readiness closure evidence.
