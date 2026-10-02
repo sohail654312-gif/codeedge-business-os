@@ -136,7 +136,7 @@ export default async function LeadsPage({
                       </span>
                     </td>
                     <td><b>{formatLeadValue(lead.estimated_value_pence)}</b></td>
-                    <td className="muted">{formatLeadDate(lead.last_contact_at)}</td>
+                    <td className="muted">{formatLeadDate(lead.last_contact_at, context.business.timezone)}</td>
                   </tr>
                 );
               }) : (
