@@ -1,0 +1,4 @@
+# Schema fingerprints must use the same bytes on Windows and CI.
+supabase/migrations/*.sql text eol=lf
+src/types/database*.ts text eol=lf
+scripts/generate-schema-contract.mjs text eol=lf
