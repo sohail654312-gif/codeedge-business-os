@@ -48,6 +48,16 @@ export async function listLeads(
   }));
 }
 
+export async function listLeadPage(client: SupabaseClient<Database>,businessId: string,filters: LeadFilters,page: number) {
+  const { data,error } = await client.rpc("search_leads_page",{
+    p_business_id:businessId,p_query:filters.q,p_status:filters.status,
+    p_source:filters.source,p_service_id:filters.service_id,p_page:page,
+  });
+  if (error || !data) throw new Error("Unable to load Lead page.");
+  const names = await serviceNames(client,businessId,data.rows.map(lead => lead.service_id));
+  return { ...data,rows:data.rows.map(lead => ({ ...lead,service_name:lead.service_id ? names.get(lead.service_id) ?? null : null })) };
+}
+
 export async function getLead(
   client: SupabaseClient<Database>,
   businessId: string,

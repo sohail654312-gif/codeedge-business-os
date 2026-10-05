@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { getCustomerDirectoryData } from "@/modules/buy-from-me/customers/data";
 import { requireDashboardTenant } from "@/server/auth/session";
+import { pageSchema,pageHref } from "@/modules/buy-from-me/pagination";
+import { z } from "zod";
 
-export default async function CustomersPage() {
+export default async function CustomersPage({ searchParams }: { searchParams:Promise<Record<string,string|string[]|undefined>> }) {
   const { client, context } = await requireDashboardTenant();
-  const directory = await getCustomerDirectoryData(client, context.business.id);
+  const query = await searchParams;
+  const q = z.string().trim().max(120).catch("").parse(Array.isArray(query.q) ? query.q[0] : query.q) || null;
+  const page = pageSchema.parse(query.page);
+  const directory = await getCustomerDirectoryData(client, context.business.id,q,page);
   const activeCount = directory.rows.filter((customer) => customer.status === "Active").length;
 
   return (
@@ -19,15 +24,15 @@ export default async function CustomersPage() {
           <span className="pill">
             {directory.mode === "hybrid" ? "CodeEdge + ERPNext" : directory.mode === "erpnext" ? "ERPNext live" : "CodeEdge CRM"}
           </span>
-          <button className="btn primary" type="button" disabled title="Direct customer creation is not enabled yet">
+          <Link className="btn primary" href="/dashboard/buy-from-me/customers/new">
             + Add customer
-          </button>
+          </Link>
         </div>
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">Total customers</div><div className="statValue">{directory.rows.length}</div></div>
-        <div className="stat"><div className="statLabel">Active</div><div className="statValue">{activeCount}</div></div>
+        <div className="stat"><div className="statLabel">{q ? "Matching customers" : "Total customers"}</div><div className="statValue">{directory.total}</div></div>
+        <div className="stat"><div className="statLabel">Active on this page</div><div className="statValue">{activeCount}</div></div>
         <div className="stat"><div className="statLabel">CRM source</div><div className="statValue">{directory.mode === "erpnext" ? "ERPNext" : "CodeEdge"}</div></div>
         <div className="stat"><div className="statLabel">Back-office</div><div className="statValue">{directory.mode === "crm" ? "Optional" : "Connected"}</div></div>
       </div>
@@ -40,10 +45,11 @@ export default async function CustomersPage() {
               Converted Leads remain visible in CodeEdge even when the back-office adapter is unavailable.
             </p>
           </div>
-          <div className="customerFilters">
-            <input className="customerSearch" placeholder="Search customers..." disabled />
-            <button className="btn" type="button" disabled>Filter</button>
-          </div>
+          <form className="customerFilters" method="get">
+            <input aria-label="Search customers" name="q" className="customerSearch" placeholder="Name, phone or email" maxLength={120} defaultValue={q ?? ""} />
+            <button className="btn" type="submit">Search</button>
+            {q ? <Link href="/dashboard/buy-from-me/customers">Reset</Link> : null}
+          </form>
         </div>
 
         <div className="customerTableWrap">
@@ -63,7 +69,7 @@ export default async function CustomersPage() {
             <tbody>
               {directory.rows.length ? directory.rows.map((customer) => (
                 <tr key={customer.id}>
-                  <td><b>{customer.name}</b></td>
+                  <td><Link href={`/dashboard/buy-from-me/customers/${customer.id}/edit`}>{customer.name}</Link></td>
                   <td>{customer.company}</td>
                   <td className="muted">{customer.contact}</td>
                   <td>
@@ -88,6 +94,11 @@ export default async function CustomersPage() {
             </tbody>
           </table>
         </div>
+        <nav aria-label="Customer pages" className="row topGap">
+          <span>Page {page} · {directory.total} matching Customers · {directory.pageSize} per page</span>
+          {page > 1 ? <Link className="btn" href={pageHref("/dashboard/buy-from-me/customers",{q},page-1)}>Previous</Link> : null}
+          {page*directory.pageSize < directory.total ? <Link className="btn" href={pageHref("/dashboard/buy-from-me/customers",{q},page+1)}>Next</Link> : null}
+        </nav>
       </section>
     </>
   );

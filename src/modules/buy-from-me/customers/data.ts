@@ -14,6 +14,9 @@ export type CustomerRow = {
 
 export type CustomerDirectoryData = {
   rows: CustomerRow[];
+  total: number;
+  page: number;
+  pageSize: number;
   mode: "crm" | "erpnext" | "hybrid";
   note: string;
 };
@@ -29,28 +32,27 @@ function localRow(customer: Customer): CustomerRow {
     value: "—",
     lastActivity: customer.erpnext_customer_id
       ? "Finance engine mapping available"
-      : "Converted from Lead",
+      : customer.source_lead_id ? "Converted from Lead" : "Created in CRM",
   };
 }
 
 export async function getCustomerDirectoryData(
   client: SupabaseClient<Database>,
   businessId: string,
+  query: string | null = null,
+  page: number = 1,
 ): Promise<CustomerDirectoryData> {
-  const { data: localCustomers,error } = await client
-    .from("customers")
-    .select("*")
-    .eq("business_id",businessId)
-    .order("created_at",{ ascending:false });
+  const { data,error } = await client.rpc("search_customers_page",{ p_business_id:businessId,p_query:query,p_page:page });
 
-  if (error) throw new Error("Unable to load Codeedge Customers.");
+  if (error || !data) throw new Error("Unable to load Codeedge Customers.");
 
-  const rows = (localCustomers ?? []).map(localRow);
+  const rows = data.rows.map(localRow);
   return {
     rows,
+    total:data.total,page:data.page,pageSize:data.pageSize,
     mode:"crm",
     note: rows.length
       ? "Codeedge CRM remains the canonical Customer identity. Finance engines are linked through Codeedge Money."
-      : "No Customers yet. Convert a Lead to create the first Customer.",
+      : "Add a Customer or convert a Lead. Search remains scoped to this workspace.",
   };
 }

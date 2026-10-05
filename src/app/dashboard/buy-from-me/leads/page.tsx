@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatLeadDate, formatLeadValue, listActiveServices, listLeads } from "@/modules/buy-from-me/leads/data";
+import { formatLeadDate, formatLeadValue, listActiveServices, listLeadPage } from "@/modules/buy-from-me/leads/data";
+import { pageSchema,pageHref } from "@/modules/buy-from-me/pagination";
 import { leadSourceLabels, leadSources, leadStatusLabels, leadStatuses } from "@/modules/buy-from-me/leads/domain";
 import { hasLeadFilters } from "@/modules/buy-from-me/leads/filters";
 import { leadFilterSchema } from "@/modules/buy-from-me/leads/validation";
@@ -13,11 +14,14 @@ export default async function LeadsPage({
   searchParams: Promise<LeadSearchParams>;
 }) {
   const { client, context } = await requireDashboardTenant();
-  const filters = leadFilterSchema.parse(await searchParams);
-  const [leads, services] = await Promise.all([
-    listLeads(client, context.business.id, filters),
+  const query = await searchParams;
+  const filters = leadFilterSchema.parse(query);
+  const page = pageSchema.parse(query.page);
+  const [result, services] = await Promise.all([
+    listLeadPage(client, context.business.id, filters,page),
     listActiveServices(client, context.business.id),
   ]);
+  const leads = result.rows;
 
   const hasFilters = hasLeadFilters(filters);
   const potentialValue = leads.reduce((total, lead) => total + (lead.estimated_value_pence ?? 0), 0);
@@ -40,10 +44,10 @@ export default async function LeadsPage({
       </div>
 
       <div className="statGrid compact">
-        <div className="stat"><div className="statLabel">{hasFilters ? "Matching leads" : "Total leads"}</div><div className="statValue">{leads.length}</div></div>
-        <div className="stat"><div className="statLabel">New</div><div className="statValue">{newCount}</div></div>
-        <div className="stat"><div className="statLabel">Qualified</div><div className="statValue">{qualifiedCount}</div></div>
-        <div className="stat"><div className="statLabel">Potential value</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
+        <div className="stat"><div className="statLabel">{hasFilters ? "Matching leads" : "Total leads"}</div><div className="statValue">{result.total}</div></div>
+        <div className="stat"><div className="statLabel">New on this page</div><div className="statValue">{newCount}</div></div>
+        <div className="stat"><div className="statLabel">Qualified on this page</div><div className="statValue">{qualifiedCount}</div></div>
+        <div className="stat"><div className="statLabel">Potential value on this page</div><div className="statValue">{formatLeadValue(potentialValue)}</div></div>
       </div>
 
       <section className="panel topGap">
@@ -160,6 +164,11 @@ export default async function LeadsPage({
             </tbody>
           </table>
         </div>
+        <nav aria-label="Lead pages" className="row topGap">
+          <span>Page {page} · {result.total} matching Leads · {result.pageSize} per page</span>
+          {page > 1 ? <Link className="btn" href={pageHref("/dashboard/buy-from-me/leads",filters,page-1)}>Previous</Link> : null}
+          {page*result.pageSize < result.total ? <Link className="btn" href={pageHref("/dashboard/buy-from-me/leads",filters,page+1)}>Next</Link> : null}
+        </nav>
       </section>
     </>
   );
