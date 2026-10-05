@@ -73,3 +73,19 @@ Major completed Audit 4 operational work:
 Audit 4 is **not formally closed**. Remaining gates are recorded in the Audit 4 verification files and must not be represented as completed production proof.
 
 Audit 3 remains complete as an audit but is not formally remediated/closed.
+
+## 5 October 2026 staging update
+
+Historical statements above apply to their recorded baselines. Current dedicated
+test evidence supersedes the older 29-migration and Vercel-access assumptions:
+actual hosted parity is 31/31; all 40 public tables have forced RLS; nine hosted
+tenant cases passed with rollback; a native local backup restoration matched
+75 table counts and six logical schema fingerprints. Exact commit `9fb7276` has
+green CI and a READY Preview with readiness HTTP 200 (6/6), healthy read-only
+automation probes and six redacted transaction-pool topology entries.
+
+See [current staging evidence](FINAL-STAGING-ACCEPTANCE-2026-10-05.md) for exact
+identifiers, backup limitations and remaining gates. Additional candidate changes
+include account recovery, reproducible hosted parity and a controlled Finance
+network-ambiguity rehearsal. Their final exact-SHA CI/browser acceptance is still
+required. Audits 3/4 are not formally closed and no production release is approved.

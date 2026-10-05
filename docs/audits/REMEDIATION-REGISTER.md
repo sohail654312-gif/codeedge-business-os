@@ -78,3 +78,20 @@ Post-merge CI #805: **GREEN**.
 Audit 4 remains open until the explicitly listed operational/policy gates are closed.
 Do not substitute historical Vercel deployments, guessed RPO/RTO, or invented retention
 durations for real closure evidence.
+
+## 5 October 2026 dedicated test evidence
+
+See [final staging acceptance](FINAL-STAGING-ACCEPTANCE-2026-10-05.md).
+REL-001 now has actual hosted 31/31 parity and 40/40 forced RLS. REL-009 has six
+deployed transaction-pool summaries and six separate TLS-attested restricted
+principals. REL-003 readiness is HTTP 200, with no error/fatal logs for the checked
+Preview; alert delivery is still pending. REL-006 manual read-only health/probe
+passes, while unattended cadence is pending. REL-002 has a fresh native snapshot
+and restoration proof; DPAPI account dependency, independent durable destination
+and owner RPO/RTO approval remain explicit. A new loopback-provider integration
+rehearsal covers REL-008 accepted-write/network-loss ambiguity, persistence,
+duplicate suppression and tenant-isolated operator read-back.
+
+Evidence belongs to its recorded SHA and environment. Later candidate CI,
+authenticated UI, rollback, Voice test-provider acceptance and owner policies
+remain gates. Historical Audit 1/2 conclusions are preserved.
