@@ -96,4 +96,20 @@ describe("Password recovery authentication boundary", () => {
     expect(await requestPasswordRecovery({}, form({ email: "missing@example.test" }))).toEqual(known);
     expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("missing@example.test", { redirectTo: "https://staging.codeedge.test/auth/confirm" });
   });
+
+  it("reports the project-wide email limit without revealing account existence or provider diagnostics", async () => {
+    mocks.resetPasswordForEmail.mockResolvedValue({ error: { code: "over_email_send_rate_limit", message: "private provider diagnostics" } });
+    const known = await requestPasswordRecovery({}, form({ email: "owner@example.test" }));
+    const missing = await requestPasswordRecovery({}, form({ email: "missing@example.test" }));
+    expect(missing).toEqual(known);
+    expect(known.success).toBeUndefined();
+    expect(known.error).toContain("email limit");
+    expect(known.error).not.toContain("private provider diagnostics");
+  });
+
+  it("reports transport unavailability without exposing the exception", async () => {
+    mocks.resetPasswordForEmail.mockRejectedValue(new Error("private transport diagnostics"));
+    const result = await requestPasswordRecovery({}, form({ email: "owner@example.test" }));
+    expect(result).toEqual({ error: "Recovery email is temporarily unavailable. Please try again later." });
+  });
 });
