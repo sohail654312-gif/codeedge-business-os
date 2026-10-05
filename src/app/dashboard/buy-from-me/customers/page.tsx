@@ -89,7 +89,7 @@ export default async function CustomersPage({ searchParams }: { searchParams:Pro
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={8}><div className="emptyState"><h3>No Customers yet</h3><p>Convert a Lead to create a Customer.</p></div></td></tr>
+                <tr><td colSpan={8}><div className="emptyState"><h3>{q ? "No matching Customers" : "No Customers yet"}</h3><p>{q ? "Try another name, phone number or email." : "Add a Customer or convert a Lead."}</p></div></td></tr>
               )}
             </tbody>
           </table>

@@ -105,3 +105,32 @@ candidate must finish; baseline evidence above is not automatically attributed
   provider configuration. Demo behavior does not prove a live tool loop.
 
 PR #75 remains draft; protected main is unchanged. Readiness alone is not V1 closure.
+
+## Authenticated acceptance delta after `5e43136`
+
+Exact `5e43136f3a9b5f0cbfa2c4939eebf294ac8a94ea` passed CI #848
+(732 tests, 339 security tests and four browser tests) and the separate disposable
+ERPNext smoke #44. Preview `dpl_BsXFEKzvd5en2DToAz36DzwxSUmX` is READY with
+readiness HTTP 200 (6/6). The test owner's secure admin-assisted password reset
+completed at 06:57:55 UTC; Auth recorded successful sign-in at 06:59:06 UTC and
+the browser displayed the authenticated Codeedge workspace. Email recovery is
+still not accepted: expired/invalid links and the default email-service limit
+were observed. The fallback did not store the new password or add an Admin key
+to the application.
+
+Hosted browser checks on that deployment passed standalone Customer creation,
+same-ID editing, matching and unmatched search counts, Lead creation and atomic
+Won conversion with preserved activity, an internal Shared Inbox thread/note,
+and appointment creation, rescheduling and cancellation in the test timezone
+Asia/Karachi. Only the dedicated test business was put into Demo mode; these
+fixtures use `example.test` contacts and have no live customer effects.
+
+The Voice settings save failed in actual browser acceptance. Its upsert included
+`business_id` in the conflict update although that column is deliberately not
+updateable. This candidate uses separate, tenant-filtered insert/update paths
+without changing grants. Demo Voice also now checks the saved enabled flag,
+Demo adapter and its required allowed actions before creating any call/booking.
+Nine targeted action regressions and the three existing configuration-audit
+tests pass locally. The filtered Customer empty-state copy is corrected too.
+These new changes require exact-SHA CI and a fresh hosted recheck; their source
+change alone is not verification or a claim of a live Vapi receptionist loop.
