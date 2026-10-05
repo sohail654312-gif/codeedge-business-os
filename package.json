@@ -21,26 +21,29 @@
     "verify:next-security": "node scripts/verify-next-security.mjs"
   },
   "dependencies": {
-    "next": "15.5.27",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "zod": "4.5.4",
     "@supabase/ssr": "0.12.6",
     "@supabase/supabase-js": "2.116.0",
+    "next": "15.5.27",
+    "pg": "8.16.3",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "server-only": "0.0.1",
-    "pg": "8.16.3"
+    "zod": "4.5.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.55.0",
     "@types/node": "^22",
+    "@types/pg": "8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5.8.3",
     "eslint": "^9.35.0",
     "eslint-config-next": "15.5.27",
-    "vitest": "^3.2.4",
-    "@eslint/eslintrc": "^3.3.1",
-    "@electric-sql/pglite": "^0.5.8",
-    "@playwright/test": "^1.55.0",
-    "@types/pg": "8.15.5"
+    "typescript": "^5.8.3",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "postcss": "8.5.28"
   }
 }
