@@ -56,6 +56,21 @@ describe("Final CRM directory and pagination",() => {
     expect(second.rows.some(row=>first.rows.some(other=>other.id===row.id))).toBe(false);
     expect((await page(f.businessA,7)).total).toBe(261);expect((await page(f.businessA,7)).rows).toEqual([]);
   });
+  it("counts filtered Leads independently of page boundaries",async()=>{
+    await asUser(db,f.ownerA);
+    const result=await db.query<{result:{total:number;rows:unknown[]}}>("select public.search_leads_page($1,'Page Lead','new','manual',null,6) result",[f.businessA]);
+    expect(result.rows[0].result.total).toBe(260);expect(result.rows[0].result.rows).toHaveLength(10);
+    expect((await page(f.businessA,1,f.serviceA)).total).toBe(1);
+  });
+  it("bounds Customer pages while preserving exact totals and literal search",async()=>{
+    await db.query(`insert into public.customers(business_id,contact_name,phone,email,created_by)
+      select $1,'Paged Customer '||g,'123','',$2 from generate_series(1,53) g`,[f.businessA,f.ownerA]);
+    await asUser(db,f.staffA);
+    const result=await db.query<{result:{total:number;rows:unknown[]}}>("select public.search_customers_page($1,'Paged',2) result",[f.businessA]);
+    expect(result.rows[0].result.total).toBe(53);expect(result.rows[0].result.rows).toHaveLength(3);
+    const injection=await db.query<{result:{total:number}}>("select public.search_customers_page($1,$2,1) result",[f.businessA,"') OR true --"]);
+    expect(injection.rows[0].result.total).toBe(0);
+  });
   it("isolates forged business/service filters and revoked access",async()=>{
     await asUser(db,f.ownerA);expect((await page(f.businessB)).total).toBe(0);expect((await page(f.businessA,1,f.serviceB)).total).toBe(0);
     await asUser(db,f.removedA);expect((await page()).total).toBe(0);

@@ -45,7 +45,7 @@ export default async function Dashboard() {
   const upcomingBookings = bookingResult.error ? null : bookingResult.count ?? 0;
   const inboxAttention = conversationResult.error ? null : conversationResult.count ?? 0;
   const automationAttention = automationResult.error ? null : automationResult.count ?? 0;
-  const activeCustomers = customerDirectory.rows.filter((customer) => customer.status === "Active").length;
+  const activeCustomers = customerDirectory.total;
   const customerPreview = customerDirectory.rows.slice(0, 3);
 
   const stats = [
@@ -127,7 +127,7 @@ export default async function Dashboard() {
         <div className="customerSummaryGrid">
           <div className="stat">
             <div className="statLabel">Total customers</div>
-            <div className="statValue">{customerDirectory.rows.length}</div>
+            <div className="statValue">{customerDirectory.total}</div>
           </div>
           <div className="stat">
             <div className="statLabel">Active customers</div>
