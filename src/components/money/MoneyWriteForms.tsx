@@ -66,9 +66,9 @@ export function MoneySalesWriteForms({
           <details className="businessServiceCard">
             <summary>Create quote</summary>
             <form action={quoteAction} className="businessInfoForm">
-              <div className="field"><label>Customer</label><select name="customer_id" required>{customers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
-              <div className="field"><label>Amount ({currency})</label><input name="amount" inputMode="decimal" required placeholder="850.00" /></div>
-              <div className="field"><label>Valid until</label><input name="valid_until" type="date" /></div>
+              <div className="field"><label htmlFor="money-quote-customer-id">Customer</label><select id="money-quote-customer-id" name="customer_id" required>{customers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="money-quote-amount">Amount ({currency})</label><input id="money-quote-amount" name="amount" inputMode="decimal" required placeholder="850.00" /></div>
+              <div className="field"><label htmlFor="money-quote-valid-until">Valid until</label><input id="money-quote-valid-until" name="valid_until" type="date" /></div>
               <Notice state={quoteState} />
               <button className="btn primary" type="submit" disabled={quotePending}>{quotePending ? "Creating..." : "Create quote"}</button>
             </form>
@@ -77,10 +77,10 @@ export function MoneySalesWriteForms({
           <details className="businessServiceCard">
             <summary>Create invoice</summary>
             <form action={invoiceAction} className="businessInfoForm">
-              <div className="field"><label>Customer</label><select name="customer_id" required>{customers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
-              <div className="field"><label>Quote (optional)</label><select name="quote_id" defaultValue=""><option value="">No linked quote</option>{quotes.map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}</select></div>
-              <div className="field"><label>Amount ({currency})</label><input name="amount" inputMode="decimal" required placeholder="850.00" /></div>
-              <div className="field"><label>Due date</label><input name="due_at" type="date" /></div>
+              <div className="field"><label htmlFor="money-invoice-customer-id">Customer</label><select id="money-invoice-customer-id" name="customer_id" required>{customers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="money-invoice-quote-id">Quote (optional)</label><select id="money-invoice-quote-id" name="quote_id" defaultValue=""><option value="">No linked quote</option>{quotes.map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}</select></div>
+              <div className="field"><label htmlFor="money-invoice-amount">Amount ({currency})</label><input id="money-invoice-amount" name="amount" inputMode="decimal" required placeholder="850.00" /></div>
+              <div className="field"><label htmlFor="money-invoice-due-at">Due date</label><input id="money-invoice-due-at" name="due_at" type="date" /></div>
               <Notice state={invoiceState} />
               <button className="btn primary" type="submit" disabled={invoicePending}>{invoicePending ? "Creating..." : "Create invoice"}</button>
             </form>
@@ -92,8 +92,8 @@ export function MoneySalesWriteForms({
         <summary>Record accounting payment</summary>
         {invoices.length === 0 ? <p className="muted">Create an invoice before recording a payment.</p> : (
           <form action={paymentAction} className="businessInfoForm">
-            <div className="field"><label>Invoice</label><select name="invoice_id" required>{invoices.map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}</select></div>
-            <div className="field"><label>Amount ({currency})</label><input name="amount" inputMode="decimal" required placeholder="500.00" /></div>
+            <div className="field"><label htmlFor="money-payment-invoice-id">Invoice</label><select id="money-payment-invoice-id" name="invoice_id" required>{invoices.map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}</select></div>
+            <div className="field"><label htmlFor="money-payment-amount">Amount ({currency})</label><input id="money-payment-amount" name="amount" inputMode="decimal" required placeholder="500.00" /></div>
             <Notice state={paymentState} />
             <button className="btn primary" type="submit" disabled={paymentPending}>{paymentPending ? "Recording..." : "Record payment"}</button>
           </form>
@@ -130,9 +130,9 @@ export function MoneyPurchaseWriteForms({
         <details className="businessServiceCard">
           <summary>Create supplier</summary>
           <form action={supplierAction} className="businessInfoForm">
-            <div className="field"><label>Name</label><input name="name" required maxLength={200} /></div>
-            <div className="field"><label>Email</label><input name="email" type="email" maxLength={320} /></div>
-            <div className="field"><label>Phone</label><input name="phone" maxLength={80} /></div>
+            <div className="field"><label htmlFor="money-supplier-name">Name</label><input id="money-supplier-name" name="name" required maxLength={200} /></div>
+            <div className="field"><label htmlFor="money-supplier-email">Email</label><input id="money-supplier-email" name="email" type="email" maxLength={320} /></div>
+            <div className="field"><label htmlFor="money-supplier-phone">Phone</label><input id="money-supplier-phone" name="phone" maxLength={80} /></div>
             <Notice state={supplierState} />
             <button className="btn primary" type="submit" disabled={supplierPending}>{supplierPending ? "Creating..." : "Create supplier"}</button>
           </form>
@@ -142,9 +142,9 @@ export function MoneyPurchaseWriteForms({
           <summary>Create bill</summary>
           {suppliers.length === 0 ? <p className="muted">Create a supplier first.</p> : (
             <form action={billAction} className="businessInfoForm">
-              <div className="field"><label>Supplier</label><select name="supplier_id" required>{suppliers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
-              <div className="field"><label>Amount ({currency})</label><input name="amount" inputMode="decimal" required placeholder="120.00" /></div>
-              <div className="field"><label>Due date</label><input name="due_at" type="date" /></div>
+              <div className="field"><label htmlFor="money-bill-supplier-id">Supplier</label><select id="money-bill-supplier-id" name="supplier_id" required>{suppliers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="money-bill-amount">Amount ({currency})</label><input id="money-bill-amount" name="amount" inputMode="decimal" required placeholder="120.00" /></div>
+              <div className="field"><label htmlFor="money-bill-due-at">Due date</label><input id="money-bill-due-at" name="due_at" type="date" /></div>
               <Notice state={billState} />
               <button className="btn primary" type="submit" disabled={billPending}>{billPending ? "Creating..." : "Create bill"}</button>
             </form>
@@ -155,10 +155,10 @@ export function MoneyPurchaseWriteForms({
       <details className="businessServiceCard topGap">
         <summary>Create expense</summary>
         <form action={expenseAction} className="businessInfoForm">
-          <div className="field"><label>Supplier (optional)</label><select name="supplier_id" defaultValue=""><option value="">No supplier</option>{suppliers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
-          <div className="field"><label>Category</label><input name="category" required maxLength={120} placeholder="Clinic supplies" /></div>
-          <div className="field"><label>Amount ({currency})</label><input name="amount" inputMode="decimal" required placeholder="45.00" /></div>
-          <div className="field"><label>Incurred date</label><input name="incurred_at" type="date" required /></div>
+          <div className="field"><label htmlFor="money-expense-supplier-id">Supplier (optional)</label><select id="money-expense-supplier-id" name="supplier_id" defaultValue=""><option value="">No supplier</option>{suppliers.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+          <div className="field"><label htmlFor="money-expense-category">Category</label><input id="money-expense-category" name="category" required maxLength={120} placeholder="Clinic supplies" /></div>
+          <div className="field"><label htmlFor="money-expense-amount">Amount ({currency})</label><input id="money-expense-amount" name="amount" inputMode="decimal" required placeholder="45.00" /></div>
+          <div className="field"><label htmlFor="money-expense-incurred-at">Incurred date</label><input id="money-expense-incurred-at" name="incurred_at" type="date" required /></div>
           <Notice state={expenseState} />
           <button className="btn primary" type="submit" disabled={expensePending}>{expensePending ? "Creating..." : "Create expense"}</button>
         </form>

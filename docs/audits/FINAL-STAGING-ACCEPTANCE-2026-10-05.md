@@ -93,16 +93,38 @@ token-hash template; the callback also supports bounded recovery token hashes.
 
 ## Remaining acceptance gates
 
-- Exact-SHA CI and hosted acceptance of the additional recovery/parity/rehearsal
-candidate must finish; baseline evidence above is not automatically attributed
-  to a later commit.
-- Test owner must recover/sign in before actual authenticated browser acceptance.
-- Test-only rollback routing rehearsal must use a qualified immutable baseline.
-- Alert destination/delivery and approved scheduler cadence remain operational
-  gates; manual liveness does not prove an unattended scheduler.
-- Owner must approve durable backup RPO/RTO and retention/archive policy.
-- Controlled Voice provider/tool-loop acceptance still needs an approved test
-  provider configuration. Demo behavior does not prove a live tool loop.
+The owner signed in successfully and completed staging checks are preserved in
+the authenticated acceptance delta below. Test-only alias rollback routing has
+also been rehearsed with a qualified immutable baseline; that evidence does not
+claim authenticated-session compatibility or production rollback.
+
+Per the owner's narrowed instruction, finish only the current UI/keyboard fix,
+focused regression tests and one final exact-SHA CI/ERPNext/Vercel acceptance.
+Do not repeat passed conversion, Customer, Inbox or booking checks. The Money
+write forms now associate each visible label with a unique input/select ID,
+making their names available to keyboard and assistive-technology users without
+changing write behavior. Final evidence is appended to the PR and output report
+after that exact commit has passed; it does not require another source commit.
+
+Queued external/owner gates (not enabled or claimed complete):
+
+- Scheduler: owner-approved unattended cadence and deployment configuration;
+  manual read-only probes are already proven.
+- Alerts: approved destination/credentials and actual delivery/recovery proof.
+- Backup: approved RPO/RTO, independent durable destination and recurring restore
+  policy. The measured local encrypted backup/restore evidence remains valid.
+- Retention: approved archive durations and finance/legal preservation policy;
+  no purge is authorized.
+- Voice: approved sandbox provider/model/tool configuration and controlled
+  acceptance. Transport and Demo tools do not prove a live Vapi tool/model loop.
+
+These are explicit release gates, not permission to restart completed remediation.
+
+One Demo Money Quote submitted before the scope was narrowed returned the generic
+"Unable to complete the Money action" error. Its cause has not been established;
+normal hosted Money writes are not represented as accepted. That separate issue
+is retained for follow-up rather than reopening remediation during the requested
+UI/keyboard-only finish. The label correction does not claim to fix that write.
 
 PR #75 remains draft; protected main is unchanged. Readiness alone is not V1 closure.
 
