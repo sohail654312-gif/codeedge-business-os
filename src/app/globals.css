@@ -238,3 +238,5 @@ body{background:var(--ce-bg-deep)}
   .ceDashboardHead{flex-direction:column}.ceKpiGrid,.ceAnalyticsGrid{grid-template-columns:1fr}.ceAnalyticsGrid .ceAnalyticsCard:last-child{grid-column:auto}
   .ceNavSection{grid-template-columns:1fr 1fr}.cePipeline{grid-template-columns:repeat(5,190px)}
 }
+
+/* Design preview uses shared staging-only preview configuration. */
