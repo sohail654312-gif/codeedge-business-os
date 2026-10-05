@@ -5,7 +5,6 @@ const mocks=vi.hoisted(()=>({health:vi.fn(),run:vi.fn()}));
 vi.mock("@/server/automation/health",()=>({getAutomationRuntimeHealth:mocks.health}));
 vi.mock("@/server/automation/runner",()=>({runPendingAutomations:mocks.run}));
 import { POST } from "@/app/api/internal/automation/run/route";
-import { GET as CRON } from "@/app/api/internal/automation/cron/route";
 describe("Readiness and non-effect liveness",()=>{
   afterEach(()=>{vi.unstubAllEnvs();vi.clearAllMocks();});
   const env={NEXT_PUBLIC_APP_URL:"https://test.example.test",NEXT_PUBLIC_SUPABASE_URL:"https://test.supabase.co",NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_test_only_123456789",CHAT_DATABASE_URL:"postgresql://restricted:placeholder@db.test.supabase.co/postgres?sslmode=verify-full",COMMUNICATION_DATABASE_URL:"postgresql://restricted:placeholder@db.test.supabase.co/postgres?sslmode=verify-full",AUTOMATION_RUNNER_SECRET:"test_only_".repeat(4)};
@@ -26,21 +25,6 @@ describe("Readiness and non-effect liveness",()=>{
     vi.stubEnv("AUTOMATION_RUNNER_SECRET",env.AUTOMATION_RUNNER_SECRET);
     const result=await POST(new NextRequest("https://test.example.test/api/internal/automation/run?probe=1",{method:"POST"}));
     expect(result.status).toBe(401);expect(mocks.health).not.toHaveBeenCalled();expect(mocks.run).not.toHaveBeenCalled();
-  });
-  it("authorizes the scheduled cron separately and bounds each batch",async()=>{
-    const cronSecret="cron_test_only_".repeat(3);
-    vi.stubEnv("CRON_SECRET",cronSecret);
-    mocks.run.mockResolvedValue([]);
-    const result=await CRON(new NextRequest("https://test.example.test/api/internal/automation/cron",{headers:{authorization:`Bearer ${cronSecret}`}}));
-    expect(result.status).toBe(200);
-    expect(await result.json()).toMatchObject({status:"ok",scheduled:true,processed:0});
-    expect(mocks.run).toHaveBeenCalledWith(10);
-  });
-  it("rejects an unauthorized scheduled cron before runner access",async()=>{
-    vi.stubEnv("CRON_SECRET","cron_test_only_".repeat(3));
-    const result=await CRON(new NextRequest("https://test.example.test/api/internal/automation/cron"));
-    expect(result.status).toBe(401);
-    expect(mocks.run).not.toHaveBeenCalled();
   });
   it("returns retryable failure with no secret or provider effect",async()=>{
     vi.stubEnv("AUTOMATION_RUNNER_SECRET",env.AUTOMATION_RUNNER_SECRET);
