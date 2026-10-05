@@ -1,3 +1,4 @@
+import { requireFinanceWriteCapability } from "./write-capability";
 import "server-only";
 
 import { z } from "zod";
@@ -359,6 +360,7 @@ export async function ensureFinanceCustomer(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"customers");
+  requireFinanceWriteCapability(engine,"customers");
   if (!engine.resolveCustomer || !engine.createCustomer) {
     throw new Error("finance_capability_unavailable");
   }
@@ -409,6 +411,7 @@ export async function createFinanceQuote(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"quotations");
+  requireFinanceWriteCapability(engine,"quotations");
   if (!engine.createQuote) throw new Error("finance_capability_unavailable");
 
   await trustedCustomer(context,input.crmCustomerId);
@@ -444,6 +447,7 @@ export async function createFinanceInvoice(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"invoices");
+  requireFinanceWriteCapability(engine,"invoices");
   if (!engine.createInvoice) throw new Error("finance_capability_unavailable");
 
   await trustedCustomer(context,input.crmCustomerId);
@@ -478,6 +482,7 @@ export async function recordFinancePayment(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"payments");
+  requireFinanceWriteCapability(engine,"payments");
   if (!engine.recordPayment) throw new Error("finance_capability_unavailable");
 
   const payload: RecordFinancePaymentInput = {
@@ -509,6 +514,7 @@ export async function createFinanceSupplier(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"suppliers");
+  requireFinanceWriteCapability(engine,"suppliers");
   if (!engine.createSupplier) throw new Error("finance_capability_unavailable");
 
   const payload: CreateFinanceSupplierInput = {
@@ -541,6 +547,7 @@ export async function createFinanceBill(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"bills");
+  requireFinanceWriteCapability(engine,"bills");
   if (!engine.createBill) throw new Error("finance_capability_unavailable");
 
   const payload: CreateFinanceBillInput = {
@@ -575,6 +582,7 @@ export async function createFinanceExpense(input: {
 }) {
   const { context,engine } = await financeSession(input);
   requireFinanceCapability(engine,"expenses");
+  requireFinanceWriteCapability(engine,"expenses");
   if (!engine.createExpense) throw new Error("finance_capability_unavailable");
 
   const payload: CreateFinanceExpenseInput = {

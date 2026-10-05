@@ -8,6 +8,7 @@ export type FinanceEngineMetadata = {
   externalEffect: boolean;
   environments: readonly ("demo" | "sandbox" | "production")[];
   capabilities: readonly FinanceCapability[];
+  writeCapabilities: readonly FinanceCapability[];
 };
 
 export const financeEngineMetadata = {
@@ -15,6 +16,7 @@ export const financeEngineMetadata = {
     id: "demo_finance",
     externalEffect: false,
     environments: ["demo"],
+    writeCapabilities: ["customers","suppliers","quotations","invoices","payments","bills","expenses"],
     capabilities: [
       "health",
       "customers",
@@ -36,6 +38,7 @@ export const financeEngineMetadata = {
     id: "erpnext",
     externalEffect: true,
     environments: ["sandbox", "production"],
+    writeCapabilities: ["customers"],
     capabilities: [
       "health",
       "customers",

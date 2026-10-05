@@ -142,6 +142,21 @@ export default async function Settings() {
         <span className="pill">{canEdit ? "Owner" : "Staff"}</span>
       </div>
 
+      <section className="panel topGap" aria-label="Workspace setup checklist">
+        <h2>Operational setup</h2>
+        <p className="muted">Configuration progress for this workspace. Complete setup, then verify a test booking and channel exchange before going live.</p>
+        <ul>
+          <li>Business profile: {profileResult.data?.trading_name && (profileResult.data.phone || profileResult.data.email) ? "Contact details saved" : "Add trading name and contact details below"}</li>
+          <li>Timezone: {context.business.timezone} — confirm the business location below</li>
+          <li>Services: {serviceResult.data?.some(service => service.active) ? "Active service saved" : "Add an active service below"}</li>
+          <li>Opening hours: {hoursResult.data?.some(hours => !hours.is_closed && hours.opens_at && hours.closes_at) ? "Open hours saved" : "Set opening hours below"}</li>
+          <li>Website chat: {websiteChatResult.data?.enabled ? "Widget enabled; verify a test conversation" : "Configure the website widget below"}</li>
+          <li>Booking: <Link href="/dashboard/bookings">Check availability and create a test booking</Link></li>
+          <li>Channels and Voice: <Link href="/dashboard/contact-me/voice">Review receptionist setup and test acceptance</Link></li>
+          <li>Finance: <Link href="/dashboard/settings/erpnext">Review workspace Finance status</Link></li>
+        </ul>
+      </section>
+
       <div className="twoCol">
         <section className="panel">
           <h2>Workspace</h2>
