@@ -4,6 +4,8 @@ import { ResetPasswordForm } from "@/components/auth/RecoveryForms";
 import { createClient } from "@/server/db/client";
 import { verifiedUser } from "@/server/authorization/tenant";
 
+export const dynamic = "force-dynamic";
+
 export default async function ResetPassword() {
   const client = await createClient();
   try { await verifiedUser(client); } catch { redirect("/forgot-password?recovery=invalid"); }

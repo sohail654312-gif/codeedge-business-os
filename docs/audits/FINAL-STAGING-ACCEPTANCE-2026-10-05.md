@@ -59,6 +59,14 @@ project settings, extension infrastructure, provider secrets and role passwords
 are outside the scoped restoration proof. The Free project has no managed
 backups; durable backup destination and policy remain owner decisions.
 
+After the hosted deltas, six logical fingerprints (columns, indexes, policies,
+triggers, functions and RLS) exactly match the rehearsed native database. A
+separate constraint comparison found only three formatting differences: restored
+PostgreSQL flattens redundant grouping of the two length predicates joined by
+AND in locale/sender/inbound-email checks. Exact regrouped text and 14 boundary
+cases per constraint match on both databases. Raw constraint digests are retained
+as different; no unexplained definition differences were accepted.
+
 ## Additional candidate verification
 
 `tests/integration/finance-ambiguity-rehearsal.test.ts` runs the actual Finance
@@ -86,7 +94,7 @@ token-hash template; the callback also supports bounded recovery token hashes.
 ## Remaining acceptance gates
 
 - Exact-SHA CI and hosted acceptance of the additional recovery/parity/rehearsal
-  candidate must finish; baseline evidence above is not automatically attributed
+candidate must finish; baseline evidence above is not automatically attributed
   to a later commit.
 - Test owner must recover/sign in before actual authenticated browser acceptance.
 - Test-only rollback routing rehearsal must use a qualified immutable baseline.
