@@ -13,6 +13,7 @@ describe("Readiness and non-effect liveness",()=>{
     for(const name of Object.keys(env)) expect(configurationReady({...env,[name]:"invalid"})).toBe(false);
     expect(configurationReady({...env,AUTOMATION_RUNNER_SECRET:" ".repeat(40)})).toBe(false);
     expect(configurationReady({...env,CHAT_DATABASE_URL:env.CHAT_DATABASE_URL.replace("verify-full","require")})).toBe(false);
+    expect(configurationReady({...env,RESTRICTED_DATABASE_CA_CERT:"invalid-provider-ca"})).toBe(false);
   });
   it("never claims or executes automations during a healthy probe",async()=>{
     vi.stubEnv("AUTOMATION_RUNNER_SECRET",env.AUTOMATION_RUNNER_SECRET);
