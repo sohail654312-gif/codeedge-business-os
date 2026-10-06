@@ -1,8 +1,16 @@
+import Image from "next/image";
+
 export function Brand() {
   return (
     <div className="brand" aria-label="Codeedge">
-      <div className="mark" aria-hidden="true">C</div>
-      <span>Codeedge</span>
+      <Image
+        src="/assets/codeedge-logo.svg"
+        alt="Codeedge"
+        width={150}
+        height={38}
+        priority
+        unoptimized
+      />
     </div>
   );
 }
