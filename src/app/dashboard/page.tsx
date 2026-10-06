@@ -36,7 +36,6 @@ export default async function Dashboard() {
   );
 
   const [
-    totalLeadsResult,
     customerCountResult,
     bookingCountResult,
     inboxCountResult,
@@ -44,8 +43,6 @@ export default async function Dashboard() {
     recentLeadsResult,
     ...pipelineCountResults
   ] = await Promise.all([
-    client.from("leads").select("id", { count: "exact", head: true })
-      .eq("business_id", context.business.id),
     client.from("customers").select("id", { count: "exact", head: true })
       .eq("business_id", context.business.id),
     client.from("appointments").select("id", { count: "exact", head: true })
@@ -59,7 +56,7 @@ export default async function Dashboard() {
       .eq("business_id", context.business.id)
       .in("status", ["pending", "failed"]),
     client.from("leads")
-      .select("id,contact_name,email,phone,source,status,estimated_value_pence,last_contact_at,enquiry_summary,created_at,updated_at")
+      .select("id,contact_name,email,phone,source,status,estimated_value_pence,last_contact_at,enquiry_summary,created_at,updated_at", { count: "exact" })
       .eq("business_id", context.business.id)
       .order("updated_at", { ascending: false })
       .limit(20),
@@ -69,7 +66,7 @@ export default async function Dashboard() {
   const recentLeads = recentLeadsResult.error ? [] : recentLeadsResult.data ?? [];
   const selectedLead = recentLeads[0] ?? null;
 
-  const totalLeads = totalLeadsResult.error ? 0 : totalLeadsResult.count ?? 0;
+  const totalLeads = recentLeadsResult.error ? 0 : recentLeadsResult.count ?? 0;
   const customers = customerCountResult.error ? 0 : customerCountResult.count ?? 0;
   const upcomingBookings = bookingCountResult.error ? 0 : bookingCountResult.count ?? 0;
   const inboxAttention = inboxCountResult.error ? 0 : inboxCountResult.count ?? 0;
@@ -85,7 +82,7 @@ export default async function Dashboard() {
   const conversionRate = totalLeads > 0 ? Math.round((counts.won / totalLeads) * 100) : 0;
   const pipelineMax = Math.max(1, ...pipelineOrder.map((status) => counts[status]));
   const funnelCounts = [counts.new + counts.contacted + counts.qualified + counts.won, counts.contacted + counts.qualified + counts.won, counts.qualified + counts.won, counts.won];
-  const dataUnavailable = [totalLeadsResult, customerCountResult, bookingCountResult, inboxCountResult, automationCountResult, recentLeadsResult, ...pipelineCountResults].some((result) => result.error);
+  const dataUnavailable = [customerCountResult, bookingCountResult, inboxCountResult, automationCountResult, recentLeadsResult, ...pipelineCountResults].some((result) => result.error);
 
   const recentByStatus = Object.fromEntries(
     pipelineOrder.map((status) => [
