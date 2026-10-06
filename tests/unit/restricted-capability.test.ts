@@ -12,6 +12,7 @@ import { voiceCapabilityConfig } from "@/server/voice/capability";
 import { automationCapabilityConfig } from "@/server/automation/capability";
 import { financeCapabilityConfig } from "@/server/finance/capability";
 import { aiCapabilityConfig } from "@/server/ai/capability";
+import { cigoReadCapabilityConfig } from "@/server/cigo/capability";
 
 function harness(options: {
   role?: "codeedge_finance_api";
@@ -139,6 +140,7 @@ describe("restricted database capability infrastructure", () => {
       automationCapabilityConfig.role,
       financeCapabilityConfig.role,
       aiCapabilityConfig.role,
+      cigoReadCapabilityConfig.role,
     ]).toEqual([
       "codeedge_communication_api",
       "codeedge_chat_api",
@@ -146,6 +148,7 @@ describe("restricted database capability infrastructure", () => {
       "codeedge_automation_api",
       "codeedge_finance_api",
       "codeedge_ai_api",
+      "codeedge_cigo_read_api",
     ]);
   });
 
