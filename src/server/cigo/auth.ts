@@ -9,6 +9,10 @@ export type CigoReadGrant = Readonly<{
   secret: string;
 }>;
 
+function credentialFingerprint(secret: string) {
+  return createHash("sha256").update(secret, "utf8").digest("hex");
+}
+
 function grantMap(raw: string | undefined) {
   if (!raw) throw new Error("CIGO read credentials are not configured.");
   let parsed: unknown;
@@ -56,7 +60,11 @@ export function authorizeCigoReadRequest(input: {
   keyId: string | null;
   authorization: string | null;
   rawCredentials?: string;
-}): Readonly<{ businessId: string; keyId: string; credentialFingerprint: string }> {
+}): Readonly<{
+  businessId: string;
+  keyId: string;
+  credentialFingerprint: string;
+}> {
   if (!businessIdPattern.test(input.workspaceId)) {
     throw new Error("CIGO read authorization denied.");
   }
@@ -74,5 +82,9 @@ export function authorizeCigoReadRequest(input: {
   ) {
     throw new Error("CIGO read authorization denied.");
   }
-  return {\n    businessId: grant.businessId,\n    keyId: input.keyId,\n    credentialFingerprint: credentialFingerprint(grant.secret),\n  };
+  return {
+    businessId: grant.businessId,
+    keyId: input.keyId,
+    credentialFingerprint: credentialFingerprint(grant.secret),
+  };
 }
