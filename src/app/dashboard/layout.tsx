@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/Sidebar";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import { requireDashboardTenant } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +8,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { context } = await requireDashboardTenant();
 
   return (
-    <main className="dash">
+    <div className="dash">
+      <a className="ceSkipLink" href="#workspace-content">Skip to workspace content</a>
       <Sidebar businessName={context.business.name} role={context.role} />
-      <section className="content">{children}</section>
-    </main>
+      <div className="content ceContent">
+        <DashboardHeader businessName={context.business.name} role={context.role} executionMode={context.business.execution_mode} />
+        <main className="cePageContent" id="workspace-content" tabIndex={-1}>{children}</main>
+      </div>
+    </div>
   );
 }
