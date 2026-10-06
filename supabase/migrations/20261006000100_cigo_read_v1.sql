@@ -25,11 +25,11 @@ create schema if not exists codeedge_internal;
 revoke all on schema codeedge_internal
 from public,anon,authenticated,codeedge_cigo_read_api;
 
-do $ begin
+do $$ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
     execute 'revoke all on schema codeedge_internal from service_role';
   end if;
-end $;
+end $$;
 
 create table if not exists codeedge_internal.cigo_read_grants (
   key_id text primary key
@@ -57,11 +57,11 @@ create table if not exists codeedge_internal.cigo_read_rate_state (
 revoke all on all tables in schema codeedge_internal
 from public,anon,authenticated,codeedge_cigo_read_api;
 
-do $ begin
+do $$ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
     execute 'revoke all on all tables in schema codeedge_internal from service_role';
   end if;
-end $;
+end $$;
 
 create or replace function public.cigo_read_v1(
   p_key_id text,
@@ -369,7 +369,7 @@ begin
         count(*) filter (where r.status='failed')::integer as failed,
         count(*) filter (where r.status='ambiguous')::integer as ambiguous,
         count(*) filter (where r.status='simulated')::integer as simulated,
-        max(coalesce(r.completed_at,rc.created_at)) as last_execution_at
+        max(coalesce(r.completed_at,r.created_at)) as last_execution_at
       from public.finance_execution_records r
       where r.business_id=b.id
     ) x on true
@@ -397,11 +397,11 @@ $$;
 revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
 from public,anon,authenticated;
 
-do $ begin
+do $$ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
     execute 'revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) from service_role';
   end if;
-end $;
+end $$;
 grant execute on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
 to codeedge_cigo_read_api;
 
