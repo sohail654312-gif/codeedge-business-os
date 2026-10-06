@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/server/db/client";
 import { AccessError, requireDefaultTenant, requireTenant, verifiedUser } from "@/server/authorization/tenant";
@@ -13,7 +14,7 @@ export async function requireSession() {
   }
 }
 
-export async function requireDashboardTenant() {
+const loadDashboardTenant = cache(async () => {
   const client = await createClient();
   try {
     return { client, context: await requireDefaultTenant(client) };
@@ -24,6 +25,10 @@ export async function requireDashboardTenant() {
     }
     throw error;
   }
+});
+
+export async function requireDashboardTenant() {
+  return loadDashboardTenant();
 }
 
 export async function requireBusinessById(businessId: string) {

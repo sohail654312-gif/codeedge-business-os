@@ -28,16 +28,17 @@ export async function middleware(request: NextRequest) {
       },
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: (items) => {
+        setAll: (items, headers) => {
           items.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           items.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
         },
       },
     },
   );
 
-  await client.auth.getUser();
+  await client.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
   applySecurityHeaders(response.headers, {
     pathname: request.nextUrl.pathname,
@@ -47,5 +48,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
