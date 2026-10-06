@@ -42,7 +42,7 @@ function projectedValue(value: unknown): ProjectedValue {
   return {
     externalReference: row.externalReference,
     version: row.version,
-    observedAt: row.observedAt,
+    observedAt: new Date(row.observedAt).toISOString(),
     value: row.value,
   };
 }
