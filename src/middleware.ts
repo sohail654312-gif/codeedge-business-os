@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  await client.auth.getUser();
+  await client.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
   applySecurityHeaders(response.headers, {
     pathname: request.nextUrl.pathname,
