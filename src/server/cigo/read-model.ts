@@ -72,7 +72,7 @@ export async function readCigoProjection(input: {
          record,
          sort_time::text as sort_time,
          sort_id
-       from public.cigo_read_v1(
+       from codeedge_internal.cigo_read_v1(
          $1::text,$2::text,$3::uuid,$4::text,$5::integer,$6::timestamptz,$7::text
        )`,
       [
