@@ -19,13 +19,13 @@ do $$ begin
 end $$;
 
 grant codeedge_cigo_read_api to postgres;
-grant usage on schema public to codeedge_cigo_read_api;
-
 create schema if not exists codeedge_internal;
 revoke all on schema codeedge_internal
 from public,anon,authenticated,codeedge_cigo_read_api;
 
-do $$ begin
+grant usage on schema codeedge_internal to codeedge_cigo_read_api;
+
+do $ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
     execute 'revoke all on schema codeedge_internal from service_role';
   end if;
@@ -63,7 +63,7 @@ do $$ begin
   end if;
 end $$;
 
-create or replace function public.cigo_read_v1(
+create or replace function codeedge_internal.cigo_read_v1(
   p_key_id text,
   p_credential_fingerprint text,
   p_business_id uuid,
@@ -394,16 +394,16 @@ begin
 end;
 $$;
 
-revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
+revoke all on function codeedge_internal.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
 from public,anon,authenticated;
 
 do $$ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
-    execute 'revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) from service_role';
+    execute 'revoke all on function codeedge_internal.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) from service_role';
   end if;
 end $$;
-grant execute on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
+grant execute on function codeedge_internal.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
 to codeedge_cigo_read_api;
 
-comment on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) is
+comment on function codeedge_internal.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) is
   'Versioned tenant-scoped read-only projection for Codeedge CIGO v1.';
