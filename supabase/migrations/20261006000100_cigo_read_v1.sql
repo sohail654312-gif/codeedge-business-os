@@ -25,7 +25,7 @@ from public,anon,authenticated,codeedge_cigo_read_api;
 
 grant usage on schema codeedge_internal to codeedge_cigo_read_api;
 
-do $ begin
+do $$ begin
   if exists(select 1 from pg_roles where rolname='service_role') then
     execute 'revoke all on schema codeedge_internal from service_role';
   end if;
