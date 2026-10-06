@@ -45,6 +45,20 @@ export async function runDemoReceptionist(
     return { error: "Demo Voice is available only in a Demo workspace." };
   }
 
+  const settings = await client.from("voice_receptionist_settings")
+    .select("enabled,provider,allowed_tools")
+    .eq("business_id", context.business.id)
+    .maybeSingle();
+  if (settings.error) return { error: "Unable to load AI Voice settings." };
+  if (!settings.data?.enabled || settings.data.provider !== "demo_voice") {
+    return { error: "Enable AI Receptionist with Demo Voice before running this simulation." };
+  }
+  const requiredTools = ["business_knowledge", "appointment_availability", "create_appointment"];
+  const allowedTools = settings.data.allowed_tools;
+  if (!requiredTools.every((tool) => allowedTools.includes(tool))) {
+    return { error: "This simulation requires business knowledge, appointment availability and create appointment permission." };
+  }
+
   const knowledge = await loadReceptionistKnowledge({ client, tenant: context });
   const service = knowledge.services.find(
     (item) => item.id === parsed.data.service_id,

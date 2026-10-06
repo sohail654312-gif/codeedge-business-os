@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { configurationReady,readinessSettings } from "@/server/readiness";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +14,8 @@ const required = [
 ] as const;
 
 export async function GET() {
-  const configured = required.filter((name) => Boolean(process.env[name]));
-  const ready = configured.length === required.length;
+  const configured = readinessSettings.filter((name) => Boolean(process.env[name]));
+  const ready = configurationReady(process.env);
 
   return NextResponse.json(
     {

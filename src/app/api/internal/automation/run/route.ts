@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { getAutomationRuntimeHealth } from "@/server/automation/health";
 import { runPendingAutomations } from "@/server/automation/runner";
 
 export const runtime = "nodejs";
@@ -30,6 +31,25 @@ export async function POST(request: NextRequest) {
 
   if (!runnerAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  if (request.nextUrl.searchParams.get("probe") === "1") {
+    try {
+      const health = await getAutomationRuntimeHealth();
+      return NextResponse.json(
+        {
+          status: health.healthy ? "ok" : "degraded",
+          probe: true,
+          ...health,
+        },
+        { status: health.healthy ? 200 : 503 },
+      );
+    } catch {
+      return NextResponse.json(
+        { status: "unavailable", probe: true },
+        { status: 503 },
+      );
+    }
   }
 
   const requested = Number(request.nextUrl.searchParams.get("limit") ?? "10");

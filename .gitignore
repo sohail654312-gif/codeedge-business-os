@@ -5,3 +5,7 @@ out
 .env.local
 .DS_Store
 *.log
+*.tsbuildinfo
+supabase/.temp/
+test-results/
+playwright-report/

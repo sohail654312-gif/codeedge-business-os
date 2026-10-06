@@ -1,0 +1,27 @@
+name: Audit 4 Part 6 automation liveness preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-4-part-6-automation-liveness
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: audit4-staging
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Verify staging Automation liveness without claiming runs
+        run: node scripts/audit4-automation-liveness-probe.mjs
+        env:
+          AUDIT4_BASE_URL: ${{ secrets.AUDIT4_BASE_URL }}
+          AUTOMATION_RUNNER_SECRET: ${{ secrets.AUTOMATION_RUNNER_SECRET }}

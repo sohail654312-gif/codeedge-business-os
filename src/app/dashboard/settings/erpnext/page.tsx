@@ -1,43 +1,26 @@
 import Link from "next/link";
-import { getERPNextPublicStatus } from "@/integrations/erpnext";
-
-export default function ERPNextSettingsPage() {
-  const status = getERPNextPublicStatus();
-
-  return (
-    <>
-      <div className="pageHead">
-        <div>
-          <div className="eyebrow">Integration</div>
-          <h1>ERPNext</h1>
-          <p className="muted">CodeEdge uses ERPNext as a replaceable back-office engine for finance and operations.</p>
-        </div>
-        <span className="pill">{status.configured ? "Configured" : "Not configured"}</span>
-      </div>
-
-      <div className="twoCol">
-        <div className="panel">
-          <h2>Connection</h2>
-          <p className="muted">Base URL: {status.baseUrl ?? "Not set"}</p>
-          <p className="muted">API credentials stay server-side and are never rendered in the browser.</p>
-          <p>Status endpoint: <code>/api/integrations/erpnext/status</code></p>
-        </div>
-
-        <div className="panel">
-          <h2>What ERPNext will power</h2>
-          <p className="muted">Customers and contacts</p>
-          <p className="muted">Leads and quotations</p>
-          <p className="muted">Sales invoices and payments</p>
-          <p className="muted">Suppliers and purchase documents</p>
-          <p className="muted">Projects, tasks and selected operations</p>
-        </div>
-      </div>
-
-      <div className="panel topGap">
-        <h2>Integration principle</h2>
-        <p className="muted">CodeEdge remains the client-facing product. ERPNext stays behind an adapter so it can be upgraded or replaced without redesigning the CodeEdge customer experience.</p>
-        <Link className="btn" href="/dashboard/settings">Back to settings</Link>
-      </div>
-    </>
-  );
+import { randomUUID } from "node:crypto";
+import { requireDashboardTenant } from "@/server/auth/session";
+import { loadFinanceContext } from "@/server/finance/context";
+import { financeEngineMetadata } from "@/server/finance/provider-metadata";
+export default async function FinanceSettingsPage() {
+  const { context } = await requireDashboardTenant();
+  let finance: Awaited<ReturnType<typeof loadFinanceContext>> | null = null;
+  try { finance = await loadFinanceContext({businessId:context.business.id,userId:context.userId,correlationId:randomUUID()}); }
+  catch { /* Fail closed; do not expose configuration errors or credentials. */ }
+  const metadata = finance ? financeEngineMetadata[finance.engine] : null;
+  return <>
+    <div className="pageHead"><div><div className="eyebrow">Workspace integration</div><h1>Finance settings</h1>
+      <p className="muted">Finance engines are replaceable. Codeedge CRM owns Customer identity.</p></div></div>
+    <section className="panel"><h2>{context.business.name}</h2>
+      <p>Workspace mode: {context.business.execution_mode}</p>
+      <p>Active engine: {metadata?.id ?? "Unavailable or not configured"}</p>
+      <p>Credential environment: {finance?.credentialEnvironment ?? "No external credentials available"}</p>
+      <p className="muted">Credentials stay server-side. Provider health is checked in Codeedge Money before use.</p>
+      {metadata ? <><p>Supported reads: {metadata.capabilities.join(", ")}</p>
+        <p>Supported writes: {metadata.writeCapabilities.join(", ")}</p></> : null}
+      <p>Unsupported operations fail closed. ERPNext supplier, quotation and invoice listing does not enable their creation.</p>
+      <Link className="btn" href="/dashboard/money">Open Codeedge Money</Link>
+    </section>
+  </>;
 }

@@ -10,6 +10,7 @@ export default function Login() {
         <h1>Welcome back</h1>
         <p className="muted">Sign in to your CodeEdge workspace.</p>
         <LoginForm />
+        <p className="authSwitch"><Link href="/forgot-password">Forgot your password?</Link></p>
         <p className="authSwitch">
           New to CodeEdge? <Link href="/signup">Create a workspace</Link>
         </p>

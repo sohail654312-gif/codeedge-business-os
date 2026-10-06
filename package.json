@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run verify:next-security && next build",
     "start": "next start",
     "erpnext:demo:start": "bash scripts/erpnext-demo.sh",
     "erpnext:demo:stop": "bash scripts/erpnext-demo-stop.sh",
@@ -17,29 +17,34 @@
     "schema:generate": "node scripts/generate-schema-contract.mjs --write",
     "schema:check": "node scripts/generate-schema-contract.mjs --check",
     "schema:prove-drift": "node scripts/generate-schema-contract.mjs --prove-drift",
-    "schema:hosted-parity": "node scripts/check-hosted-migration-parity.mjs"
+    "schema:hosted-parity": "node scripts/check-hosted-migration-parity.mjs",
+    "verify:next-security": "node scripts/verify-next-security.mjs"
   },
   "dependencies": {
-    "next": "15.5.26",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "zod": "4.5.4",
     "@supabase/ssr": "0.12.6",
     "@supabase/supabase-js": "2.116.0",
+    "next": "15.5.27",
+    "pg": "8.16.3",
+    "pg-connection-string": "2.11.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "server-only": "0.0.1",
-    "pg": "8.16.3"
+    "zod": "4.5.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.55.0",
     "@types/node": "^22",
+    "@types/pg": "8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5.8.3",
     "eslint": "^9.35.0",
-    "eslint-config-next": "15.5.26",
-    "vitest": "^3.2.4",
-    "@eslint/eslintrc": "^3.3.1",
-    "@electric-sql/pglite": "^0.5.8",
-    "@playwright/test": "^1.55.0",
-    "@types/pg": "8.15.5"
+    "eslint-config-next": "15.5.27",
+    "typescript": "^5.8.3",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "postcss": "8.5.28"
   }
 }

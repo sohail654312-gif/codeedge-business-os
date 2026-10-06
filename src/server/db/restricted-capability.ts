@@ -1,4 +1,6 @@
 import "server-only";
+import { X509Certificate } from "node:crypto";
+import { parseIntoClientConfig } from "pg-connection-string";
 
 import {
   Pool,
@@ -109,6 +111,33 @@ export function validateRestrictedDatabaseConnection(
   return value;
 }
 
+export function restrictedDatabasePoolConnection(
+  value: string | undefined,
+  label: string,
+  ca = process.env.RESTRICTED_DATABASE_CA_CERT,
+): PoolConfig {
+  const connection = validateRestrictedDatabaseConnection(value, label);
+  // Parse first: pg otherwise replaces an explicit ssl.ca when sslmode is in the URL.
+  const parsed = parseIntoClientConfig(connection);
+  if (!ca) return parsed;
+  try {
+    const certificate = new X509Certificate(ca);
+    const now = Date.now();
+    if (!certificate.ca || now < Date.parse(certificate.validFrom)
+      || now > Date.parse(certificate.validTo)) throw new Error("Invalid CA");
+  } catch {
+    throw new Error(`${label} database CA certificate is invalid or expired.`);
+  }
+  return {
+    ...parsed,
+    ssl: {
+      ...(typeof parsed.ssl === "object" ? parsed.ssl : {}),
+      ca,
+      rejectUnauthorized: true,
+    },
+  };
+}
+
 async function attestRestrictedLoginPrincipal(
   client: RestrictedClient,
   label: string,
@@ -173,7 +202,7 @@ export function createRestrictedCapability(
     work: (db: RestrictedCapabilityDb) => Promise<T>,
   ): Promise<T> {
     pool ??= (dependencies.createPool ?? ((poolConfig) => new Pool(poolConfig)))({
-      connectionString: validateRestrictedDatabaseConnection(
+      ...restrictedDatabasePoolConnection(
         config.connectionString(),
         config.label,
       ),

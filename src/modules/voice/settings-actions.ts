@@ -46,14 +46,28 @@ export async function saveVoiceReceptionistSettings(
     return { error: "Only a business owner can change AI Voice settings." };
   }
 
-  const { error } = await client
+  const existing = await client
     .from("voice_receptionist_settings")
-    .upsert({
-      business_id: context.business.id,
-      ...parsed.data,
-    }, { onConflict: "business_id" });
+    .select("business_id")
+    .eq("business_id", context.business.id)
+    .maybeSingle();
 
-  if (error) return { error: "Unable to save AI Voice settings." };
+  if (existing.error) return { error: "Unable to load AI Voice settings." };
+
+  // business_id is insertable but deliberately not updateable. An upsert
+  // includes it in ON CONFLICT's update and violates that column boundary.
+  const result = existing.data
+    ? await client.from("voice_receptionist_settings")
+      .update(parsed.data)
+      .eq("business_id", context.business.id)
+      .select("business_id")
+      .maybeSingle()
+    : await client.from("voice_receptionist_settings")
+      .insert({ business_id: context.business.id, ...parsed.data })
+      .select("business_id")
+      .single();
+
+  if (result.error || !result.data) return { error: "Unable to save AI Voice settings." };
 
   revalidatePath("/dashboard/contact-me/voice");
   return { success: "AI Voice settings saved." };

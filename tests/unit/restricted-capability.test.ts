@@ -1,7 +1,9 @@
 import type { PoolClient, PoolConfig } from "pg";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
   createRestrictedCapability,
+  restrictedDatabasePoolConnection,
   validateRestrictedDatabaseConnection,
 } from "@/server/db/restricted-capability";
 import { communicationCapabilityConfig } from "@/server/channels/capability";
@@ -75,6 +77,33 @@ function harness(options: {
 }
 
 describe("restricted database capability infrastructure", () => {
+  it("retains a provider CA with verify-full and hostname verification", () => {
+    const ca = readFileSync("tests/fixtures/supabase-prod-ca-2021.crt", "utf8");
+    const config = restrictedDatabasePoolConnection(
+      "postgresql://app:encoded%40password@database.example.test:5432/codeedge?sslmode=verify-full",
+      "Finance", ca,
+    );
+    expect(config.host).toBe("database.example.test");
+    expect(config.password).toBe("encoded@password");
+    expect(config.ssl).toEqual({ ca, rejectUnauthorized: true });
+    expect(config).not.toHaveProperty("connectionString");
+    expect(config.ssl).not.toHaveProperty("checkServerIdentity");
+  });
+
+  it("fails closed for a malformed provider CA without exposing its contents", () => {
+    const invalid = "untrusted-private-value";
+    expect(() => restrictedDatabasePoolConnection(
+      "postgresql://app@database.example.test/codeedge?sslmode=verify-full", "Finance", invalid,
+    )).toThrow("Finance database CA certificate is invalid or expired.");
+  });
+
+  it("still rejects downgraded TLS when a provider CA is configured", () => {
+    const ca = readFileSync("tests/fixtures/supabase-prod-ca-2021.crt", "utf8");
+    expect(() => restrictedDatabasePoolConnection(
+      "postgresql://app@database.example.test/codeedge?sslmode=require", "Finance", ca,
+    )).toThrow(/verified TLS/);
+  });
+
   it("fails closed when verified TLS is absent for a remote database", () => {
     expect(() => validateRestrictedDatabaseConnection(
       "postgresql://app@example.test/codeedge",
