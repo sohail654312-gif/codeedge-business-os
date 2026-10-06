@@ -82,7 +82,17 @@ export async function requireDefaultTenant(
   if (error) throw new Error("Unable to resolve workspace membership.");
   if (!membership) throw new AccessError(404, "No active workspace is available.");
 
-  return tenantForVerifiedUser(client, user.id, { id: membership.business_id });
+  const { data: business, error: businessError } = await client
+    .from("businesses")
+    .select("id,name,slug,status,timezone,execution_mode,created_at,updated_at")
+    .eq("id", membership.business_id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (businessError) throw new Error("Unable to load business access.");
+  if (!business) throw new AccessError(404, "Business unavailable.");
+
+  return { userId: user.id, business, role: membership.role };
 }
 
 export function requireOwner(context: TenantContext) {
