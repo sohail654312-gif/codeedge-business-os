@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { authorizeCigoReadRequest } from "@/server/cigo/auth";
 
@@ -16,7 +17,13 @@ describe("CIGO read service authentication", () => {
       keyId: "key_a",
       authorization: `Bearer ${secret}`,
       rawCredentials: raw,
-    })).toEqual({ businessId: A, keyId: "key_a" });
+    })).toEqual({
+      businessId: A,
+      keyId: "key_a",
+      credentialFingerprint: createHash("sha256")
+        .update(secret, "utf8")
+        .digest("hex"),
+    });
   });
 
   it("rejects cross-workspace swapping even with another valid-looking target", () => {

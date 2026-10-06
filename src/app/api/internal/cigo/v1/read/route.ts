@@ -10,7 +10,10 @@ import {
   type CigoReadEnvelope,
 } from "@/server/cigo/contract";
 import { cigoReadCursorCodecFromEnvironment } from "@/server/cigo/cursor";
-import { readCigoProjection } from "@/server/cigo/read-model";
+import {
+  CigoReadRateLimitError,
+  readCigoProjection,
+} from "@/server/cigo/read-model";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,13 +56,19 @@ export async function GET(request: NextRequest) {
     return json({ error: "Invalid read request." }, 400, requestId);
   }
 
+  let grant: ReturnType<typeof authorizeCigoReadRequest>;
   try {
-    authorizeCigoReadRequest({
+    grant = authorizeCigoReadRequest({
       workspaceId,
       keyId: request.headers.get("x-codeedge-cigo-key-id"),
       authorization: request.headers.get("authorization"),
     });
   } catch {
+    console.warn(JSON.stringify({
+      event: "cigo_read_rejected",
+      reason: "authorization",
+      requestId,
+    }));
     return json({ error: "Unauthorized." }, 401, requestId);
   }
 
@@ -73,6 +82,8 @@ export async function GET(request: NextRequest) {
 
     const page = await readCigoProjection({
       workspaceId,
+      keyId: grant.keyId,
+      credentialFingerprint: grant.credentialFingerprint,
       resourceKind,
       limit,
       ...(decoded ? { cursor: decoded } : {}),
@@ -97,7 +108,16 @@ export async function GET(request: NextRequest) {
       errors: [],
     };
     return json(envelope, 200, requestId);
-  } catch {
+  } catch (error) {
+    const rateLimited = error instanceof CigoReadRateLimitError;
+    console.warn(JSON.stringify({
+      event: "cigo_read_unavailable",
+      reason: rateLimited ? "rate_limited" : "source_unavailable",
+      requestId,
+      workspaceId,
+      resourceKind,
+      keyId: grant.keyId,
+    }));
     const envelope: CigoReadEnvelope = {
       contractVersion: CIGO_READ_CONTRACT_VERSION,
       sourceSystem: CIGO_READ_SOURCE_SYSTEM,
@@ -108,11 +128,11 @@ export async function GET(request: NextRequest) {
       pagination: {},
       completeness: "PARTIAL",
       errors: [{
-        code: "SOURCE_UNAVAILABLE",
+        code: rateLimited ? "RATE_LIMITED" : "SOURCE_UNAVAILABLE",
         message: "Business OS read boundary unavailable.",
         retryable: true,
       }],
     };
-    return json(envelope, 503, requestId);
+    return json(envelope, rateLimited ? 429 : 503, requestId);
   }
 }

@@ -15,6 +15,12 @@ type ProjectionRow = QueryResultRow & {
   sort_id: string;
 };
 
+export class CigoReadRateLimitError extends Error {
+  constructor() {
+    super("CIGO_READ_RATE_LIMITED");
+  }
+}
+
 type ProjectedValue = {
   externalReference: string;
   version: string;
@@ -49,6 +55,8 @@ function projectedValue(value: unknown): ProjectedValue {
 
 export async function readCigoProjection(input: {
   workspaceId: string;
+  keyId: string;
+  credentialFingerprint: string;
   resourceKind: CigoReadResourceKind;
   limit: number;
   cursor?: CigoReadCursorState;
@@ -57,20 +65,37 @@ export async function readCigoProjection(input: {
   nextState?: CigoReadCursorState;
 }> {
   const requested = input.limit + 1;
-  const result = await withCigoReadCapability((db) => db.query<ProjectionRow>(
-    `select
-       record,
-       sort_time::text as sort_time,
-       sort_id
-     from public.cigo_read_v1($1::uuid,$2::text,$3::integer,$4::timestamptz,$5::text)`,
-    [
-      input.workspaceId,
-      input.resourceKind,
-      requested,
-      input.cursor?.afterTime ?? null,
-      input.cursor?.afterId ?? "",
-    ],
-  ));
+  let result;
+  try {
+    result = await withCigoReadCapability((db) => db.query<ProjectionRow>(
+      `select
+         record,
+         sort_time::text as sort_time,
+         sort_id
+       from public.cigo_read_v1(
+         $1::text,$2::text,$3::uuid,$4::text,$5::integer,$6::timestamptz,$7::text
+       )`,
+      [
+        input.keyId,
+        input.credentialFingerprint,
+        input.workspaceId,
+        input.resourceKind,
+        requested,
+        input.cursor?.afterTime ?? null,
+        input.cursor?.afterId ?? "",
+      ],
+    ));
+  } catch (error) {
+    if (
+      error
+      && typeof error === "object"
+      && "code" in error
+      && error.code === "57014"
+    ) {
+      throw new CigoReadRateLimitError();
+    }
+    throw error;
+  }
 
   if (!result || !Array.isArray(result.rows) || result.rows.length > requested) {
     throw new Error("Invalid CIGO projection result.");

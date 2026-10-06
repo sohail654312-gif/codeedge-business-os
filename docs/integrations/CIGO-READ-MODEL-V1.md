@@ -21,7 +21,7 @@ Allowed v1 resources:
 - `inbox_summary`
 - `finance_summary`
 
-The database boundary is `public.cigo_read_v1(...)`, executable only through the restricted `codeedge_cigo_read_api` capability role. The function contains the same allowlist and enforces an active tenant before every read.
+The database boundary is `public.cigo_read_v1(...)`, executable only through the restricted `codeedge_cigo_read_api` capability role. A private `codeedge_internal.cigo_read_grants` table binds key ID + workspace + SHA-256 credential fingerprint, is unreadable to the capability role, and supports independent disable/revocation. The function contains the same allowlist and refuses any request whose server credential and database grant do not agree. A bounded private per-key rate state enforces the configured requests-per-minute limit across application instances.
 
 ## Data minimisation
 
@@ -45,3 +45,10 @@ A successful HTTP read does **not** create a CIGO FACT or VERIFIED truth claim. 
 - `CIGO_READ_CURSOR_ACTIVE_KEY_ID` — active cursor encryption key ID.
 
 No credential belongs in source control or normal request payloads.
+
+
+## Abuse control and auditability
+
+Authorization failures and source/rate-limit failures emit structured server logs containing only the request ID and non-secret scope identifiers. Secrets and credential fingerprints are never logged. Rate-limit exhaustion returns HTTP 429 with the same generic safe envelope rather than triggering an unbounded retry loop.
+
+Database grants are provisioned by an administrator out of band; no grant secret or fingerprint is committed to source. Revocation can be performed independently at both layers: remove/rotate the server credential and disable or revoke the matching database grant.
