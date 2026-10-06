@@ -1,5 +1,5 @@
 import "server-only";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 const businessIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const keyIdPattern = /^[A-Za-z0-9_-]{1,64}$/;
@@ -56,7 +56,7 @@ export function authorizeCigoReadRequest(input: {
   keyId: string | null;
   authorization: string | null;
   rawCredentials?: string;
-}): Readonly<{ businessId: string; keyId: string }> {
+}): Readonly<{ businessId: string; keyId: string; credentialFingerprint: string }> {
   if (!businessIdPattern.test(input.workspaceId)) {
     throw new Error("CIGO read authorization denied.");
   }
@@ -74,5 +74,5 @@ export function authorizeCigoReadRequest(input: {
   ) {
     throw new Error("CIGO read authorization denied.");
   }
-  return { businessId: grant.businessId, keyId: input.keyId };
+  return {\n    businessId: grant.businessId,\n    keyId: input.keyId,\n    credentialFingerprint: credentialFingerprint(grant.secret),\n  };
 }
