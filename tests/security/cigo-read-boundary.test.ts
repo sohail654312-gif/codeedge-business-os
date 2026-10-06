@@ -16,7 +16,9 @@ describe("CIGO read-only projection security", () => {
     expect(migration).toContain("codeedge_internal.cigo_read_rate_state");
     expect(migration).toContain("requests_per_minute");
     expect(migration).not.toMatch(/grant\s+(insert|update|delete|all)\s+on\s+public\./i);
-    expect(migration).toContain("from public,anon,authenticated");\n    expect(migration).toContain("grant usage on schema codeedge_internal to codeedge_cigo_read_api");\n    expect(migration).not.toContain("grant usage on schema public to codeedge_cigo_read_api");
+    expect(migration).toContain("from public,anon,authenticated");
+    expect(migration).toContain("grant usage on schema codeedge_internal to codeedge_cigo_read_api");
+    expect(migration).not.toContain("grant usage on schema public to codeedge_cigo_read_api");
     expect(migration).toContain("rolname='service_role'");
     expect(migration).toContain("from service_role");
   });
