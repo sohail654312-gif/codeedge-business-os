@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { formatLeadDate, formatLeadValue } from "@/modules/buy-from-me/leads/data";
 import { leadSourceLabels, leadStatusLabels } from "@/modules/buy-from-me/leads/domain";
 import { requireDashboardTenant } from "@/server/auth/session";
+import { DashboardLeadActivity } from "@/components/DashboardLeadActivity";
 
 const pipelineOrder = ["new", "contacted", "qualified", "won", "lost"] as const;
 
@@ -20,14 +22,6 @@ const pipelineClass: Record<(typeof pipelineOrder)[number], string> = {
   won: "ceStageWon",
   lost: "ceStageLost",
 };
-
-function eventDate(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone,
-  }).format(new Date(value));
-}
 
 export default async function Dashboard() {
   const { client, context } = await requireDashboardTenant();
@@ -74,16 +68,6 @@ export default async function Dashboard() {
 
   const recentLeads = recentLeadsResult.error ? [] : recentLeadsResult.data ?? [];
   const selectedLead = recentLeads[0] ?? null;
-
-  const activityResult = selectedLead
-    ? await client
-      .from("crm_activities")
-      .select("id,event_type,description,created_at")
-      .eq("business_id", context.business.id)
-      .eq("lead_id", selectedLead.id)
-      .order("created_at", { ascending: false })
-      .limit(5)
-    : { data: [], error: null };
 
   const totalLeads = totalLeadsResult.error ? 0 : totalLeadsResult.count ?? 0;
   const customers = customerCountResult.error ? 0 : customerCountResult.count ?? 0;
@@ -256,16 +240,9 @@ export default async function Dashboard() {
 
               <section className="ceActivityPanel" id="lead-activity">
                 <h3 className="ceActivityHeading">Activity</h3>
-                <div className="ceActivityList">
-                  {(activityResult.data ?? []).length ? (activityResult.data ?? []).map((activity) => (
-                    <div className="ceActivityRow" key={activity.id}>
-                      <span className="ceActivityIcon">•</span>
-                      <div><b>{activity.description}</b><span>{eventDate(activity.created_at, context.business.timezone)}</span></div>
-                    </div>
-                  )) : (
-                    <p className="ceDetailMuted">No CRM activity recorded for this lead yet.</p>
-                  )}
-                </div>
+                <Suspense fallback={<p className="ceDetailMuted">Loading recent activity…</p>}>
+                  <DashboardLeadActivity leadId={selectedLead.id} timeZone={context.business.timezone} />
+                </Suspense>
                 <Link className="ceNoteLink" href={"/dashboard/buy-from-me/leads/" + selectedLead.id}>Open lead notes →</Link>
               </section>
             </>
