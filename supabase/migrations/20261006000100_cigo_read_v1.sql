@@ -23,7 +23,13 @@ grant usage on schema public to codeedge_cigo_read_api;
 
 create schema if not exists codeedge_internal;
 revoke all on schema codeedge_internal
-from public,anon,authenticated,service_role,codeedge_cigo_read_api;
+from public,anon,authenticated,codeedge_cigo_read_api;
+
+do $ begin
+  if exists(select 1 from pg_roles where rolname='service_role') then
+    execute 'revoke all on schema codeedge_internal from service_role';
+  end if;
+end $;
 
 create table if not exists codeedge_internal.cigo_read_grants (
   key_id text primary key
@@ -49,7 +55,13 @@ create table if not exists codeedge_internal.cigo_read_rate_state (
 );
 
 revoke all on all tables in schema codeedge_internal
-from public,anon,authenticated,service_role,codeedge_cigo_read_api;
+from public,anon,authenticated,codeedge_cigo_read_api;
+
+do $ begin
+  if exists(select 1 from pg_roles where rolname='service_role') then
+    execute 'revoke all on all tables in schema codeedge_internal from service_role';
+  end if;
+end $;
 
 create or replace function public.cigo_read_v1(
   p_key_id text,
@@ -383,7 +395,13 @@ end;
 $$;
 
 revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
-from public,anon,authenticated,service_role;
+from public,anon,authenticated;
+
+do $ begin
+  if exists(select 1 from pg_roles where rolname='service_role') then
+    execute 'revoke all on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text) from service_role';
+  end if;
+end $;
 grant execute on function public.cigo_read_v1(text,text,uuid,text,integer,timestamptz,text)
 to codeedge_cigo_read_api;
 
