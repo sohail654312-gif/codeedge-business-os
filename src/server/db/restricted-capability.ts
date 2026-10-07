@@ -17,6 +17,7 @@ export const restrictedDatabaseRoles = [
   "codeedge_automation_api",
   "codeedge_finance_api",
   "codeedge_ai_api",
+  "codeedge_cigo_read_api",
 ] as const;
 
 export type RestrictedDatabaseRole =

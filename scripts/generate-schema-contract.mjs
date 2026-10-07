@@ -109,9 +109,14 @@ async function expectedGeneratedSource() {
   });
 }
 
-function mismatchError() {
+function mismatchError(expected = "") {
+  const migrationSha256 = expected.match(
+    /"migrationSha256": "([0-9a-f]{64})"/,
+  )?.[1];
   return new Error(
-    "Database schema/type contract drift detected. Run npm run schema:generate and review the generated diff.",
+    "Database schema/type contract drift detected."
+    + (migrationSha256 ? ` Expected migration SHA-256: ${migrationSha256}.` : "")
+    + " Run npm run schema:generate and review the generated diff.",
   );
 }
 
@@ -122,7 +127,7 @@ async function checkCurrent(expected) {
   } catch {
     throw mismatchError();
   }
-  if (actual !== expected) throw mismatchError();
+  if (actual !== expected) throw mismatchError(expected);
 }
 
 const mode = process.argv[2] ?? "--check";
