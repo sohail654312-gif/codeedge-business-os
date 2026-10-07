@@ -133,7 +133,9 @@ export async function readCigoProjection(input: {
   return {
     records,
     nextState: {
-      afterTime: new Date(last.sort_time).toISOString(),
+      // Preserve PostgreSQL's microseconds. JavaScript ISO conversion truncates
+      // them and would repeat rows whose timestamp is later within that millisecond.
+      afterTime: last.sort_time,
       afterId: last.sort_id,
     },
   };
