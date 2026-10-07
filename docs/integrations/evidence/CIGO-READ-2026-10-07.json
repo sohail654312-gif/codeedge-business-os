@@ -1,0 +1,225 @@
+{
+  "deploymentId": "dpl_BiWkCsCoQCgs7x9WWGaH7DxNdzCv",
+  "deploymentSha": "e5a3c7d64940c79558c9318d446237340a32d620",
+  "environment": "codeedge-business-os-test / protected Preview",
+  "contractVersion": "codeedge-business-os-read-model:v1",
+  "workspaceA": "e0eccae6-ecae-4c7a-b5de-d1ffc9fdcad0",
+  "workspaceB": "a75b5c38-1364-45e6-83ef-aafe739c8d89",
+  "cases": [
+    {
+      "name": "adapter -> protected preview -> restricted projection -> durable receipt",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "98229709-4835-4290-ab62-1303bf6ca47d"
+        }
+      ]
+    },
+    {
+      "name": "CIGO outer + Business OS inner pagination continuation",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "5e632672-bc37-47d1-803a-660d8aa02507"
+        }
+      ]
+    },
+    {
+      "name": "cross-workspace credential rejected at HTTP boundary",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 401,
+          "applicationRequestId": "07118129-9b23-4dee-a832-541c493a5266"
+        }
+      ]
+    },
+    {
+      "name": "unsupported resource rejected at HTTP boundary",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "d5e3d545-3cac-498e-adbc-bac10ecab77d"
+        }
+      ]
+    },
+    {
+      "name": "bad bearer rejected at HTTP boundary",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 401,
+          "applicationRequestId": "0746b325-3fa9-4702-a303-982aea54386b"
+        }
+      ]
+    },
+    {
+      "name": "DB-revoked grant fails closed through HTTP",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 503,
+          "applicationRequestId": "8eabb592-fce1-4398-8dd6-ce7d43fe52cf"
+        }
+      ]
+    },
+    {
+      "name": "credential old succeeds, revocation fails, rotated succeeds through CIGO",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "d5a3027c-0738-4ba0-97ac-58782f56b6d5"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 503,
+          "applicationRequestId": "a1213d36-4e2a-4b10-850f-1ec082a64754"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "a4afdc18-ab17-4316-bdd3-5f5b86594937"
+        }
+      ]
+    },
+    {
+      "name": "all eight resources preserve data minimisation",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "bb469059-25da-48c2-a0a7-9292c14bec68"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "4b04247b-f5a0-48af-8e95-eda628d9708d"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "8ca59e10-e0f7-48e9-a680-c405e50bcfa9"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "fae6c80d-aaef-4824-997c-e24e5855b717"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "4d36889c-e84a-4547-b3e2-c9d85d98b2b7"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "0339bf82-945d-44c1-8456-8b3687f29ae0"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "91cac0ec-9759-4a20-9b82-effcd07026e9"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "171bece7-dd47-49f9-bac9-0f9532434e8b"
+        }
+      ]
+    },
+    {
+      "name": "rate limit fails closed through protected HTTP",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "06ef0bdb-45b2-46ed-80b6-735dea9c50af"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "9dec2cb2-ec60-4eb4-9366-750a56036b84"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 429,
+          "applicationRequestId": "6618bf55-094b-4d40-9504-800aab828247"
+        }
+      ]
+    },
+    {
+      "name": "inner cursor tamper, workspace/resource/limit binding",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "a1b63b43-9996-4e12-b6e8-34171f003984"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "97addcb3-2ea1-4ca7-a5a6-4a38e71e7bba"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "94f0ab7b-a2ac-484e-a33a-9b301ea2cf13"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "806cac8d-5f82-43f2-a06d-12a7cc81f78a"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "ea9b0882-23d2-4113-a888-3038c5b446c6"
+        }
+      ]
+    },
+    {
+      "name": "authentic expired inner cursor and retained old key rotation",
+      "result": "PASS",
+      "http": [
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "3ec1ba2c-6d99-4946-80a3-e6d8bd3ed5de"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 400,
+          "applicationRequestId": "d1d2fe6c-e3f5-4a7f-9f89-148a53eed455"
+        },
+        {
+          "path": "/api/internal/cigo/v1/read",
+          "status": 200,
+          "applicationRequestId": "7a251175-a8d7-4f56-99b1-928a7b61f8fa"
+        }
+      ]
+    },
+    {
+      "name": "restricted DB capability cannot SELECT operational or credential tables",
+      "result": "PASS",
+      "http": []
+    }
+  ],
+  "secretsLogged": false,
+  "providerEffects": 0,
+  "result": "PASS",
+  "observedAt": "2026-10-07T16:36:17.997Z"
+}
