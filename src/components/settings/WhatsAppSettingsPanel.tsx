@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   saveWhatsAppSettings,
+  syncWhatsAppTemplates,
   type WhatsAppSettingsState,
 } from "@/modules/whatsapp/actions";
 import type { ChannelConnection } from "@/types/database";
@@ -19,6 +20,7 @@ export function WhatsAppSettingsPanel({
   appUrl: string | null;
 }) {
   const [state, action, pending] = useActionState(saveWhatsAppSettings, initialState);
+  const [templateState, templateAction, syncing] = useActionState(syncWhatsAppTemplates, initialState);
   const webhookUrl = appUrl ? `${appUrl}/api/channels/whatsapp/meta/webhook` : null;
 
   return (
@@ -31,7 +33,7 @@ export function WhatsAppSettingsPanel({
             Meta WhatsApp Cloud API connected to the existing Codeedge Shared Inbox.
           </p>
         </div>
-        <span className="pill">{connection?.enabled ? "Enabled" : "Disabled"}</span>
+        <span className="pill">{connection?.enabled ? "Enabled — awaiting live verification" : "Not connected"}</span>
       </div>
 
       {!canEdit ? (
@@ -43,12 +45,20 @@ export function WhatsAppSettingsPanel({
         </dl>
       ) : (
         <form action={action} className="businessInfoForm">
+          <input type="hidden" name="whatsapp_assistant_settings" value="1" />
           <div className="settingsToggleRow">
             <label className="checkField">
               <input type="checkbox" name="enabled" defaultChecked={connection?.enabled ?? false} />
               Enable WhatsApp channel
             </label>
           </div>
+
+          <div className="settingsToggleRow">
+            <label className="checkField"><input type="checkbox" name="whatsapp_ai_enabled" defaultChecked={connection?.whatsapp_ai_enabled ?? false} /> AI auto reply from approved business knowledge</label>
+            <label className="checkField"><input type="checkbox" name="whatsapp_clinic_mode" defaultChecked={connection?.whatsapp_clinic_mode ?? false} /> Clinic mode: administrative questions only</label>
+          </div>
+          <div className="field"><label htmlFor="whatsapp_escalation">Escalation keywords (comma separated)</label><input id="whatsapp_escalation" name="whatsapp_escalation_keywords" maxLength={1000} defaultValue={(connection?.whatsapp_escalation_keywords ?? ["human","person","complaint","payment problem"]).join(", ")} /></div>
+          <p className="muted">Human handoff is enabled. Staff replies pause automatic replies until explicitly resumed in the Shared Inbox.</p>
 
           <div className="profileGrid">
             <div className="field">
@@ -114,6 +124,17 @@ export function WhatsAppSettingsPanel({
           </button>
         </form>
       )}
+
+      <dl className="detailList">
+        <div><dt>AI auto reply</dt><dd>{connection?.whatsapp_ai_enabled ? "On" : "Off"}</dd></div>
+        <div><dt>Webhook</dt><dd>{connection?.last_webhook_at ? `Last received: ${connection.last_webhook_at}` : "No verified event received"}</dd></div>
+        <div><dt>Template approvals</dt><dd>{connection?.whatsapp_templates_synced_at ? `Last refreshed: ${connection.whatsapp_templates_synced_at}` : "Not checked with Meta"}</dd></div>
+      </dl>
+      {canEdit && connection ? <form action={templateAction}>
+        <button className="btn" disabled={syncing}>{syncing ? "Refreshing..." : "Refresh templates from Meta"}</button>
+        {templateState.error ? <p role="alert">{templateState.error}</p> : null}
+        {templateState.success ? <p role="status">{templateState.success}</p> : null}
+      </form> : null}
 
       <div className="websiteChatInstall">
         <h3>Meta webhook</h3>

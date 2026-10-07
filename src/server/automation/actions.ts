@@ -5,6 +5,7 @@ import { z } from "zod";
 import { sendEmailReply } from "@/server/channels/email";
 import { sendSmsReply } from "@/server/channels/sms";
 import { sendWhatsAppReply } from "@/server/channels/whatsapp";
+import { runWhatsAppAssistant } from "@/server/ai/whatsapp-assistant";
 import { withAutomationCapability } from "./capability";
 import { resolveAutomationPath } from "./conditions";
 import {
@@ -20,6 +21,7 @@ export type AutomationActionRegistration = {
 };
 
 export const automationActionRegistry = Object.freeze({
+  "communication.ai_whatsapp_reply": { externalEffect: true, retry: "idempotent" },
   "crm.update_lead_status": {
     externalEffect: false,
     retry: "safe_internal",
@@ -74,6 +76,13 @@ export async function executeAutomationAction(
   actionIndex: number,
 ): Promise<Record<string, unknown>> {
   switch (action.type) {
+    case "communication.ai_whatsapp_reply":
+      return runWhatsAppAssistant({
+        businessId: context.businessId,
+        userId: context.actorUserId,
+        conversationId: requiredUuid(context, action.conversationIdPath),
+        messageId: requiredUuid(context, action.messageIdPath),
+      });
     case "crm.update_lead_status": {
       const leadId = requiredUuid(context, action.leadIdPath);
       await withAutomationCapability(async (db) => {
@@ -110,6 +119,7 @@ export async function executeAutomationAction(
         userId: context.actorUserId,
         requestId,
         body: action.body,
+        automatic: true,
       };
 
       const result = action.type === "communication.send_whatsapp"

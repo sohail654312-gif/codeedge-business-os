@@ -270,6 +270,13 @@ export type AutomationActionRun = {
 };
 
 export type Conversation = {
+  automation_state?: "automatic" | "human";
+  handoff_reason?: string;
+  automation_epoch?: number;
+  last_customer_message_at?: string | null;
+  whatsapp_opted_out_at?: string | null;
+  whatsapp_consent_at?: string | null;
+  whatsapp_consent_source?: string;
   id: string;
   business_id: string;
   lead_id: string | null;
@@ -290,6 +297,12 @@ export type Conversation = {
 };
 
 export type ChannelConnection = {
+  whatsapp_ai_enabled?: boolean;
+  whatsapp_clinic_mode?: boolean;
+  whatsapp_escalation_keywords?: string[];
+  last_webhook_at?: string | null;
+  whatsapp_templates?: Array<{ name: string; language: string; category: string; status: string; body: string }>;
+  whatsapp_templates_synced_at?: string | null;
   id: string;
   business_id: string;
   channel: ConversationChannel;
@@ -351,6 +364,11 @@ export type EmailMessageMetadata = {
 };
 
 export type Message = {
+  content_kind?: "text" | "interactive" | "image" | "document" | "audio" | "video" | "template";
+  media_metadata?: Record<string, unknown>;
+  provider_timestamp?: string | null;
+  assistant_claimed_at?: string | null;
+  assistant_outcome?: string;
   id: string;
   business_id: string;
   conversation_id: string;
@@ -678,6 +696,9 @@ export type Database = {
           external_sender_id: string;
           display_address?: string;
           credential_key: string;
+          whatsapp_ai_enabled?: boolean;
+          whatsapp_clinic_mode?: boolean;
+          whatsapp_escalation_keywords?: string[];
           enabled?: boolean;
           id?: string;
         },
@@ -687,6 +708,9 @@ export type Database = {
           | "external_sender_id"
           | "display_address"
           | "credential_key"
+          | "whatsapp_ai_enabled"
+          | "whatsapp_clinic_mode"
+          | "whatsapp_escalation_keywords"
           | "enabled"
         >>
       >;
