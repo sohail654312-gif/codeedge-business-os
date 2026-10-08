@@ -57,6 +57,7 @@ describe("Meta WhatsApp adapter", () => {
       body: "Hello Codeedge",
     }]);
     expect(parsed.statuses).toEqual([{
+      externalSenderId: "109876543210",
       providerMessageId: "wamid.outbound",
       status: "delivered",
       errorCode: null,

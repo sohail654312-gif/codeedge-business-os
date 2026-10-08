@@ -14,6 +14,9 @@ export const whatsappConnectionSettingsSchema = z.object({
     /^[A-Za-z0-9._-]{2,80}$/,
     "Credential key may use letters, numbers, dots, underscores and hyphens.",
   ),
+  whatsapp_ai_enabled: z.boolean().optional(),
+  whatsapp_clinic_mode: z.boolean().optional(),
+  whatsapp_escalation_keywords: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
 });
 
 export type WhatsAppConnectionSettings = z.infer<typeof whatsappConnectionSettingsSchema>;
