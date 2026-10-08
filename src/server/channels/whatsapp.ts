@@ -75,7 +75,7 @@ export async function refreshWhatsAppTemplates(businessId: string,userId: string
   assertCommunicationExternalEffectAllowed({ businessId,executionMode: config.execution_mode,providerEnvironment: config.credential_environment,action: "communication.send",channel: "whatsapp",provider: "meta_whatsapp_cloud",correlationId: null,simulated: false });
   const sender: WhatsAppSender = { businessId: config.business_id,externalSenderId: config.external_sender_id,credentialKey: config.credential_key,providerEnvironment: config.credential_environment };
   const templates: WhatsAppApprovedTemplate[] = await getTextCommunicationProvider("meta_whatsapp_cloud").listTemplates({ ...sender,accountId: config.external_account_id });
-  const saved = await withCommunicationCapability(db => db.query<{ saved: boolean }>("select public.whatsapp_cache_templates($1,$2,$3,$4,$5) as saved",[businessId,userId,config.external_sender_id,config.external_account_id,templates]));
+  const saved = await withCommunicationCapability(db => db.query<{ saved: boolean }>("select public.whatsapp_cache_templates($1,$2,$3,$4,$5) as saved",[businessId,userId,config.external_sender_id,config.external_account_id,JSON.stringify(templates)]));
   if (!saved.rows[0]?.saved) throw new Error("Connection changed during template refresh.");
   return templates.length;
 }
