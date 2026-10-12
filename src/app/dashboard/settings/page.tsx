@@ -4,6 +4,7 @@ import { OpeningHoursPanel, ServiceAreasPanel } from "@/components/settings/Serv
 import { BusinessSettingsPanel, FaqPanel } from "@/components/settings/FaqSettingsPanels";
 import { WebsiteChatSettingsPanel } from "@/components/settings/WebsiteChatSettingsPanel";
 import { WhatsAppSettingsPanel } from "@/components/settings/WhatsAppSettingsPanel";
+import { WhatsAppAutoReplySettingsPanel } from "@/components/settings/WhatsAppAutoReplySettingsPanel";
 import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
 import { SmsSettingsPanel } from "@/components/settings/SmsSettingsPanel";
 import { BusinessTimezonePanel } from "@/components/settings/BusinessTimezonePanel";
@@ -24,6 +25,7 @@ export default async function Settings() {
     settingsResult,
     websiteChatResult,
     whatsappResult,
+    whatsappDraftSettingsResult,
     emailResult,
     emailSettingsResult,
     smsResult,
@@ -74,6 +76,11 @@ export default async function Settings() {
       .eq("provider", "meta_whatsapp_cloud")
       .maybeSingle(),
     client
+      .from("whatsapp_auto_reply_settings")
+      .select("*")
+      .eq("business_id", context.business.id)
+      .maybeSingle(),
+    client
       .from("channel_connections")
       .select("*")
       .eq("business_id", context.business.id)
@@ -103,6 +110,7 @@ export default async function Settings() {
     settingsResult.error ||
     websiteChatResult.error ||
     whatsappResult.error ||
+    whatsappDraftSettingsResult.error ||
     emailResult.error ||
     emailSettingsResult.error ||
     smsResult.error
@@ -235,6 +243,12 @@ export default async function Settings() {
         connection={whatsappResult.data}
         canEdit={canEdit}
         appUrl={appUrl}
+      />
+
+      <WhatsAppAutoReplySettingsPanel
+        key={whatsappDraftSettingsResult.data?.updated_at ?? "new-whatsapp-auto-replies"}
+        settings={whatsappDraftSettingsResult.data}
+        canEdit={canEdit}
       />
 
       <EmailSettingsPanel
