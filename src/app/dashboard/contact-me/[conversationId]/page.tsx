@@ -40,6 +40,16 @@ export default async function ConversationDetailPage({
   if (!detail) notFound();
 
   const { conversation, lead, customer, messages } = detail;
+  const lastDraft = conversation.channel === "whatsapp"
+    ? await client.from("whatsapp_auto_reply_drafts")
+      .select("id,decision,reply_text,created_at")
+      .eq("business_id", context.business.id)
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    : null;
+  if (lastDraft?.error) throw new Error("Unable to load WhatsApp reply suggestion.");
   const contactName = customer?.contact_name ?? lead?.contact_name ?? "Unlinked conversation";
 
   return (
@@ -123,6 +133,26 @@ export default async function ConversationDetailPage({
           )}
         </div>
       </section>
+
+      {lastDraft?.data ? (
+        <section className="panel topGap">
+          <h2>WhatsApp reply assistant</h2>
+          {lastDraft.data.decision === "draft" ? (
+            <>
+              <p className="muted">
+                Suggested reply only. Nothing has been sent. Review it, then
+                copy the text into the composer to reply as a team member.
+              </p>
+              <blockquote>{lastDraft.data.reply_text}</blockquote>
+            </>
+          ) : (
+            <p className="muted">
+              Automated suggestions paused: {lastDraft.data.decision.replaceAll("_", " ")}.
+              A team member should handle this conversation.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       <section className="panel topGap">
         <h2>Add message</h2>

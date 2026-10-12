@@ -77,3 +77,39 @@ export async function saveWhatsAppSettings(
   revalidatePath("/dashboard/contact-me");
   return { success: "WhatsApp settings saved." };
 }
+
+/**
+ * Owner-only persistent draft controls. Enabling this NEVER enables provider
+ * sends: the webhook creates reviewable suggestions only.
+ */
+export async function saveWhatsAppAutoReplySettings(
+  _state: WhatsAppSettingsState,
+  formData: FormData,
+): Promise<WhatsAppSettingsState> {
+  const rawLimit = String(formData.get("monthly_draft_limit") ?? "");
+  const monthlyDraftLimit = Number(rawLimit);
+  if (!/^\d{1,3}$/.test(rawLimit) ||
+      !Number.isInteger(monthlyDraftLimit) ||
+      monthlyDraftLimit < 1 || monthlyDraftLimit > 800) {
+    return { error: "Choose a monthly draft limit between 1 and 800." };
+  }
+
+  const { client, context } = await requireDashboardTenant();
+  if (context.role !== "owner") {
+    return { error: "Only a business owner can change automatic reply settings." };
+  }
+
+  const { error } = await client.from("whatsapp_auto_reply_settings").upsert({
+    business_id: context.business.id,
+    enabled: formData.get("enabled") === "on",
+    monthly_draft_limit: monthlyDraftLimit,
+  }, { onConflict: "business_id" });
+
+  if (error) {
+    return { error: "Unable to save automatic reply settings." };
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/contact-me");
+  return { success: "Automatic reply draft settings saved. No messages are sent automatically." };
+}
