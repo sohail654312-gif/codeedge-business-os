@@ -123,13 +123,13 @@ declare
   decision text;
   monthly_count integer;
 begin
-  if p_inbound_message_id is null
+  if p_inbound_message_id is null or p_action is null
      or p_action not in ('draft','human_requested','opt_out') then
     raise exception 'Invalid auto-reply request' using errcode='22023';
   end if;
 
   connection := private.active_whatsapp_connection(p_external_sender_id);
-  select m.*, c.id as match_conversation
+  select m.*
     into inbound
   from public.messages m
   join public.conversations c
