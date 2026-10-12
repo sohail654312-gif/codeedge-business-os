@@ -304,6 +304,34 @@ export type ChannelConnection = {
   updated_at: string;
 };
 
+export type WhatsAppAutoReplySettings = {
+  business_id: string;
+  enabled: boolean;
+  monthly_draft_limit: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WhatsAppAutoReplyContact = {
+  business_id: string;
+  connection_id: string;
+  customer_wa_id: string;
+  muted_reason: "opt_out" | "human_requested";
+  created_at: string;
+  updated_at: string;
+};
+
+export type WhatsAppAutoReplyDraft = {
+  id: string;
+  business_id: string;
+  connection_id: string;
+  conversation_id: string;
+  inbound_message_id: string;
+  decision: "draft" | "human_requested" | "opt_out" | "muted" | "limit_reached";
+  reply_text: string;
+  created_at: string;
+};
+
 export type EmailChannelSettings = {
   connection_id: string;
   business_id: string;
@@ -667,6 +695,17 @@ export type Database = {
           | "lead_capture_enabled"
           | "accent_color"
         >>
+      >;
+      whatsapp_auto_reply_settings: Table<
+        WhatsAppAutoReplySettings,
+        { business_id: string; enabled?: boolean; monthly_draft_limit?: number },
+        Partial<Pick<WhatsAppAutoReplySettings, "enabled" | "monthly_draft_limit">>
+      >;
+      whatsapp_auto_reply_contacts: Table<
+        WhatsAppAutoReplyContact, never, never
+      >;
+      whatsapp_auto_reply_drafts: Table<
+        WhatsAppAutoReplyDraft, never, never
       >;
       channel_connections: Table<
         ChannelConnection,
