@@ -4,6 +4,7 @@ import {
   verifyMetaWebhookChallenge,
   verifyMetaWebhookSignature,
 } from "@/server/channels/meta-whatsapp";
+import { planWhatsAppAutoReply } from "@/server/channels/whatsapp-auto-reply";
 import {
   receiveWhatsAppText,
   updateWhatsAppDelivery,
@@ -72,7 +73,12 @@ export async function POST(request: NextRequest) {
 
   try {
     for (const message of events.messages) {
-      await receiveWhatsAppText(message);
+      const stored = await receiveWhatsAppText(message);
+      if (stored?.message_id) {
+        // Durable draft/handoff only; NEVER sends a Meta reply from webhook.
+        // Replanning duplicates is safe after any partial webhook failure.
+        await planWhatsAppAutoReply(message, stored.message_id);
+      }
     }
 
     for (const status of events.statuses) {
