@@ -153,7 +153,8 @@ describe("WhatsApp auto-reply durable draft and RLS boundary", () => {
     const result = await db.query<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>(
       `select relname,relrowsecurity,relforcerowsecurity from pg_class
        join pg_namespace n on n.oid=relnamespace
-       where n.nspname='public' and relname like 'whatsapp_auto_reply_%'
+       where n.nspname='public' and pg_class.relkind='r'
+         and relname like 'whatsapp_auto_reply_%'
        order by relname`,
     );
     expect(result.rows).toEqual([
