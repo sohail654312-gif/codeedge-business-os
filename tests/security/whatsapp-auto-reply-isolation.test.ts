@@ -49,7 +49,7 @@ describe("WhatsApp auto-reply durable draft and RLS boundary", () => {
     await db.exec("RESET ROLE; SAVEPOINT whatsapp_draft_case");
   });
   afterEach(async () => {
-    await db.exec("RESET ROLE; ROLLBACK TO SAVEPOINT whatsapp_draft_case; RELEASE SAVEPOINT whatsapp_draft_case");
+    await db.exec("ROLLBACK TO SAVEPOINT whatsapp_draft_case; RELEASE SAVEPOINT whatsapp_draft_case; RESET ROLE");
   });
 
   it("defaults to disabled and creates no suggestions or provider sends", async () => {
