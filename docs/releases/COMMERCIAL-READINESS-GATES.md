@@ -11,17 +11,17 @@ The original **Business OS V1 shipped on 6 October 2026** (merged [PR #77](https
 
 ## Read-only status gate
 
-- Source of truth for pending work: \`release/commercial-readiness.json\`.
-- Lint schema/evidence structure only: \`node scripts/check-commercial-readiness.mjs --validate\`. This MUST pass even when gates are incomplete.
-- Check an honest demo readiness decision: \`node scripts/check-commercial-readiness.mjs --mode demo\`.
-- Check paid-pilot readiness: \`node scripts/check-commercial-readiness.mjs --mode pilot\`.
-- For machine-readable summary: add \`--json\`.
+- Source of truth for pending work: `release/commercial-readiness.json`.
+- Lint schema/evidence structure only: `node scripts/check-commercial-readiness.mjs --validate`. This MUST pass even when gates are incomplete.
+- Check an honest demo readiness decision: `node scripts/check-commercial-readiness.mjs --mode demo`.
+- Check paid-pilot readiness: `node scripts/check-commercial-readiness.mjs --mode pilot`.
+- For machine-readable summary: add `--json`.
 - Nonzero result (1): unaccepted gates. Nonzero result (2): malformed manifest. This script does not phone home, inspect secrets, mutate databases, touch providers or deploy anything.
 - An acceptance entry requires a real artifact URL/repo path, date, exact commit SHA and accountable **human** reviewer. A syntactically valid evidence entry is **not independently authenticated by this script**; human review and fresh live tests remain mandatory.
 
 ## Verified reference points, not acceptance for this new release
 
-- Frozen V1 merged `c705d2e2b2eb552015f79c412dce4d40e9bf1016` after the original V1 release; V1 had tested CRM, Booking, Shared Inbox, Demo Voice/Money, permissions and responsive UI.
+- The released V1 and later performance changes were already merged on `main` (baseline `c705d2e2b2eb552015f79c412dce4d40e9bf1016`); V1 had tested CRM, Booking, Shared Inbox, Demo Voice/Money, permissions and responsive UI.
 - Current Business OS staging project `kffcywicqrtxdwgyvhvk` was `ACTIVE_HEALTHY` at inspection. It has **33** applied migration identities (31 V1 + 2 historical CIGO) and **40/40 public tables with both enabled and forced RLS**; this is *not* a fresh PR #83 hosted migration-parity acceptance.
 - Separate project named "CodeEdge Business OS" `ljniurodhvbvpcztwlnh` was **INACTIVE**. Its intended role is unverified. Do not activate, migrate or select it as production without owner approval.
 - Latest WhatsApp PR #83 is draft/unmerged at `aefdaf540a0ad7b80baebc0c00b3171af6fff0c3`. Exact-head CI succeeded, its Vercel preview is READY, but the provider-health check said `not_configured` and live Meta test-number connectivity is unverified.
