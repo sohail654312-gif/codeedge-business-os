@@ -58,6 +58,11 @@ const actionBase = {
 
 export const automationActionSchema = z.discriminatedUnion("type", [
   z.object({
+    type: z.literal("communication.ai_whatsapp_reply"),
+    conversationIdPath: conditionPathSchema,
+    messageIdPath: conditionPathSchema,
+  }).strict(),
+  z.object({
     type: z.literal("crm.update_lead_status"),
     leadIdPath: conditionPathSchema,
     status: z.enum(leadStatuses),

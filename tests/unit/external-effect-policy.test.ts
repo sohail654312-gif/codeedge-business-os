@@ -71,6 +71,15 @@ describe("central external-effect safety policy", () => {
     ))).toBe("external_effect_provider_environment_unsupported");
   });
 
+  it("permits the Meta test-number path only with matching sandbox workspace and credentials", () => {
+    expect(assertCommunicationExternalEffectAllowed(context("whatsapp", "meta_whatsapp_cloud", {
+      executionMode: "sandbox", providerEnvironment: "sandbox",
+    }))).toMatchObject({ executionMode: "sandbox", providerEnvironment: "sandbox" });
+    expect(codeFrom(() => assertCommunicationExternalEffectAllowed(context("whatsapp", "meta_whatsapp_cloud", {
+      executionMode: "production", providerEnvironment: "sandbox",
+    })))).toBe("external_effect_production_environment_blocked");
+  });
+
   it.each(liveProviders)(
     "preserves production path for %s",
     (channel, provider) => {

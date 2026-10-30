@@ -4,7 +4,7 @@ import type {
   CommunicationProviderId,
   EmailCommunicationProvider,
   SmsCommunicationProvider,
-  TextCommunicationProvider,
+  WhatsAppProvider,
 } from "./provider";
 import { createMetaWhatsAppProvider } from "./meta-whatsapp";
 import { createResendEmailProvider } from "./resend-email";
@@ -24,7 +24,7 @@ export const communicationProviderRegistry = {
     meta_whatsapp_cloud: {
       id: "meta_whatsapp_cloud",
       channel: "whatsapp",
-      environments: ["production"],
+      environments: ["sandbox", "production"],
     },
   },
   email: {
@@ -61,7 +61,7 @@ export function getCommunicationProviderRegistration(
 
 export function getTextCommunicationProvider(
   provider: string,
-): TextCommunicationProvider {
+): WhatsAppProvider {
   getCommunicationProviderRegistration("whatsapp", provider);
   return createMetaWhatsAppProvider();
 }

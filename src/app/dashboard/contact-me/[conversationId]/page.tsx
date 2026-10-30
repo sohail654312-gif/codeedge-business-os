@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WhatsAppConversationControls } from "@/components/conversations/WhatsAppConversationControls";
 import { notFound } from "next/navigation";
 import { ConversationComposer } from "@/components/conversations/ConversationComposer";
 import { ConversationStatusForm } from "@/components/conversations/ConversationStatusForm";
@@ -112,6 +113,7 @@ export default async function ConversationDetailPage({
                 <time className="muted">{formatConversationTime(message.created_at, context.business.timezone)}</time>
               </div>
               <p>{message.body}</p>
+              {message.content_kind && ["image", "document", "audio", "video"].includes(message.content_kind) ? <p><a className="leadNameLink" href={`/api/channels/whatsapp/media/${message.id}`}>Download attachment securely</a></p> : null}
               {message.delivery_status ? (
                 <p className="muted formHelp">
                   Delivery: {deliveryStatusLabels[message.delivery_status]}
@@ -128,6 +130,7 @@ export default async function ConversationDetailPage({
         <h2>Add message</h2>
         <ConversationComposer conversationId={conversation.id} channel={conversation.channel} />
       </section>
+      {conversation.channel === "whatsapp" ? <WhatsAppConversationControls conversation={conversation} isOwner={context.role === "owner"} /> : null}
     </>
   );
 }

@@ -47,7 +47,7 @@ vi.mock("@/server/channels/capability", () => ({
         };
       }
 
-      if (sql.includes("whatsapp_prepare_outbound")) {
+      if (sql.includes("whatsapp_prepare_message")) {
         return {
           rows: [{
             message_id: "90000000-0000-4000-8000-000000000001",
