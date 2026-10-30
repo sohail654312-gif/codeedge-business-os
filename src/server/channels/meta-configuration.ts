@@ -13,7 +13,13 @@ type MetaConfigurationEnv = {
   WHATSAPP_META_CREDENTIALS_JSON?: string;
 };
 
-export function metaConfigurationReady(env: MetaConfigurationEnv = process.env): boolean {
+export function metaConfigurationReady(env: MetaConfigurationEnv = {
+  COMMUNICATION_DATABASE_URL: process.env.COMMUNICATION_DATABASE_URL,
+  WHATSAPP_META_APP_SECRET: process.env.WHATSAPP_META_APP_SECRET,
+  WHATSAPP_META_VERIFY_TOKEN: process.env.WHATSAPP_META_VERIFY_TOKEN,
+  WHATSAPP_META_GRAPH_API_VERSION: process.env.WHATSAPP_META_GRAPH_API_VERSION,
+  WHATSAPP_META_CREDENTIALS_JSON: process.env.WHATSAPP_META_CREDENTIALS_JSON,
+}): boolean {
   if (
     !env.COMMUNICATION_DATABASE_URL?.trim()
     || !env.WHATSAPP_META_APP_SECRET || env.WHATSAPP_META_APP_SECRET.length < 16
