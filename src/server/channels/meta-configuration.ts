@@ -5,7 +5,16 @@ import "server-only";
  * It never calls Meta or the database, and never returns sensitive values.
  * Successful preflight does NOT prove webhook subscription or live delivery.
  */
-export function metaConfigurationReady(env: NodeJS.ProcessEnv = process.env): boolean {
+type MetaConfigurationEnv = Pick<
+  NodeJS.ProcessEnv,
+  | "COMMUNICATION_DATABASE_URL"
+  | "WHATSAPP_META_APP_SECRET"
+  | "WHATSAPP_META_VERIFY_TOKEN"
+  | "WHATSAPP_META_GRAPH_API_VERSION"
+  | "WHATSAPP_META_CREDENTIALS_JSON"
+>;
+
+export function metaConfigurationReady(env: MetaConfigurationEnv = process.env): boolean {
   if (
     !env.COMMUNICATION_DATABASE_URL?.trim()
     || !env.WHATSAPP_META_APP_SECRET || env.WHATSAPP_META_APP_SECRET.length < 16
