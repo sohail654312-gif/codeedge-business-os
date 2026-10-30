@@ -1,5 +1,19 @@
 # WhatsApp release checkpoint — 29 October 2026
 
+## Follow-up 30 October 2026 — backend preflight, no live Meta integration claim
+
+The owner created the Codeedge Meta Developer app, selected only `Test Messaging Account`, and reported a successful Meta sandbox outgoing test message to their own WhatsApp. **This does not demonstrate inbound webhook, CRM persistence, or Codeedge sending.** The earlier Meta access token was visible in a screenshot and **must be revoked/rotated before configuring any backend**.
+
+Read-only connected inspections:
+- Existing Supabase `codeedge-business-os-test` is `ACTIVE_HEALTHY`, with 33 applied migration identities and 40/40 public tables forced RLS. New WhatsApp AI/database functions and settings columns from this PR are **not present**.
+- Existing Vercel `codeedge-business-os-test` Preview environment list had **no `WHATSAPP_META_*` keys**. The deployment is SSO-protected; Meta cannot complete an unauthenticated verification challenge until a narrowly reviewed public ingress is available.
+- The existing Meta health response checks only configuration, never live delivery. The current PR strengthens the health preflight to reject malformed, empty, mismatched or raw-token credential mappings; corresponding synthetic unit tests are added.
+- No DB migration, Vercel environment secret write, provider call, production number change or main-branch merge was made by the 30 October source fixes.
+
+**Next prerequisites:** establish fresh recoverable backup and verify only-missing migration suffix, configure rotated server secrets scoped to the test Preview branch, ensure narrowly accessible Meta callback without exposing the rest of the dashboard, then capture real GET challenge and signed inbound/outbound tenant-safe acceptance. Keep AI replies disabled until independently approved.
+
+See [updated owner setup](WHATSAPP-META-OWNER-SETUP.md).
+
 The live connection is not complete. PR #83 remains open; no automatic main merge is authorized. The owner confirmed that the Codeedge Business Portfolio exists; developer sign-in is still the next owner gate.
 
 ## Verified code and Preview
