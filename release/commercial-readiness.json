@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "product": "Codeedge Business OS",
+  "asOf": "2026-10-30",
+  "baseline": {
+    "branch": "main",
+    "sha": "c705d2e2b2eb552015f79c412dce4d40e9bf1016",
+    "v1Released": "2026-10-06",
+    "note": "Historical V1 released; commercial/pilot acceptance is separate."
+  },
+  "rules": {
+    "demo": "All demo gates accepted with human-reviewed exact-release evidence.",
+    "pilot": "Every demo and pilot gate accepted with real provider and operational evidence.",
+    "defaultDeny": true
+  },
+  "gates": [
+    {
+      "id": "D01",
+      "scope": "demo",
+      "title": "Reproducible fictional clinic and UK trades tenants",
+      "owner": "engineering",
+      "acceptance": "Seed/reset two isolated demo workspaces without real contacts or external effects; verify reruns",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "D02",
+      "scope": "demo",
+      "title": "Authenticated CRM and booking journeys",
+      "owner": "qa",
+      "acceptance": "Owner/staff sign-in; Lead→Customer, quote, appointment create/reschedule/cancel; unauthorized tenant denied",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "D03",
+      "scope": "demo",
+      "title": "Website Chat and Shared Inbox journeys",
+      "owner": "qa",
+      "acceptance": "Synthetic enquiry enters correct tenant inbox, linked to lead; no messages sent externally",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "D04",
+      "scope": "demo",
+      "title": "AI Receptionist and Money simulated journeys",
+      "owner": "qa",
+      "acceptance": "Explicit DEMO branding; simulated receptionist, human review, invoice/quote and AI proposal; reproduce Money quote write",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "D05",
+      "scope": "demo",
+      "title": "Responsive demo, security and error-state signoff",
+      "owner": "qa",
+      "acceptance": "Phone/tablet/desktop; tenant A/B, anonymous/revoked, empty/error states; exact preview SHA and screenshots",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P01",
+      "scope": "pilot",
+      "title": "Reconciled release branch, exact CI and staged migration parity",
+      "owner": "engineering",
+      "acceptance": "Review PR #83/#84 ancestry, test exact SHA, verified backup, reconcile 33 applied migrations before any new suffix",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P02",
+      "scope": "pilot",
+      "title": "Owner-approved production tenant, authentication and access gates",
+      "owner": "owner",
+      "acceptance": "Identify production project (do not assume inactive named project); actual user/revocation and signed tenant isolation",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P03",
+      "scope": "pilot",
+      "title": "Live Meta WhatsApp signed webhook and test-number acceptance",
+      "owner": "owner",
+      "acceptance": "Developer sign-in, app/test number, server secrets, inbound/outbound/delivery, duplicate, STOP/handoff; protect existing number",
+      "status": "blocked_external",
+      "evidence": []
+    },
+    {
+      "id": "P04",
+      "scope": "pilot",
+      "title": "Live AI Voice and handoff acceptance",
+      "owner": "owner",
+      "acceptance": "Approved provider/number, disclosure, real two-way call, tool safety, staff takeover, transcript consent",
+      "status": "blocked_external",
+      "evidence": []
+    },
+    {
+      "id": "P05",
+      "scope": "pilot",
+      "title": "Real Email/SMS delivery and account recovery",
+      "owner": "owner",
+      "acceptance": "Approved sender and consent, bounce/STOP handling, reset email expiry/browser behaviour",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P06",
+      "scope": "pilot",
+      "title": "Unattended automation and safe retry proof",
+      "owner": "engineering",
+      "acceptance": "Supported external scheduler, authenticated heartbeat and dead-letter/backlog metrics, zero unauthorized effects",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P07",
+      "scope": "pilot",
+      "title": "Recurring offsite backup and isolated restore",
+      "owner": "owner",
+      "acceptance": "Approved RPO/RTO, encrypted offsite destination, automated backup and independent restore plus RLS verification",
+      "status": "blocked_external",
+      "evidence": []
+    },
+    {
+      "id": "P08",
+      "scope": "pilot",
+      "title": "Operational monitoring and delivered incident alerts",
+      "owner": "owner",
+      "acceptance": "Alert destination delivered and recovered on readiness, webhook 5xx, queue, DB and provider ambiguity",
+      "status": "blocked_external",
+      "evidence": []
+    },
+    {
+      "id": "P09",
+      "scope": "pilot",
+      "title": "Database and provider security signoff",
+      "owner": "security",
+      "acceptance": "Negative signed REST/RPC tenant tests, four SECURITY DEFINER authorization reviews, RLS, execution-mode isolation",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P10",
+      "scope": "pilot",
+      "title": "Retention, privacy, consent and operating costs",
+      "owner": "owner",
+      "acceptance": "Approve per-record retention/hold, patient privacy handling, provider spend limits and customer terms",
+      "status": "needs_acceptance",
+      "evidence": []
+    },
+    {
+      "id": "P11",
+      "scope": "pilot",
+      "title": "Controlled real-client pilot, rollback and release approval",
+      "owner": "owner",
+      "acceptance": "One client owner/staff, exact live journeys, backup/restore, rollback, user signoff; explicit merge/release authorization",
+      "status": "needs_acceptance",
+      "evidence": []
+    }
+  ]
+}
